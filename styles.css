@@ -25,23 +25,16 @@
   --accent: #60a5fa;
 }
 
-[data-theme="dark"] {
-  --bg: #0f172a;
-  --text: #e2e8f0;
-  --card: #1e293b;
-  --accent: #60a5fa;
-}
-
 body {
   margin: 0;
-  font-family: system-ui;
+  font-family: system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  transition: 0.3s;
+  transition: 0.4s ease;
 }
 
 .container {
@@ -49,6 +42,11 @@ body {
   background: var(--card);
   padding: 24px;
   border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+h1 {
+  margin: 0 0 10px;
 }
 
 .verse {
@@ -58,8 +56,8 @@ body {
 }
 
 .ref {
-  color: var(--accent);
   font-weight: bold;
+  color: var(--accent);
 }
 
 .controls {
