@@ -7,19 +7,16 @@
 
 /* 🌅 Morning */
 [data-time="morning"] {
-  --bg: #fff6e5;
   --accent: #f59e0b;
 }
 
 /* ☀️ Day */
 [data-time="day"] {
-  --bg: #f5f5f5;
   --accent: #2b6cb0;
 }
 
 /* 🌙 Night */
 [data-time="night"] {
-  --bg: #0f172a;
   --text: #e2e8f0;
   --card: #1e293b;
   --accent: #60a5fa;
@@ -28,13 +25,40 @@
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
-  background: var(--bg);
   color: var(--text);
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  transition: 0.4s ease;
+  overflow: hidden;
+}
+
+/* 🌌 Animated background */
+.background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-size: 400% 400%;
+  animation: drift 18s ease infinite;
+  transition: background 1.2s ease;
+}
+
+.background.morning {
+  background: linear-gradient(-45deg, #ffecd2, #fcb69f, #ffd89b, #ff9a9e);
+}
+
+.background.day {
+  background: linear-gradient(-45deg, #89f7fe, #66a6ff, #a1c4fd, #c2e9fb);
+}
+
+.background.night {
+  background: linear-gradient(-45deg, #0f172a, #1e3a8a, #312e81, #000000);
+}
+
+@keyframes drift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .container {
