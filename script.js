@@ -46,7 +46,7 @@ async function fetchDailyVerse() {
 
 async function loadTranslation(ref) {
   try {
-    const version = translationEl.value || "niv";
+    const version = translationEl.value || "web";
 
     const res = await fetch(
       `https://bible-api.com/${encodeURIComponent(ref)}?translation=${version}`
