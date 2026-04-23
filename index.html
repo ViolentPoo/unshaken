@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unshaken</title>
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --text: #111;
+      --card: #ffffff;
+      --accent: #2b6cb0;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f172a;
+      --text: #e2e8f0;
+      --card: #1e293b;
+      --accent: #60a5fa;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container {
+      width: min(700px, 92%);
+      background: var(--card);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      letter-spacing: 1px;
+    }
+
+    .verse {
+      font-size: 20px;
+      line-height: 1.6;
+      margin: 20px 0;
+    }
+
+    .ref {
+      font-weight: bold;
+      color: var(--accent);
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    select, button {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text);
+    }
+
+    button {
+      border: 1px solid var(--accent);
+    }
+
+    button:hover {
+      background: var(--accent);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Unshaken</h1>
+    <div id="verse" class="verse">Loading verse...</div>
+    <div id="ref" class="ref"></div>
+
+    <div class="controls">
+      <select id="translation">
+        <option value="kjv">KJV</option>
+        <option value="web">WEB</option>
+        <option value="esv">ESV</option>
+      </select>
+
+      <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+      <button onclick="shareVerse()">Share</button>
+    </div>
+  </div>
+
+<script>
+let currentRef = null;
+let currentVerse = null;
+
+function setThemeByTime() {
+  const hour = new Date().getHours();
+  const isDark = hour >= 18 || hour < 6;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+}
+
+async function fetchDailyVerse() {
+  try {
+    const res = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
+    const data = await res.json();
+
+    const verse = data.verse.details.text;
+    const ref = data.verse.details.reference;
+
+    currentRef = ref;
+    document.getElementById('ref').textContent = ref;
+
+    loadTranslation(ref);
+  } catch (e) {
+    document.getElementById('verse').textContent = 'Failed to load verse.';
+  }
+}
+
+async function loadTranslation(ref) {
+  const version = document.getElementById('translation').value;
+  try {
+    const url = `https://bible-api.com/${encodeURIComponent(ref)}?translation=${version}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    currentVerse = data.text;
+    document.getElementById('verse').textContent = data.text;
+  } catch (e) {
+    document.getElementById('verse').textContent = 'Could not load translation.';
+  }
+}
+
+function toggleDarkMode() {
+  const current = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+}
+
+async function shareVerse() {
+  const text = `${currentRef}\n\n${currentVerse}`;
+
+  if (navigator.share) {
+    await navigator.share({ title: 'Unshaken Verse', text });
+  } else {
+    navigator.clipboard.writeText(text);
+    alert('Copied to clipboard');
+  }
+}
+
+document.getElementById('translation').addEventListener('change', () => {
+  if (currentRef) loadTranslation(currentRef);
+});
+
+setThemeByTime();
+fetchDailyVerse();
+</script>
+</body>
+</html>
+          title: "Daily Bible Verse",
+          text: shareText,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareText);
+        alert("Verse copied to clipboard!");
+      }
+    } catch {
+      alert("Could not share verse.");
+    }
+  };
+
+  return (
+    <div
+      className={`min-h-screen flex items-center justify-center p-6 transition-colors duration-300 bg-gradient-to-br ${getThemeClasses()}`}
+    >
+      <div
+        className={`shadow-xl rounded-2xl p-8 max-w-xl text-center w-full transition-colors duration-300 ${
+          darkMode || getTheme() === "night"
+            ? "bg-gray-900"
+            : "bg-white"
+        }`}
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Daily Bible Verse</h1>
+
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className="text-sm px-3 py-1 rounded-full border"
+          >
+            {darkMode ? "Light Mode" : "Night Mode"}
+          </button>
+        </div>
+
+        {/* Translation Selector */}
+        <div className="mb-4">
+          <select
+            value={translation}
+            onChange={(e) => setTranslation(e.target.value)}
+            className="border rounded px-3 py-1 text-sm"
+          >
+            <option value="kjv">KJV</option>
+            <option value="niv">NIV</option>
+            <option value="esv">ESV</option>
+          </select>
+        </div>
+
+        {loading && <p className="text-gray-500">Loading verse...</p>}
+
+        {error && <p className="text-red-500">{error}</p>}
+
+        {verse && !loading && (
+          <>
+            <p className="text-xl italic mb-4">"{verse.text}"</p>
+            <p className="font-semibold">— {verse.reference}</p>
+
+            <button
+              onClick={shareVerse}
+              className="mt-6 px-4 py-2 rounded-lg border"
+            >
+              Share Verse
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+<div id="bg"></div>
+
+<div class="container">
+<h1>Unshaken</h1>
+
+<select id="theme" onchange="setTheme()">
+<option value="sky">Peaceful Sky</option>
+<option value="gold">Majestic Gold</option>
+<option value="minimal">Modern Minimal</option>
+<option value="forest">Forest Prayer</option>
+</select>
+
+<div id="verse">Loading...</div>
+<div id="reference"></div>
+
+<button onclick="toggleMode()">Night Mode</button>
+<button onclick="shareVerse()">Share</button>
+</div>
+
+<script src="script.js"></script>
+
+<script>
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+
+</body>
+</html>    justify-content:center;
+    align-items:center;
+    z-index:999;
+    transition:opacity 1s ease;
+}
+
+.logo{
+    font-size:60px;
+    animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.1);}
+}
+
+/* card */
+.container{
+    width:90%;
+    max-width:700px;
+    background:rgba(255,255,255,.88);
+    backdrop-filter:blur(10px);
+    padding:40px;
+    border-radius:20px;
+    text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.2);
+}
+
+h1{
+    margin-top:0;
+}
+
+#verse{
+    font-size:1.4rem;
+    line-height:1.7;
+    margin:25px 0;
+}
+
+#reference{
+    font-weight:bold;
+}
+
+button{
+    margin:8px;
+    padding:10px 14px;
+    border:none;
+    border-radius:10px;
+    background:#2c3e50;
+    color:white;
+    cursor:pointer;
+}
+
+/* dark mode */
+.dark .container{
+    background:rgba(20,20,20,.82);
+    color:white;
+}
+</style>
+</head>
+<body>
+
+<div id="bg"></div>
+
+<div id="splash">
+    <div class="logo">📖</div>
+    <h2>Daily Bible Verse</h2>
+</div>
+
+<div class="container">
+    <h1>Daily Bible Verse</h1>
+    <div id="verse">Loading verse...</div>
+    <div id="reference"></div>
+
+    <button onclick="toggleMode()">Night Mode</button>
+    <button onclick="shareVerse()">Share</button>
+</div>
+
+<script>
+function cinematicBackground(){
+    const hour = new Date().getHours();
+    const bg = document.getElementById("bg");
+
+    if(hour >= 5 && hour < 12){
+        // Morning
+        bg.style.background =
+        "linear-gradient(120deg,#ffecd2,#fcb69f,#ffd1ff)";
+    }
+    else if(hour >= 12 && hour < 18){
+        // Day
+        bg.style.background =
+        "linear-gradient(120deg,#89f7fe,#66a6ff,#a1c4fd)";
+    }
+    else{
+        // Night
+        bg.style.background =
+        "linear-gradient(120deg,#0f2027,#203a43,#2c5364)";
+        createStars();
+    }
+}
+
+function createStars(){
+    const bg = document.getElementById("bg");
+
+    for(let i=0;i<50;i++){
+        const star = document.createElement("div");
+        star.className="star";
+        star.style.left=Math.random()*100+"%";
+        star.style.top=Math.random()*100+"%";
+        star.style.animationDuration=(2+Math.random()*4)+"s";
+        bg.appendChild(star);
+    }
+}
+
+async function loadVerse(){
+    try{
+        const res = await fetch("https://beta.ourmanna.com/api/v1/get/?format=json");
+        const data = await res.json();
+
+        document.getElementById("verse").textContent =
+            data.verse.details.text;
+
+        document.getElementById("reference").textContent =
+            data.verse.details.reference;
+
+    }catch{
+        document.getElementById("verse").textContent =
+            "Unable to load verse.";
+    }
+}
+
+function toggleMode(){
+    document.body.classList.toggle("dark");
+}
+
+function shareVerse(){
+    const text =
+        document.getElementById("verse").textContent +
+        " — " +
+        document.getElementById("reference").textContent;
+
+    if(navigator.share){
+        navigator.share({
+            title:"Daily Bible Verse",
+            text:text
+        });
+    }else{
+        navigator.clipboard.writeText(text);
+        alert("Verse copied!");
+    }
+}
+
+/* start */
+cinematicBackground();
+loadVerse();
+
+/* remove splash */
+setTimeout(()=>{
+    document.getElementById("splash").style.opacity="0";
+    setTimeout(()=>{
+        document.getElementById("splash").remove();
+    },1000);
+},1800);
+</script>
+
+</body>
+</html>    50% { transform: translate(3%,2%); }
+    100% { transform: translate(0,0); }
+}
+
+/* STARS (night mode only) */
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: twinkle 3s infinite;
+}
+
+@keyframes twinkle {
+    0%,100% { opacity: 0.2; }
+    50% { opacity: 1; }
+}
+
+body {
+    margin: 0;
+    font-family: Arial;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    transition: background 0.4s;
+}
+
+.container {
+    background: white;
+    padding: 40px;
+    max-width: 700px;
+    width: 90%;
+    text-align: center;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+button {
+    margin: 8px;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #2c3e50;
+    color: white;
+}
+.dark .container {
+    background: #1e1e1e;
+    color: white;
+}
+</style>
+</head>
+
+<body>
+<div id="splashScreen">
+    <div class="logo">📖</div>
+    <h2>Unshaken</h2>
+</div>
+<div id="bg" class="bg"></div>
+<div class="container">
+    <h1>Unshaken</h1>
+
+    <div id="verse">Loading...</div>
+    <div id="reference"></div>
+
+    <button onclick="toggleMode()">Night Mode</button>
+    <button onclick="shareVerse()">Share</button>
+</div>
+
+<script src="script.js"></script>
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+
+</body>
+</html>
