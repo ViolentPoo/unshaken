@@ -1,0 +1,63 @@
+:root {
+  --bg: #f5f5f5;
+  --text: #111;
+  --card: #fff;
+  --accent: #2b6cb0;
+}
+
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --text: #e2e8f0;
+  --card: #1e293b;
+  --accent: #60a5fa;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  transition: 0.3s;
+}
+
+.container {
+  width: min(700px, 92%);
+  background: var(--card);
+  padding: 24px;
+  border-radius: 16px;
+}
+
+.verse {
+  font-size: 20px;
+  line-height: 1.6;
+  margin: 20px 0;
+}
+
+.ref {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+button, select {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent);
+  color: white;
+}
