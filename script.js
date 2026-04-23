@@ -4,11 +4,23 @@ let currentVerse = "";
 const verseEl = document.getElementById("verse");
 const refEl = document.getElementById("ref");
 const translationEl = document.getElementById("translation");
+const themeBtn = document.getElementById("themeBtn");
 
 function setThemeByTime() {
   const hour = new Date().getHours();
-  document.documentElement.dataset.theme =
-    hour >= 18 || hour < 6 ? "dark" : "light";
+  let theme = "day";
+
+  if (hour >= 5 && hour < 12) {
+    theme = "morning";
+  } else if (hour >= 12 && hour < 18) {
+    theme = "day";
+  } else {
+    theme = "night";
+  }
+
+  document.documentElement.dataset.time = theme;
+
+  themeBtn.textContent = theme === "night" ? "Day Mode" : "Night Mode";
 }
 
 async function fetchDailyVerse() {
@@ -19,11 +31,14 @@ async function fetchDailyVerse() {
       renderVerse(data.ref, data.text);
     }
 
-    const res = await fetch("https://beta.ourmanna.com/api/v1/get/?format=json&order=daily");
+    const res = await fetch(
+      "https://beta.ourmanna.com/api/v1/get/?format=json&order=daily"
+    );
     const data = await res.json();
 
     const ref = data.verse.details.reference;
     await loadTranslation(ref);
+
   } catch {
     verseEl.textContent = "Offline or failed to load.";
   }
@@ -31,7 +46,7 @@ async function fetchDailyVerse() {
 
 async function loadTranslation(ref) {
   try {
-    const version = translationEl.value;
+    const version = translationEl.value || "niv";
 
     const res = await fetch(
       `https://bible-api.com/${encodeURIComponent(ref)}?translation=${version}`
@@ -45,6 +60,7 @@ async function loadTranslation(ref) {
       "verse-cache",
       JSON.stringify({ ref, text: data.text })
     );
+
   } catch {
     verseEl.textContent = "Could not load translation.";
   }
@@ -59,8 +75,15 @@ function renderVerse(ref, text) {
 }
 
 function toggleTheme() {
-  const isDark = document.documentElement.dataset.theme === "dark";
-  document.documentElement.dataset.theme = isDark ? "light" : "dark";
+  const current = document.documentElement.dataset.time;
+
+  let newTheme = "day";
+  if (current === "night") newTheme = "day";
+  else newTheme = "night";
+
+  document.documentElement.dataset.time = newTheme;
+
+  themeBtn.textContent = newTheme === "night" ? "Day Mode" : "Night Mode";
 }
 
 async function shareVerse() {
@@ -78,8 +101,8 @@ translationEl.addEventListener("change", () => {
   if (currentRef) loadTranslation(currentRef);
 });
 
-document.getElementById("themeBtn").onclick = toggleTheme;
-document.getElementById("shareBtn").onclick = shareVerse;
+themeBtn.addEventListener("click", toggleTheme);
+document.getElementById("shareBtn").addEventListener("click", shareVerse);
 
 setThemeByTime();
 fetchDailyVerse();
