@@ -111,6 +111,7 @@ button:hover{
 
 <!-- VERSE -->
 <div class="card">
+
   <button id="mainStar"
     onclick="toggleFavorite(currentRef)"
     style="float:right; font-size:20px; border:none; background:transparent; cursor:pointer;">
@@ -143,6 +144,13 @@ button:hover{
 
   <button onclick="toggleFavorites()">Favorites</button>
   <button onclick="toggleHistory()">History</button>
+
+  <!-- STREAK TRACKER -->
+  <div style="margin-top:10px; font-weight:600;">
+    🔥 Streak: <span id="streakCount">0</span> days
+  </div>
+  <div id="streakMessage" style="font-size:14px; opacity:0.85; margin-top:4px;"></div>
+
 </div>
 
 <!-- PRAYER -->
@@ -196,6 +204,8 @@ let currentText = "";
 let favorites = JSON.parse(localStorage.getItem('unshaken_favs') || '[]');
 let history = JSON.parse(localStorage.getItem('unshaken_history') || '[]');
 
+let streak = JSON.parse(localStorage.getItem('unshaken_streak') || '{"count":0,"lastDate":null}');
+
 /* =========================
    INIT
 ========================= */
@@ -213,10 +223,13 @@ window.onload = () => {
   renderHistory();
   renderFavorites();
   fetchDaily();
+
+  updateStreak();
+  renderStreak();
 };
 
 /* =========================
-   DAILY VERSE
+   STREAK SYSTEM
 ========================= */
 
 function getDayKey(){
@@ -224,30 +237,66 @@ function getDayKey(){
   return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
 }
 
-async function fetchDaily(){
-  const key = getDayKey();
-  const storageKey = "unshaken_daily_" + key;
+function updateStreak(){
+  const today = getDayKey();
 
-  const cached = localStorage.getItem(storageKey);
+  if(streak.lastDate === today) return;
 
-  if(cached){
-    loadVerse(JSON.parse(cached).ref);
-    return;
+  const y = new Date();
+  y.setDate(y.getDate()-1);
+  const yKey = `${y.getFullYear()}-${y.getMonth()+1}-${y.getDate()}`;
+
+  if(streak.lastDate === yKey){
+    streak.count++;
+  } else {
+    streak.count = 1;
   }
 
-  let r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
-  let d = await r.json();
+  streak.lastDate = today;
 
-  const ref = d?.verse?.details?.reference || "John 14:27";
+  localStorage.setItem('unshaken_streak', JSON.stringify(streak));
 
-  localStorage.setItem(storageKey, JSON.stringify({ ref, date:key }));
+  renderStreak();
+}
 
-  loadVerse(ref);
+function renderStreak(){
+  let el = document.getElementById('streakCount');
+  let msg = document.getElementById('streakMessage');
+
+  if(el) el.innerText = streak.count;
+
+  if(!msg) return;
+
+  if(streak.count === 1){
+    msg.innerText = "Start of something good.";
+  } else if(streak.count < 5){
+    msg.innerText = "Keep building consistency.";
+  } else if(streak.count < 10){
+    msg.innerText = "You're gaining momentum.";
+  } else if(streak.count < 30){
+    msg.innerText = "Strong spiritual rhythm.";
+  } else {
+    msg.innerText = "Deep discipline forming.";
+  }
 }
 
 /* =========================
-   VERSE LOADER
+   VERSE SYSTEM
 ========================= */
+
+async function fetchDaily(){
+  try {
+    const r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
+    const d = await r.json();
+
+    const ref = d?.verse?.details?.reference || "John 14:27";
+
+    loadVerse(ref);
+
+  } catch {
+    loadVerse("John 14:27");
+  }
+}
 
 async function loadVerse(ref){
   try{
@@ -268,12 +317,10 @@ async function loadVerse(ref){
     setExtras();
     addToHistory(ref);
     updateMainStar();
+    updateStreak();
 
-  } catch(e){
-    document.getElementById('verse').innerText =
-      "Verse temporarily unavailable.";
-
-    document.getElementById('ref').innerText = ref || "";
+  } catch {
+    document.getElementById('verse').innerText = "Verse unavailable.";
   }
 }
 
@@ -298,7 +345,7 @@ function setExtras(){
 }
 
 /* =========================
-   FAVORITES (TOGGLE SYSTEM)
+   FAVORITES
 ========================= */
 
 function isFavorite(ref){
@@ -338,7 +385,6 @@ function renderFavorites(){
     star.innerText = "⭐";
     star.style.border = "none";
     star.style.background = "transparent";
-    star.style.cursor = "pointer";
     star.onclick = () => toggleFavorite(f.ref);
 
     row.appendChild(text);
@@ -352,11 +398,6 @@ function updateMainStar(){
   if(!star) return;
 
   star.innerText = isFavorite(currentRef) ? "⭐" : "☆";
-}
-
-function toggleFavorites(){
-  let b = document.getElementById('favBox');
-  b.style.display = b.style.display === 'block' ? 'none' : 'block';
 }
 
 /* =========================
@@ -379,9 +420,8 @@ function renderHistory(){
 
   history.forEach(h => {
     let div = document.createElement('div');
-    div.style.cursor = "pointer";
-    div.style.margin = "6px 0";
     div.innerText = h.ref;
+    div.style.cursor = "pointer";
     div.onclick = () => loadVerse(h.ref);
     el.appendChild(div);
   });
