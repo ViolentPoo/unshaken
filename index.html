@@ -64,9 +64,16 @@ body{
   min-height:80px;
 }
 
-.ref{ color:var(--accent); font-weight:700; }
+.ref{
+  color:var(--accent);
+  font-weight:700;
+}
 
-.controls{ display:flex; flex-wrap:wrap; gap:8px; }
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
 
 button,select{
   padding:10px 12px;
@@ -77,14 +84,9 @@ button,select{
   cursor:pointer;
 }
 
-button:hover{ background:var(--accent); color:#fff; }
-
-.panel{ display:none; }
-
-.list-item{
-  padding:8px 0;
-  border-bottom:1px solid rgba(0,0,0,.08);
-  cursor:pointer;
+button:hover{
+  background:var(--accent);
+  color:#fff;
 }
 
 .row{
@@ -93,7 +95,10 @@ button:hover{ background:var(--accent); color:#fff; }
   align-items:center;
 }
 
-.small{ font-size:.9rem; color:var(--muted); }
+.small{
+  font-size:.9rem;
+  color:var(--muted);
+}
 
 .star-btn{
   border:none;
@@ -102,10 +107,29 @@ button:hover{ background:var(--accent); color:#fff; }
   cursor:pointer;
 }
 
-.section-title{ font-weight:700; }
+.section-title{
+  font-weight:700;
+}
 
-.streak{ margin-top:10px; font-weight:700; }
+.streak{
+  margin-top:10px;
+  font-weight:700;
+}
 
+/* panels */
+.panel{
+  display:none;
+  max-height:260px;
+  overflow:auto;
+}
+
+.list-item{
+  padding:8px 0;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  cursor:pointer;
+}
+
+/* footer */
 .footer{
   position: fixed;
   right: 12px;
@@ -144,8 +168,8 @@ button:hover{ background:var(--accent); color:#fff; }
   <div class="controls">
 
     <select id="translation" onchange="reloadCurrentVerse()">
-      <option value="kjv">KJV</option>
       <option value="web" selected>WEB</option>
+      <option value="kjv">KJV</option>
       <option value="esv">ESV</option>
     </select>
 
@@ -163,11 +187,13 @@ button:hover{ background:var(--accent); color:#fff; }
     <button onclick="randomVerse()">Random</button>
     <button onclick="encouragement()">Encourage Me</button>
     <button onclick="toggleDark()">Dark Mode</button>
+    <button onclick="toggleFavorites()">Favorites</button>
+    <button onclick="toggleHistory()">History</button>
 
   </div>
 
   <div class="streak">
-    🔥 Streak: <span id="streakCount">0</span>
+    🔥 Streak: <span id="streakCount">0</span> days
   </div>
   <div id="streakMessage" class="small"></div>
 </div>
@@ -182,6 +208,21 @@ button:hover{ background:var(--accent); color:#fff; }
 <div class="card">
   <div class="section-title">Reflection</div>
   <div id="reflection"></div>
+</div>
+
+<!-- FAVORITES -->
+<div class="card panel" id="favBox">
+  <div class="section-title">Favorites</div>
+  <div id="favList"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="card panel" id="historyBox">
+  <div class="row">
+    <div class="section-title">History</div>
+    <button onclick="clearHistory()">Clear</button>
+  </div>
+  <div id="historyList"></div>
 </div>
 
 <!-- MISSION -->
@@ -200,20 +241,52 @@ button:hover{ background:var(--accent); color:#fff; }
 
 <script>
 
+/* STATE */
 let currentRef="";
-let currentText="";
+let favorites=JSON.parse(localStorage.getItem("favs")||"[]");
+let history=JSON.parse(localStorage.getItem("hist")||"[]");
 
-/* SAFE DEVOTIONAL ENGINE (FIXED) */
+/* DAILY VERSE */
+async function fetchDaily(){
+  try{
+    const r=await fetch("https://beta.ourmanna.com/api/v1/get/?format=json&order=daily");
+    const d=await r.json();
+    loadVerse(d?.verse?.details?.reference||"John 14:27");
+  }catch{
+    loadVerse("John 14:27");
+  }
+}
+
+/* LOAD VERSE */
+async function loadVerse(ref){
+  try{
+    const r=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=web`);
+    const d=await r.json();
+
+    currentRef=ref;
+
+    document.getElementById("verse").innerText=d.text||"Unavailable";
+    document.getElementById("ref").innerText=ref;
+
+    addHistory(ref);
+    updateStar();
+
+  }catch{
+    document.getElementById("verse").innerText="Error loading verse.";
+  }
+}
+
+/* FOCUS SYSTEM */
 const pools={
   peace:[
-    {r:"John 14:27",p:"Jesus, give me peace.",f:"What steals my peace?"},
+    {r:"John 14:27",p:"Give me peace Lord.",f:"What steals my peace?"},
     {r:"Philippians 4:7",p:"Guard my heart.",f:"Where do I need calm?"}
   ],
   strength:[
-    {r:"Isaiah 41:10",p:"Strengthen me Lord.",f:"Where am I weak?"}
+    {r:"Isaiah 41:10",p:"Strengthen me.",f:"Where am I weak?"}
   ],
   hope:[
-    {r:"Jeremiah 29:11",p:"Renew my hope.",f:"What future do I fear?"}
+    {r:"Jeremiah 29:11",p:"Renew my hope.",f:"What future do I trust?"}
   ],
   anxiety:[
     {r:"Philippians 4:6",p:"I release worry.",f:"What am I holding?"}
@@ -222,10 +295,10 @@ const pools={
     {r:"Hebrews 11:1",p:"Grow my faith.",f:"Where do I doubt?"}
   ],
   love:[
-    {r:"1 Corinthians 13:4",p:"Teach me love.",f:"Who needs grace?"}
+    {r:"1 Corinthians 13:4",p:"Teach love.",f:"Who needs grace?"}
   ],
   wisdom:[
-    {r:"James 1:5",p:"Give wisdom.",f:"What decision needs clarity?"}
+    {r:"James 1:5",p:"Give wisdom.",f:"What needs clarity?"}
   ]
 };
 
@@ -237,41 +310,12 @@ function focusAreaChange(){
     return;
   }
 
-  const list=pools[a];
-  const item=list[getDayIndex(list.length)];
+  const item=pools[a][getDayIndex(pools[a].length)];
 
   document.getElementById("prayer").innerText=item.p;
   document.getElementById("reflection").innerText=item.f;
 
   loadVerse(item.r);
-}
-
-/* FIXED LOADVERSE (NO BROKEN CALLS) */
-async function loadVerse(ref){
-  try{
-    const r=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=web`);
-    const d=await r.json();
-
-    currentRef=ref;
-    currentText=d.text||"";
-
-    document.getElementById("verse").innerText=currentText;
-    document.getElementById("ref").innerText=ref;
-
-  }catch{
-    document.getElementById("verse").innerText="Verse unavailable.";
-  }
-}
-
-/* DAILY */
-async function fetchDaily(){
-  try{
-    const r=await fetch("https://beta.ourmanna.com/api/v1/get/?format=json&order=daily");
-    const d=await r.json();
-    loadVerse(d?.verse?.details?.reference||"John 14:27");
-  }catch{
-    loadVerse("John 14:27");
-  }
 }
 
 function getDayIndex(len){
@@ -280,25 +324,95 @@ function getDayIndex(len){
   return Math.floor((now-start)/86400000)%len;
 }
 
-/* OTHER SIMPLE BUTTONS */
+/* FAVORITES */
+function toggleFavorite(ref){
+  if(!ref) return;
+
+  if(favorites.includes(ref)){
+    favorites=favorites.filter(f=>f!==ref);
+  }else{
+    favorites.push(ref);
+  }
+
+  localStorage.setItem("favs",JSON.stringify(favorites));
+  renderFav();
+  updateStar();
+}
+
+function renderFav(){
+  const el=document.getElementById("favList");
+  el.innerHTML=favorites.map(f=>`<div class="list-item" onclick="loadVerse('${f}')">${f}</div>`).join("");
+}
+
+function updateStar(){
+  document.getElementById("mainStar").innerText=
+    favorites.includes(currentRef)?"⭐":"☆";
+}
+
+/* HISTORY */
+function addHistory(ref){
+  history=history.filter(h=>h!==ref);
+  history.unshift(ref);
+  history=history.slice(0,50);
+  localStorage.setItem("hist",JSON.stringify(history));
+}
+
+function renderHistory(){
+  document.getElementById("historyList").innerHTML=
+    history.map(h=>`<div class="list-item" onclick="loadVerse('${h}')">${h}</div>`).join("");
+}
+
+function toggleHistory(){
+  const b=document.getElementById("historyBox");
+  b.style.display=b.style.display==="block"?"none":"block";
+}
+
+function toggleFavorites(){
+  const b=document.getElementById("favBox");
+  b.style.display=b.style.display==="block"?"none":"block";
+}
+
+function clearHistory(){
+  if(!confirm("Clear history?")) return;
+  history=[];
+  localStorage.removeItem("hist");
+  renderHistory();
+}
+
+/* OTHER */
+function toggleDark(){
+  const t=document.documentElement.getAttribute("data-theme");
+  const n=t==="dark"?"light":"dark";
+  document.documentElement.setAttribute("data-theme",n);
+  localStorage.setItem("theme",n);
+}
+
 function encouragement(){
   loadVerse("Isaiah 41:10");
 }
 
 function randomVerse(){
   fetch("https://labs.bible.org/api/?passage=random&type=json")
-    .then(r=>r.json())
-    .then(d=>{
-      const v=d[0];
-      loadVerse(`${v.bookname} ${v.chapter}:${v.verse}`);
-    });
+  .then(r=>r.json())
+  .then(d=>{
+    const v=d[0];
+    loadVerse(`${v.bookname} ${v.chapter}:${v.verse}`);
+  });
 }
 
 function reloadCurrentVerse(){
   if(currentRef) loadVerse(currentRef);
 }
 
+/* INIT */
 window.onload=()=>{
+  document.documentElement.setAttribute(
+    "data-theme",
+    localStorage.getItem("theme")||"light"
+  );
+
+  renderFav();
+  renderHistory();
   fetchDaily();
 };
 
