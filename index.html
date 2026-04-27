@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Unshaken v1.7.4</title>
+<title>Unshaken v1.7.5</title>
 
 <style>
 :root{
   --bg:#f5f5f5;
   --text:#111;
-  --card:#ffffff;
+  --card:#fff;
   --accent:#2b6cb0;
   --muted:#666;
 }
@@ -80,6 +80,10 @@ button:hover{
   cursor:pointer;
 }
 
+.result:hover{
+  background:rgba(0,0,0,0.05);
+}
+
 .star{
   font-size:22px;
   cursor:pointer;
@@ -103,7 +107,7 @@ button:hover{
 
 <body>
 
-<div class="topbar">Unshaken v1.7.4 — Devotional Engine</div>
+<div class="topbar">Unshaken v1.7.5 — Fixed Verse Engine</div>
 
 <div class="container">
 
@@ -112,7 +116,6 @@ button:hover{
   <div class="section-title">Verse</div>
 
   <div id="verse"></div>
-  <div id="ref" style="color:var(--accent);font-weight:700;margin-top:6px;"></div>
 
   <div class="star" onclick="toggleFavorite()" id="star">☆</div>
 </div>
@@ -167,23 +170,30 @@ button:hover{
 
 <script>
 
-/* ================= CORE STATE ================= */
+/* ================= STATE ================= */
 
 let bibleIndex = [];
 let current = null;
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* ================= LOAD BIBLE ================= */
+/* ================= LOAD BIBLE (FIXED PARSER) ================= */
 
 async function loadBible(){
   const res = await fetch("web.txt");
   const text = await res.text();
 
-  bibleIndex = text.split("\n").filter(Boolean).map(line=>{
-    const i = line.indexOf(" ");
+  bibleIndex = text.split("\n").filter(Boolean).map(line => {
+    const firstSpace = line.indexOf(" ");
+    const secondSpace = line.indexOf(" ", firstSpace + 1);
+
+    const book = line.slice(0, firstSpace);
+    const ref = line.slice(firstSpace + 1, secondSpace);
+    const verseText = line.slice(secondSpace + 1);
+
     return {
-      ref: line.slice(0,i),
-      text: line.slice(i+1)
+      book,
+      ref,
+      text: verseText
     };
   });
 
@@ -221,19 +231,25 @@ function loadRandom(){
   setVerse(v);
 }
 
-/* ================= VERSE ENGINE ================= */
+/* ================= VERSE DISPLAY (FIXED) ================= */
 
 function setVerse(v){
   current = v;
 
-  document.getElementById("verse").innerHTML = v.text;
-  document.getElementById("ref").innerText = v.ref;
+  document.getElementById("verse").innerHTML = `
+    <div style="font-weight:700;font-size:18px;margin-bottom:6px;">
+      ${v.book} ${v.ref}
+    </div>
+    <div style="line-height:1.6;font-size:17px;">
+      ${v.text}
+    </div>
+  `;
 
   updateStar();
   updateDevotion(v);
 }
 
-/* ================= TIME OF DAY ================= */
+/* ================= DEVOTION ================= */
 
 function getTimeOfDay(){
   const h = new Date().getHours();
@@ -242,8 +258,6 @@ function getTimeOfDay(){
   if(h < 18) return "day";
   return "night";
 }
-
-/* ================= DEVOTIONAL ENGINE ================= */
 
 function getDevotion(v){
   const t = getTimeOfDay();
@@ -258,28 +272,23 @@ function getDevotion(v){
   }
 
   if(t === "day"){
-    prayer = "Give me strength, wisdom, and patience today.";
-    reflection = "Am I responding with grace in this moment?";
+    prayer = "Give me strength, wisdom, and patience.";
+    reflection = "Am I responding with grace right now?";
   }
 
   if(t === "night"){
-    prayer = "Thank You for today and give me restful peace.";
-    reflection = "Where did I see God working today?";
+    prayer = "Thank You for today and give me rest.";
+    reflection = "Where did I see God today?";
   }
 
   if(text.includes("fear")){
-    prayer += " Remove fear from my heart.";
+    prayer += " Remove fear from me.";
     reflection += " What am I trusting God with?";
   }
 
   if(text.includes("love")){
-    prayer += " Teach me to love others well.";
-    reflection += " How am I showing love today?";
-  }
-
-  if(text.includes("peace")){
-    prayer += " Fill me with Your peace.";
-    reflection += " Where do I need to release control?";
+    prayer += " Help me love others well.";
+    reflection += " How am I showing love?";
   }
 
   return { prayer, reflection };
@@ -287,7 +296,6 @@ function getDevotion(v){
 
 function updateDevotion(v){
   const d = getDevotion(v);
-
   document.getElementById("prayer").innerText = d.prayer;
   document.getElementById("reflection").innerText = d.reflection;
 }
@@ -297,10 +305,12 @@ function updateDevotion(v){
 function toggleFavorite(){
   if(!current) return;
 
-  const i = favorites.indexOf(current.ref);
+  const i = favorites.indexOf(current.book + " " + current.ref);
+
+  const key = current.book + " " + current.ref;
 
   if(i > -1) favorites.splice(i,1);
-  else favorites.push(current.ref);
+  else favorites.push(key);
 
   localStorage.setItem("fav", JSON.stringify(favorites));
 
@@ -311,8 +321,10 @@ function toggleFavorite(){
 function updateStar(){
   if(!current) return;
 
+  const key = current.book + " " + current.ref;
+
   document.getElementById("star").innerText =
-    favorites.includes(current.ref) ? "★" : "☆";
+    favorites.includes(key) ? "★" : "☆";
 }
 
 function toggleFavorites(){
@@ -347,7 +359,7 @@ function runSearch(){
   results.slice(0,50).forEach(v=>{
     const d = document.createElement("div");
     d.className="result";
-    d.innerHTML = `<strong>${v.ref}</strong><br>${v.text}`;
+    d.innerHTML = `<strong>${v.book} ${v.ref}</strong><br>${v.text}`;
     d.onclick = ()=>setVerse(v);
     box.appendChild(d);
   });
