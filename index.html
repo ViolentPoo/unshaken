@@ -55,6 +55,14 @@ body{
   margin-top:14px;
 }
 
+.section-title{
+  font-family:Georgia;
+  font-weight:700;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:8px;
+}
+
 .verse{
   font-size:1.25rem;
   line-height:1.7;
@@ -65,21 +73,14 @@ body{
   font-weight:700;
 }
 
-.section-title{
-  font-family:Georgia;
-  text-transform:uppercase;
-  font-weight:700;
-  color:var(--accent);
-  margin-bottom:8px;
-}
-
 .controls{
   display:flex;
   flex-wrap:wrap;
   gap:8px;
+  align-items:center;
 }
 
-input,button{
+button,input{
   padding:10px;
   border-radius:10px;
   border:1px solid #ccc;
@@ -94,15 +95,22 @@ button:hover{
   color:white;
 }
 
+.star{
+  font-size:1.5rem;
+  cursor:pointer;
+  background:none;
+  border:none;
+}
+
 .list-item{
   padding:8px;
   border-bottom:1px solid rgba(0,0,0,0.1);
   cursor:pointer;
 }
 
-.streak{
-  margin-top:8px;
-  font-weight:700;
+.small-btn{
+  font-size:0.8rem;
+  padding:6px 10px;
 }
 
 .footer{
@@ -125,6 +133,11 @@ button:hover{
 <div class="card">
   <div class="section-title">Verse</div>
 
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div></div>
+    <button class="star" onclick="toggleFavorite()">★</button>
+  </div>
+
   <div id="verse" class="verse">Loading...</div>
   <div id="ref" class="ref"></div>
 </div>
@@ -132,14 +145,16 @@ button:hover{
 <!-- CONTROLS -->
 <div class="card">
 
-  <div class="controls">
+<div class="controls">
 
-    <button onclick="loadDaily()">Daily</button>
+  <button onclick="loadDaily()">Daily</button>
+  <button onclick="randomVerse()">Random</button>
+  <button onclick="encourageMe()">Encourage Me</button>
 
-    <input id="searchBox" placeholder="Search scripture (e.g. love)" />
-    <button onclick="search()">Search</button>
+  <input id="searchBox" placeholder="Search (love, peace...)" />
+  <button onclick="search()">Search</button>
 
-  </div>
+</div>
 
 </div>
 
@@ -147,6 +162,19 @@ button:hover{
 <div class="card" id="resultsBox" style="display:none;">
   <div class="section-title">Search Results</div>
   <div id="results"></div>
+</div>
+
+<!-- FAVORITES -->
+<div class="card" id="favBox">
+  <div class="section-title">Favorites</div>
+  <div id="favList"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="card">
+  <div class="section-title">History</div>
+  <button class="small-btn" onclick="clearHistory()">Clear</button>
+  <div id="historyList"></div>
 </div>
 
 <!-- PRAYER -->
@@ -181,6 +209,12 @@ const verses = [
   {ref:"Jeremiah 29:11", text:"For I know the plans I have for you..."}
 ];
 
+/* ================= STATE ================= */
+
+let current = null;
+let favorites = JSON.parse(localStorage.getItem("fav")||"[]");
+let history = JSON.parse(localStorage.getItem("hist")||"[]");
+
 /* ================= SEED ================= */
 
 function seed(){
@@ -192,67 +226,129 @@ function seed(){
   return h;
 }
 
+/* ================= CORE ================= */
+
+function setVerse(v){
+  current = v;
+
+  document.getElementById("verse").innerText = v.text;
+  document.getElementById("ref").innerText = v.ref;
+
+  document.getElementById("prayer").innerText =
+    "Lord, guide me through " + v.ref;
+
+  document.getElementById("reflection").innerText =
+    "What is God showing me through this verse?";
+
+  addHistory(v);
+  renderFav();
+  renderHistory();
+  updateStar();
+}
+
 /* ================= DAILY ================= */
 
 function loadDaily(){
-  const v = verses[seed() % verses.length];
-  setVerse(v);
-  setPrayerReflection(v);
+  setVerse(verses[seed() % verses.length]);
 }
 
-/* ================= SET DISPLAY ================= */
+/* ================= RANDOM ================= */
 
-function setVerse(v){
-  document.getElementById("verse").innerText = v.text;
-  document.getElementById("ref").innerText = v.ref;
+function randomVerse(){
+  setVerse(verses[Math.floor(Math.random()*verses.length)]);
 }
 
-/* ================= PRAYER / REFLECTION ================= */
+/* ================= ENCOURAGE ================= */
 
-function setPrayerReflection(v){
-  document.getElementById("prayer").innerText =
-    "Lord, speak through this word today.";
-
-  document.getElementById("reflection").innerText =
-    "What is God showing me through " + v.ref + "?";
+function encourageMe(){
+  setVerse(verses[Math.floor(Math.random()*verses.length)]);
 }
 
 /* ================= SEARCH ================= */
 
 function search(){
-  const q = document.getElementById("searchBox").value.toLowerCase();
+  const q=document.getElementById("searchBox").value.toLowerCase();
 
-  const results = verses.filter(v =>
+  const res=verses.filter(v =>
     v.text.toLowerCase().includes(q) ||
     v.ref.toLowerCase().includes(q)
   );
 
-  const box = document.getElementById("resultsBox");
-  const out = document.getElementById("results");
+  document.getElementById("resultsBox").style.display="block";
 
-  box.style.display = "block";
-
-  out.innerHTML = results.map(v =>
-    `<div class="list-item" onclick='selectVerse("${v.ref}")'>
-      <b>${v.ref}</b><br>${v.text}
-    </div>`
-  ).join("");
+  document.getElementById("results").innerHTML =
+    res.map(v=>`
+      <div class="list-item" onclick='setVerse(${JSON.stringify(v)})'>
+        <b>${v.ref}</b><br>${v.text}
+      </div>
+    `).join("");
 }
 
-/* ================= SELECT FROM SEARCH ================= */
+/* ================= FAVORITES ================= */
 
-function selectVerse(ref){
-  const v = verses.find(x=>x.ref===ref);
-  if(!v) return;
+function toggleFavorite(){
+  if(!current) return;
 
-  setVerse(v);
-  setPrayerReflection(v);
+  const exists = favorites.find(f=>f.ref===current.ref);
+
+  if(exists){
+    favorites = favorites.filter(f=>f.ref!==current.ref);
+  } else {
+    favorites.push(current);
+  }
+
+  localStorage.setItem("fav",JSON.stringify(favorites));
+  renderFav();
+  updateStar();
+}
+
+function updateStar(){
+  const star = document.querySelector(".star");
+  if(!current) return;
+
+  star.innerText =
+    favorites.find(f=>f.ref===current.ref) ? "★" : "☆";
+}
+
+function renderFav(){
+  document.getElementById("favList").innerHTML =
+    favorites.map(f=>
+      `<div class="list-item" onclick='setVerse(${JSON.stringify(f)})'>
+        ${f.ref}
+      </div>`
+    ).join("");
+}
+
+/* ================= HISTORY ================= */
+
+function addHistory(v){
+  history = history.filter(h=>h.ref!==v.ref);
+  history.unshift(v);
+  history = history.slice(0,50);
+
+  localStorage.setItem("hist",JSON.stringify(history));
+}
+
+function renderHistory(){
+  document.getElementById("historyList").innerHTML =
+    history.map(h=>
+      `<div class="list-item" onclick='setVerse(${JSON.stringify(h)})'>
+        ${h.ref}
+      </div>`
+    ).join("");
+}
+
+function clearHistory(){
+  if(!confirm("Clear history?")) return;
+  history=[];
+  localStorage.removeItem("hist");
+  renderHistory();
 }
 
 /* ================= INIT ================= */
 
-window.onload = () => {
-  loadDaily(); // DEFAULT = daily
+window.onload=()=>{
+  loadDaily();
 };
 
 </script>
