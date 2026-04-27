@@ -57,14 +57,6 @@ body{
   box-shadow:0 4px 12px rgba(0,0,0,.06);
 }
 
-.missionHero{
-  background:var(--card);
-  padding:14px;
-  border-radius:12px;
-  margin-top:12px;
-  box-shadow:0 4px 12px rgba(0,0,0,.06);
-}
-
 .verse{
   font-size:20px;
   line-height:1.6;
@@ -142,34 +134,10 @@ button:hover{
   <button onclick="toggleDark()">Dark Mode</button>
   <button onclick="randomVerse()">Random</button>
   <button onclick="encouragement()">Encourage Me</button>
-  <button onclick="toggleHistory()">History</button>
+
   <button onclick="toggleFavorites()">Favorites</button>
-</div>
 
-<!-- PRAYER -->
-<div class="card">
-  <strong>Prayer</strong>
-  <div id="prayer"></div>
-</div>
-
-<!-- REFLECTION -->
-<div class="card">
-  <strong>Reflection</strong>
-  <div id="reflection"></div>
-</div>
-
-<!-- MISSION -->
-<div class="missionHero">
-  <strong>Parker Family Mission Statement</strong>
-  <div id="missionText" style="margin-top:8px"></div>
-</div>
-
-</div>
-
-<!-- HISTORY -->
-<div class="card history" id="historyBox">
-  <strong>History</strong>
-  <div id="historyList"></div>
+  <button onclick="addFavorite()">⭐ Save Favorite</button>
 </div>
 
 <!-- FAVORITES -->
@@ -178,14 +146,20 @@ button:hover{
   <div id="favList"></div>
 </div>
 
+</div>
+
 <div class="small footer1">est 2013</div>
 <div class="small footer2">The Parker Family</div>
 
 <script>
-let history = JSON.parse(localStorage.getItem('unshaken_history')||'[]');
+
+let favorites = JSON.parse(localStorage.getItem('unshaken_favs') || '[]');
+
+let currentRef = "";
+let currentText = "";
 
 /* =========================
-   DAILY SYNC SYSTEM
+   DAILY VERSE
 ========================= */
 
 function getDayKey(){
@@ -223,53 +197,56 @@ async function fetchDaily(){
 ========================= */
 
 async function loadVerse(ref){
-  let tr=document.getElementById('translation').value;
+  let tr = document.getElementById('translation').value;
 
-  let r=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
-  let d=await r.json();
+  let r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
+  let d = await r.json();
 
-  document.getElementById('verse').innerText=d.text;
-  document.getElementById('ref').innerText=ref;
+  document.getElementById('verse').innerText = d.text;
+  document.getElementById('ref').innerText = ref;
 
-  setExtras();
+  currentRef = ref;
+  currentText = d.text;
 }
 
 /* =========================
-   PRAYER + REFLECTION
+   FAVORITES
 ========================= */
 
-function getMode(){
-  let h=new Date().getHours();
-  return h<12?'morning':h<18?'day':'night';
+function addFavorite(){
+  if(!currentRef) return;
+
+  if(!favorites.some(f => f.ref === currentRef)){
+    favorites.push({
+      ref: currentRef,
+      text: currentText
+    });
+
+    localStorage.setItem('unshaken_favs', JSON.stringify(favorites));
+    renderFavorites();
+  }
 }
 
-const prayers={
-  morning:["Guide me","Strength","Order steps","Faithful","Lead me"],
-  day:["Focus","Wisdom","Patience","Anchored","Strength"],
-  night:["Thank You","Calm","Forgive","Grateful","Rest"]
-};
+function renderFavorites(){
+  let el = document.getElementById('favList');
+  el.innerHTML = '';
 
-const reflections={
-  morning:["Focus?","Walk?","Trust?","Challenge?","Identity?"],
-  day:["Faith?","Patience?","Honor?","Distracted?","Encourage?"],
-  night:["Seen God?","Grateful?","Missed?","Growth?","Tomorrow?"]
-};
+  favorites.forEach(f => {
+    let div = document.createElement('div');
+    div.style.cursor = "pointer";
+    div.style.margin = "6px 0";
 
-function idx(k,l){
-  let i=parseInt(localStorage.getItem(k)||0);
-  i=(i+1)%l;
-  localStorage.setItem(k,i);
-  return i;
+    div.innerText = f.ref;
+
+    div.onclick = () => loadVerse(f.ref);
+
+    el.appendChild(div);
+  });
 }
 
-function setExtras(){
-  let m=getMode();
-
-  document.getElementById('prayer').innerText =
-    prayers[m][idx(m+'_p',5)];
-
-  document.getElementById('reflection').innerText =
-    reflections[m][idx(m+'_r',5)];
+function toggleFavorites(){
+  let b = document.getElementById('favBox');
+  b.style.display = (b.style.display === 'block' ? 'none' : 'block');
 }
 
 /* =========================
@@ -277,16 +254,16 @@ function setExtras(){
 ========================= */
 
 function topicChange(){
-  let v=document.getElementById('topic').value;
+  let v = document.getElementById('topic').value;
 
-  const map={
+  const map = {
     peace:"John 14:27",
     strength:"Philippians 4:13",
     hope:"Jeremiah 29:11",
     anxiety:"Philippians 4:6"
   };
 
-  if(v==="daily") return fetchDaily();
+  if(v === "daily") return fetchDaily();
   loadVerse(map[v]);
 }
 
@@ -296,9 +273,9 @@ function encouragement(){
 
 function randomVerse(){
   fetch("https://labs.bible.org/api/?passage=random&type=json")
-  .then(r=>r.json())
-  .then(d=>{
-    loadVerse(d[0].bookname+" "+d[0].chapter+":"+d[0].verse);
+  .then(r => r.json())
+  .then(d => {
+    loadVerse(d[0].bookname + " " + d[0].chapter + ":" + d[0].verse);
   });
 }
 
@@ -307,30 +284,25 @@ function randomVerse(){
 ========================= */
 
 function toggleDark(){
-  let t=document.documentElement.getAttribute('data-theme');
-  document.documentElement.setAttribute('data-theme',t==='dark'?'light':'dark');
-  localStorage.setItem('theme',t==='dark'?'light':'dark');
+  let t = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', t === 'dark' ? 'light' : 'dark');
+  localStorage.setItem('theme', t === 'dark' ? 'light' : 'dark');
 }
 
 /* =========================
-   UI LOAD
+   INIT
 ========================= */
 
-function loadMission(){
-  document.getElementById('missionText').innerText =
-  localStorage.getItem('unshaken_mission') ||
-  "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
-}
-
-window.onload=()=>{
+window.onload = () => {
   document.documentElement.setAttribute(
     'data-theme',
     localStorage.getItem('theme') || 'light'
   );
 
-  loadMission();
+  renderFavorites();
   fetchDaily();
 };
+
 </script>
 
 </body>
