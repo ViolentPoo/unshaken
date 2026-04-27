@@ -111,6 +111,12 @@ button:hover{
 
 <!-- VERSE -->
 <div class="card">
+  <button id="mainStar"
+    onclick="toggleFavorite(currentRef)"
+    style="float:right; font-size:20px; border:none; background:transparent; cursor:pointer;">
+    ☆
+  </button>
+
   <div class="verse" id="verse">Loading...</div>
   <div class="ref" id="ref"></div>
 </div>
@@ -136,8 +142,6 @@ button:hover{
   <button onclick="encouragement()">Encourage Me</button>
 
   <button onclick="toggleFavorites()">Favorites</button>
-  <button onclick="addFavorite()">⭐ Save Favorite</button>
-
   <button onclick="toggleHistory()">History</button>
 </div>
 
@@ -183,7 +187,7 @@ button:hover{
 <script>
 
 /* =========================
-   SAFE STATE
+   STATE
 ========================= */
 
 let currentRef = "";
@@ -193,30 +197,22 @@ let favorites = JSON.parse(localStorage.getItem('unshaken_favs') || '[]');
 let history = JSON.parse(localStorage.getItem('unshaken_history') || '[]');
 
 /* =========================
-   SAFE INIT (FIXED CRASH POINT)
+   INIT
 ========================= */
 
 window.onload = () => {
-  try {
-    document.documentElement.setAttribute(
-      'data-theme',
-      localStorage.getItem('theme') || 'light'
-    );
+  document.documentElement.setAttribute(
+    'data-theme',
+    localStorage.getItem('theme') || 'light'
+  );
 
-    const mission = document.getElementById('missionText');
-    if (mission) {
-      mission.innerText =
-        localStorage.getItem('unshaken_mission') ||
-        "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
-    }
+  document.getElementById('missionText').innerText =
+    localStorage.getItem('unshaken_mission') ||
+    "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
 
-    renderHistory?.();
-    renderFavorites?.();
-    fetchDaily();
-
-  } catch (e) {
-    console.error("Init error:", e);
-  }
+  renderHistory();
+  renderFavorites();
+  fetchDaily();
 };
 
 /* =========================
@@ -229,39 +225,31 @@ function getDayKey(){
 }
 
 async function fetchDaily(){
-  try {
-    const key = getDayKey();
-    const storageKey = "unshaken_daily_" + key;
+  const key = getDayKey();
+  const storageKey = "unshaken_daily_" + key;
 
-    const cached = localStorage.getItem(storageKey);
+  const cached = localStorage.getItem(storageKey);
 
-    if(cached){
-      loadVerse(JSON.parse(cached).ref);
-      return;
-    }
-
-    let r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
-    let d = await r.json();
-
-    const ref = d?.verse?.details?.reference || "John 14:27";
-
-    localStorage.setItem(storageKey, JSON.stringify({ ref, date:key }));
-
-    loadVerse(ref);
-
-  } catch (e) {
-    console.error("Daily fetch failed:", e);
-    loadVerse("John 14:27");
+  if(cached){
+    loadVerse(JSON.parse(cached).ref);
+    return;
   }
+
+  let r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
+  let d = await r.json();
+
+  const ref = d?.verse?.details?.reference || "John 14:27";
+
+  localStorage.setItem(storageKey, JSON.stringify({ ref, date:key }));
+
+  loadVerse(ref);
 }
 
 /* =========================
-   VERSE LOADER (FIXED SAFETY)
+   VERSE LOADER
 ========================= */
 
 async function loadVerse(ref){
-  if(!ref) return;
-
   try{
     let tr = document.getElementById('translation').value;
 
@@ -269,8 +257,7 @@ async function loadVerse(ref){
     let d = await r.json();
 
     let text = d?.text?.trim();
-
-    if(!text) throw new Error("No verse text");
+    if(!text) throw new Error();
 
     document.getElementById('verse').innerText = text;
     document.getElementById('ref').innerText = ref;
@@ -280,10 +267,9 @@ async function loadVerse(ref){
 
     setExtras();
     addToHistory(ref);
+    updateMainStar();
 
   } catch(e){
-    console.error(e);
-
     document.getElementById('verse').innerText =
       "Verse temporarily unavailable.";
 
@@ -292,7 +278,7 @@ async function loadVerse(ref){
 }
 
 /* =========================
-   DEVOTIONAL ALIGNMENT
+   DEVOTIONAL
 ========================= */
 
 const devotional = {
@@ -312,7 +298,69 @@ function setExtras(){
 }
 
 /* =========================
-   HISTORY (FIXED)
+   FAVORITES (TOGGLE SYSTEM)
+========================= */
+
+function isFavorite(ref){
+  return favorites.some(f => f.ref === ref);
+}
+
+function toggleFavorite(ref){
+  if(!ref) return;
+
+  if(isFavorite(ref)){
+    favorites = favorites.filter(f => f.ref !== ref);
+  } else {
+    favorites.push({ ref, text: currentText });
+  }
+
+  localStorage.setItem('unshaken_favs', JSON.stringify(favorites));
+  renderFavorites();
+  updateMainStar();
+}
+
+function renderFavorites(){
+  let el = document.getElementById('favList');
+  el.innerHTML = '';
+
+  favorites.forEach(f => {
+    let row = document.createElement('div');
+    row.style.display = "flex";
+    row.style.justifyContent = "space-between";
+    row.style.margin = "6px 0";
+
+    let text = document.createElement('div');
+    text.innerText = f.ref;
+    text.style.cursor = "pointer";
+    text.onclick = () => loadVerse(f.ref);
+
+    let star = document.createElement('button');
+    star.innerText = "⭐";
+    star.style.border = "none";
+    star.style.background = "transparent";
+    star.style.cursor = "pointer";
+    star.onclick = () => toggleFavorite(f.ref);
+
+    row.appendChild(text);
+    row.appendChild(star);
+    el.appendChild(row);
+  });
+}
+
+function updateMainStar(){
+  let star = document.getElementById('mainStar');
+  if(!star) return;
+
+  star.innerText = isFavorite(currentRef) ? "⭐" : "☆";
+}
+
+function toggleFavorites(){
+  let b = document.getElementById('favBox');
+  b.style.display = b.style.display === 'block' ? 'none' : 'block';
+}
+
+/* =========================
+   HISTORY
 ========================= */
 
 function addToHistory(ref){
@@ -327,8 +375,6 @@ function addToHistory(ref){
 
 function renderHistory(){
   let el = document.getElementById('historyList');
-  if(!el) return;
-
   el.innerHTML = '';
 
   history.forEach(h => {
@@ -343,7 +389,6 @@ function renderHistory(){
 
 function toggleHistory(){
   let b = document.getElementById('historyBox');
-  if(!b) return;
   b.style.display = b.style.display === 'block' ? 'none' : 'block';
 }
 
@@ -353,43 +398,6 @@ function clearHistory(){
   history = [];
   localStorage.removeItem('unshaken_history');
   renderHistory();
-}
-
-/* =========================
-   FAVORITES (SAFE)
-========================= */
-
-function addFavorite(){
-  if(!currentRef) return;
-
-  if(!favorites.some(f => f.ref === currentRef)){
-    favorites.push({ ref: currentRef, text: currentText });
-
-    localStorage.setItem('unshaken_favs', JSON.stringify(favorites));
-    renderFavorites();
-  }
-}
-
-function renderFavorites(){
-  let el = document.getElementById('favList');
-  if(!el) return;
-
-  el.innerHTML = '';
-
-  favorites.forEach(f => {
-    let div = document.createElement('div');
-    div.style.cursor = "pointer";
-    div.style.margin = "6px 0";
-    div.innerText = f.ref;
-    div.onclick = () => loadVerse(f.ref);
-    el.appendChild(div);
-  });
-}
-
-function toggleFavorites(){
-  let b = document.getElementById('favBox');
-  if(!b) return;
-  b.style.display = b.style.display === 'block' ? 'none' : 'block';
 }
 
 /* =========================
