@@ -239,7 +239,7 @@ button:hover{
 /* =========================
    INTERNAL VERSION
 ========================= */
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.2.0";
 
 /* =========================
    STATE
@@ -262,6 +262,137 @@ try{
 }
 
 /* =========================
+   ROTATING FOCUS DATA
+========================= */
+const focusPools = {
+  peace: [
+    {
+      ref:"John 14:27",
+      prayer:"Jesus, calm my heart and fill me with Your peace today.",
+      reflection:"What is trying to steal my peace right now?"
+    },
+    {
+      ref:"Philippians 4:7",
+      prayer:"Lord, guard my heart and mind with Your peace.",
+      reflection:"Where do I need peace beyond understanding?"
+    },
+    {
+      ref:"Psalm 29:11",
+      prayer:"Father, strengthen me and bless me with peace.",
+      reflection:"How can I rest in God's strength today?"
+    }
+  ],
+
+  strength: [
+    {
+      ref:"Isaiah 41:10",
+      prayer:"Lord, give me courage and strength for today.",
+      reflection:"Where do I need to stop fearing?"
+    },
+    {
+      ref:"Philippians 4:13",
+      prayer:"Jesus, remind me I can endure through You.",
+      reflection:"What challenge needs God's strength today?"
+    },
+    {
+      ref:"Psalm 46:1",
+      prayer:"God, be my refuge and strength right now.",
+      reflection:"Where do I need help today?"
+    }
+  ],
+
+  hope: [
+    {
+      ref:"Jeremiah 29:11",
+      prayer:"Lord, renew my hope in Your future for me.",
+      reflection:"Where do I need to trust God's plan?"
+    },
+    {
+      ref:"Romans 15:13",
+      prayer:"Fill me with joy and hope through faith.",
+      reflection:"What would living hopefully look like today?"
+    },
+    {
+      ref:"Lamentations 3:22-23",
+      prayer:"Thank You for new mercy this morning.",
+      reflection:"How can I receive today's fresh start?"
+    }
+  ],
+
+  anxiety: [
+    {
+      ref:"Philippians 4:6",
+      prayer:"God, I release my worries into Your hands.",
+      reflection:"What burden am I carrying unnecessarily?"
+    },
+    {
+      ref:"1 Peter 5:7",
+      prayer:"Lord, help me cast every care on You.",
+      reflection:"What anxiety do I need to surrender?"
+    },
+    {
+      ref:"Matthew 6:34",
+      prayer:"Father, help me focus on today, not tomorrow's fear.",
+      reflection:"Am I living in tomorrow instead of today?"
+    }
+  ],
+
+  faith: [
+    {
+      ref:"Hebrews 11:1",
+      prayer:"Lord, grow my faith in unseen things.",
+      reflection:"Where am I invited to trust?"
+    },
+    {
+      ref:"Proverbs 3:5-6",
+      prayer:"Help me trust You with all my heart.",
+      reflection:"What am I leaning on besides God?"
+    },
+    {
+      ref:"Mark 9:23",
+      prayer:"Increase my belief and confidence in You.",
+      reflection:"Where do I doubt God's ability?"
+    }
+  ],
+
+  love: [
+    {
+      ref:"1 Corinthians 13:4",
+      prayer:"Teach me patience and kindness today.",
+      reflection:"Who needs grace from me right now?"
+    },
+    {
+      ref:"John 13:34",
+      prayer:"Help me love others as You love me.",
+      reflection:"What would sacrificial love look like today?"
+    },
+    {
+      ref:"Romans 12:10",
+      prayer:"Make me devoted and honoring toward others.",
+      reflection:"How can I put someone first today?"
+    }
+  ],
+
+  wisdom: [
+    {
+      ref:"James 1:5",
+      prayer:"Father, give me wisdom generously today.",
+      reflection:"What decision needs God's wisdom?"
+    },
+    {
+      ref:"Proverbs 3:13",
+      prayer:"Help me treasure wisdom over convenience.",
+      reflection:"What wise path am I avoiding?"
+    },
+    {
+      ref:"Psalm 111:10",
+      prayer:"Teach me reverence that leads to wisdom.",
+      reflection:"How can honoring God guide me today?"
+    }
+  ]
+};
+
+/* =========================
    INIT
 ========================= */
 window.onload = () => {
@@ -282,11 +413,19 @@ window.onload = () => {
 };
 
 /* =========================
-   DATE KEY
+   DATE HELPERS
 ========================= */
 function getDayKey(){
   const d = new Date();
   return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+function getDayIndex(length){
+  const now = new Date();
+  const start = new Date(now.getFullYear(),0,0);
+  const diff = now - start;
+  const day = Math.floor(diff / 86400000);
+  return day % length;
 }
 
 /* =========================
@@ -301,11 +440,8 @@ function updateStreak(){
   y.setDate(y.getDate()-1);
   const yKey = `${y.getFullYear()}-${y.getMonth()+1}-${y.getDate()}`;
 
-  if(streak.lastDate === yKey){
-    streak.count++;
-  }else{
-    streak.count = 1;
-  }
+  if(streak.lastDate === yKey) streak.count++;
+  else streak.count = 1;
 
   streak.lastDate = today;
 
@@ -314,15 +450,14 @@ function updateStreak(){
 }
 
 function renderStreak(){
-  const count = Number(streak.count) || 0;
-
-  document.getElementById("streakCount").innerText = count;
+  const c = Number(streak.count) || 0;
+  document.getElementById("streakCount").innerText = c;
 
   let msg = "Start today.";
-  if(count >= 3) msg = "Keep going.";
-  if(count >= 7) msg = "Momentum building.";
-  if(count >= 14) msg = "Strong discipline.";
-  if(count >= 30) msg = "Deep consistency.";
+  if(c >= 3) msg = "Keep going.";
+  if(c >= 7) msg = "Momentum building.";
+  if(c >= 14) msg = "Strong discipline.";
+  if(c >= 30) msg = "Deep consistency.";
 
   document.getElementById("streakMessage").innerText = msg;
 }
@@ -334,14 +469,13 @@ async function fetchDaily(){
   try{
     const r = await fetch("https://beta.ourmanna.com/api/v1/get/?format=json&order=daily");
     const d = await r.json();
-
-    loadVerse(d?.verse?.details?.reference || "John 14:27");
+    loadVerse(d?.verse?.details?.reference || "John 14:27", true);
   }catch{
-    loadVerse("John 14:27");
+    loadVerse("John 14:27", true);
   }
 }
 
-async function loadVerse(ref){
+async function loadVerse(ref, autoDevotional=false){
   try{
     const tr = document.getElementById("translation").value;
 
@@ -356,109 +490,95 @@ async function loadVerse(ref){
 
     addToHistory(ref);
     updateMainStar();
-    applyVerseDevotional(ref,currentText);
+
+    if(autoDevotional){
+      autoDetectVerseDevotional(ref,currentText);
+    }
 
   }catch{
     document.getElementById("verse").innerText = "Verse unavailable.";
     document.getElementById("ref").innerText = ref;
-    applyVerseDevotional(ref,"");
   }
 }
 
 function reloadCurrentVerse(){
-  if(currentRef) loadVerse(currentRef);
+  if(currentRef) loadVerse(currentRef,false);
 }
 
 /* =========================
-   FOCUS AREA
+   FOCUS AREA ROTATION
 ========================= */
 function focusAreaChange(){
-  const v = document.getElementById("focusArea").value;
+  const area = document.getElementById("focusArea").value;
 
-  const map = {
-    peace:"John 14:27",
-    strength:"Isaiah 41:10",
-    hope:"Jeremiah 29:11",
-    anxiety:"Philippians 4:6",
-    faith:"Hebrews 11:1",
-    love:"1 Corinthians 13:4",
-    wisdom:"James 1:5",
-    daily:"daily"
-  };
-
-  if(v === "daily"){
+  if(area === "daily"){
     fetchDaily();
     return;
   }
 
-  loadVerse(map[v]);
+  const pool = focusPools[area];
+  const item = pool[getDayIndex(pool.length)];
+
+  document.getElementById("prayer").innerText = item.prayer;
+  document.getElementById("reflection").innerText = item.reflection;
+
+  loadVerse(item.ref,false);
 }
 
 /* =========================
-   VERSE-AWARE DEVOTIONAL
+   DAILY AUTO DEVOTIONAL
 ========================= */
-function applyVerseDevotional(ref,text){
-
-  const category = detectCategory(ref,text);
-
-  const devotional = {
-    peace:{
-      prayer:"Jesus, quiet my heart and steady my mind with Your peace today.",
-      reflection:"What is stealing my peace that I need to surrender?"
-    },
-    strength:{
-      prayer:"Father, strengthen me for what is in front of me today.",
-      reflection:"Where do I need courage instead of fear?"
-    },
-    hope:{
-      prayer:"Lord, renew my hope and help me trust Your plan.",
-      reflection:"Where do I need to believe God is still working?"
-    },
-    anxiety:{
-      prayer:"God, help me release every worry into Your hands.",
-      reflection:"What burden am I carrying that I should give to God?"
-    },
-    faith:{
-      prayer:"Lord, help me trust You even when I cannot see clearly.",
-      reflection:"Where is faith being invited in my life right now?"
-    },
-    love:{
-      prayer:"Teach me to love with patience, kindness, and grace.",
-      reflection:"Who needs compassion from me today?"
-    },
-    wisdom:{
-      prayer:"Father, give me wisdom for the choices before me.",
-      reflection:"What decision needs prayerful wisdom today?"
-    },
-    daily:{
-      prayer:"Lord, speak to me through Your Word today.",
-      reflection:"What is God inviting me to notice today?"
-    }
-  };
-
-  const data = devotional[category] || devotional.daily;
-
-  document.getElementById("prayer").innerText = data.prayer;
-  document.getElementById("reflection").innerText = data.reflection;
-}
-
-function detectCategory(ref,text){
+function autoDetectVerseDevotional(ref,text){
   const content = (ref + " " + text).toLowerCase();
 
-  if(content.includes("peace")) return "peace";
-  if(content.includes("fear") || content.includes("strong") || content.includes("strength")) return "strength";
-  if(content.includes("hope") || content.includes("future")) return "hope";
-  if(content.includes("anxious") || content.includes("worry")) return "anxiety";
-  if(content.includes("faith")) return "faith";
-  if(content.includes("love")) return "love";
-  if(content.includes("wisdom")) return "wisdom";
+  if(content.includes("peace")){
+    setFocusByArea("peace");
+    return;
+  }
 
-  if(ref.includes("John 14:27")) return "peace";
-  if(ref.includes("Isaiah 41:10")) return "strength";
-  if(ref.includes("Jeremiah 29:11")) return "hope";
-  if(ref.includes("Philippians 4:6")) return "anxiety";
+  if(content.includes("fear") || content.includes("strong")){
+    setFocusByArea("strength");
+    return;
+  }
 
-  return "daily";
+  if(content.includes("hope") || content.includes("future")){
+    setFocusByArea("hope");
+    return;
+  }
+
+  if(content.includes("anxious") || content.includes("worry")){
+    setFocusByArea("anxiety");
+    return;
+  }
+
+  if(content.includes("faith")){
+    setFocusByArea("faith");
+    return;
+  }
+
+  if(content.includes("love")){
+    setFocusByArea("love");
+    return;
+  }
+
+  if(content.includes("wisdom")){
+    setFocusByArea("wisdom");
+    return;
+  }
+
+  document.getElementById("prayer").innerText =
+    "Lord, speak to me through Your Word today.";
+
+  document.getElementById("reflection").innerText =
+    "What is God inviting me to notice today?";
+}
+
+function setFocusByArea(area){
+  const pool = focusPools[area];
+  const item = pool[getDayIndex(pool.length)];
+
+  document.getElementById("prayer").innerText = item.prayer;
+  document.getElementById("reflection").innerText = item.reflection;
 }
 
 /* =========================
@@ -486,7 +606,7 @@ function renderFavorites(){
   const el = document.getElementById("favList");
   el.innerHTML = "";
 
-  if(favorites.length === 0){
+  if(!favorites.length){
     el.innerHTML = `<div class="small">No favorites yet.</div>`;
     return;
   }
@@ -497,7 +617,7 @@ function renderFavorites(){
 
     const t = document.createElement("div");
     t.innerText = f.ref;
-    t.onclick = ()=>loadVerse(f.ref);
+    t.onclick = ()=>loadVerse(f.ref,false);
 
     const s = document.createElement("button");
     s.className = "star-btn";
@@ -516,8 +636,8 @@ function updateMainStar(){
 }
 
 function toggleFavorites(){
-  const box = document.getElementById("favBox");
-  box.style.display = box.style.display === "block" ? "none" : "block";
+  const b = document.getElementById("favBox");
+  b.style.display = b.style.display === "block" ? "none" : "block";
 }
 
 /* =========================
@@ -536,7 +656,7 @@ function renderHistory(){
   const el = document.getElementById("historyList");
   el.innerHTML = "";
 
-  if(history.length === 0){
+  if(!history.length){
     el.innerHTML = `<div class="small">No history yet.</div>`;
     return;
   }
@@ -545,26 +665,25 @@ function renderHistory(){
     const div = document.createElement("div");
     div.className = "list-item";
     div.innerText = h.ref;
-    div.onclick = ()=>loadVerse(h.ref);
+    div.onclick = ()=>loadVerse(h.ref,false);
     el.appendChild(div);
   });
 }
 
 function toggleHistory(){
-  const box = document.getElementById("historyBox");
-  box.style.display = box.style.display === "block" ? "none" : "block";
+  const b = document.getElementById("historyBox");
+  b.style.display = b.style.display === "block" ? "none" : "block";
 }
 
 function clearHistory(){
   if(!confirm("Clear history?")) return;
-
   history = [];
   localStorage.removeItem("unshaken_history");
   renderHistory();
 }
 
 /* =========================
-   OTHER CONTROLS
+   CONTROLS
 ========================= */
 function toggleDark(){
   const t = document.documentElement.getAttribute("data-theme");
@@ -575,7 +694,7 @@ function toggleDark(){
 }
 
 function encouragement(){
-  loadVerse("Isaiah 41:10");
+  loadVerse("Isaiah 41:10",true);
 }
 
 function randomVerse(){
@@ -583,9 +702,9 @@ function randomVerse(){
     .then(r=>r.json())
     .then(d=>{
       const v = d[0];
-      loadVerse(`${v.bookname} ${v.chapter}:${v.verse}`);
+      loadVerse(`${v.bookname} ${v.chapter}:${v.verse}`,true);
     })
-    .catch(()=>loadVerse("Romans 8:28"));
+    .catch(()=>loadVerse("Romans 8:28",true));
 }
 </script>
 
