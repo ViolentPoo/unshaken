@@ -61,7 +61,6 @@ body{
   font-size:1.25rem;
   line-height:1.7;
   margin:14px 0;
-  min-height:80px;
 }
 
 .ref{
@@ -69,7 +68,7 @@ body{
   font-weight:700;
 }
 
-/* SECTION TITLES (v1.3 UI STYLE) */
+/* SECTION TITLES */
 .section-title{
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.05rem;
@@ -80,6 +79,7 @@ body{
   margin-bottom: 8px;
 }
 
+/* CONTENT TEXT */
 #prayer,#reflection,#missionText{
   font-size:1.1rem;
   line-height:1.7;
@@ -105,38 +105,21 @@ button:hover{
   color:#fff;
 }
 
-.row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.star-btn{
-  border:none;
-  background:transparent;
+.star{
   font-size:1.4rem;
   cursor:pointer;
-}
-
-.streak{
-  margin-top:10px;
-  font-weight:700;
-}
-
-/* PANELS */
-.panel{
-  display:none;
-  max-height:260px;
-  overflow:auto;
+  border:none;
+  background:transparent;
 }
 
 .list-item{
   padding:8px 0;
-  border-bottom:1px solid rgba(0,0,0,.08);
+  border-bottom:1px solid rgba(0,0,0,.1);
   cursor:pointer;
 }
 
-/* FOOTER */
+.panel{ display:none; }
+
 .footer{
   position: fixed;
   right: 12px;
@@ -144,11 +127,12 @@ button:hover{
   text-align: right;
   color: var(--muted);
   font-size: 10px;
-  line-height: 1.2;
-  display:flex;
-  flex-direction:column;
-  align-items:flex-end;
-  gap:2px;
+}
+
+/* STREAK */
+.streak{
+  margin-top:8px;
+  font-weight:700;
 }
 </style>
 </head>
@@ -161,9 +145,13 @@ button:hover{
 
 <!-- VERSE -->
 <div class="card">
-  <div class="row">
-    <div class="section-title">Today’s Verse</div>
-    <button class="star-btn" onclick="toggleFavorite(currentRef)">☆</button>
+  <div class="section-title">Today’s Verse</div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div></div>
+    <button class="star" onclick="toggleFavorite(currentRef)">
+      <span id="starIcon">☆</span>
+    </button>
   </div>
 
   <div id="verse" class="verse">Loading...</div>
@@ -174,12 +162,13 @@ button:hover{
 <div class="card">
   <div class="controls">
 
-    <select id="translation" onchange="reloadCurrentVerse()">
+    <select id="translation" onchange="reloadVerse()">
       <option value="web" selected>WEB</option>
       <option value="kjv">KJV</option>
       <option value="esv">ESV</option>
     </select>
 
+    <!-- ✅ FOCUS DROPDOWN RESTORED -->
     <select id="focusArea" onchange="focusAreaChange()">
       <option value="daily">Daily Verse</option>
       <option value="peace">Peace</option>
@@ -192,7 +181,7 @@ button:hover{
     </select>
 
     <button onclick="randomVerse()">Random</button>
-    <button onclick="encouragement()">Encourage Me</button>
+    <button onclick="encourageMe()">Encourage Me</button>
     <button onclick="toggleDark()">Dark Mode</button>
     <button onclick="toggleFavorites()">Favorites</button>
     <button onclick="toggleHistory()">History</button>
@@ -200,7 +189,7 @@ button:hover{
   </div>
 
   <div class="streak">
-    🔥 Streak: <span id="streakCount">0</span>
+    🔥 Streak: <span id="streakCount">0</span> days
   </div>
 </div>
 
@@ -216,6 +205,12 @@ button:hover{
   <div id="reflection"></div>
 </div>
 
+<!-- MISSION -->
+<div class="card">
+  <div class="section-title">Family Mission Statement</div>
+  <div id="missionText"></div>
+</div>
+
 <!-- FAVORITES -->
 <div class="card panel" id="favBox">
   <div class="section-title">Favorites</div>
@@ -225,13 +220,8 @@ button:hover{
 <!-- HISTORY -->
 <div class="card panel" id="historyBox">
   <div class="section-title">History</div>
+  <button onclick="clearHistory()">Clear History</button>
   <div id="historyList"></div>
-</div>
-
-<!-- MISSION -->
-<div class="card">
-  <div class="section-title">Family Mission Statement</div>
-  <div id="missionText"></div>
 </div>
 
 </div>
@@ -248,22 +238,132 @@ button:hover{
 let currentRef = "";
 let favorites = JSON.parse(localStorage.getItem("favs") || "[]");
 let history = JSON.parse(localStorage.getItem("hist") || "[]");
+let streak = JSON.parse(localStorage.getItem("streak") || '{"count":0,"last":null}');
+
+/* ================= MISSION ================= */
+const missionDefault =
+  "We seek to follow Jesus faithfully, grow in wisdom, and live with purpose as a family.";
+
+document.getElementById("missionText").innerText =
+  localStorage.getItem("mission") || missionDefault;
 
 /* ================= VERSE ================= */
-async function loadVerse(ref){
-  try{
-    const r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=web`);
-    const d = await r.json();
+async function loadVerse(ref, translation="web"){
+  const r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${translation}`);
+  const d = await r.json();
 
-    currentRef = ref;
+  currentRef = ref;
 
-    document.getElementById("verse").innerText = d.text || "Unavailable";
-    document.getElementById("ref").innerText = ref;
+  document.getElementById("verse").innerText = d.text || "Unavailable";
+  document.getElementById("ref").innerText = ref;
 
-    addHistory(ref);
-  }catch{
-    document.getElementById("verse").innerText = "Error loading verse.";
+  addHistory(ref);
+  updateStar();
+}
+
+/* ================= TRANSLATION ================= */
+function reloadVerse(){
+  const t = document.getElementById("translation").value;
+  if(currentRef) loadVerse(currentRef, t);
+}
+
+/* ================= RANDOM ================= */
+function randomVerse(){
+  fetch("https://labs.bible.org/api/?passage=random&type=json")
+    .then(r=>r.json())
+    .then(d=>{
+      const v = d[0];
+      loadVerse(`${v.bookname} ${v.chapter}:${v.verse}`);
+    });
+}
+
+/* ================= ENCOURAGE ================= */
+function encourageMe(){
+  loadVerse("Isaiah 41:10");
+}
+
+/* ================= DARK MODE ================= */
+function toggleDark(){
+  const cur = document.documentElement.getAttribute("data-theme");
+  const next = cur === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("theme", next);
+}
+
+/* ================= FAVORITES ================= */
+function toggleFavorite(ref){
+  if(!ref) return;
+
+  if(favorites.includes(ref)){
+    favorites = favorites.filter(f=>f!==ref);
+  } else {
+    favorites.push(ref);
   }
+
+  localStorage.setItem("favs", JSON.stringify(favorites));
+  renderFav();
+  updateStar();
+}
+
+function renderFav(){
+  document.getElementById("favList").innerHTML =
+    favorites.map(f=>`<div onclick="loadVerse('${f}')" class="list-item">${f}</div>`).join("");
+}
+
+function updateStar(){
+  document.getElementById("starIcon").innerText =
+    favorites.includes(currentRef) ? "★" : "☆";
+}
+
+/* ================= HISTORY ================= */
+function addHistory(ref){
+  history = history.filter(h=>h!==ref);
+  history.unshift(ref);
+  history = history.slice(0,50);
+
+  localStorage.setItem("hist", JSON.stringify(history));
+}
+
+function renderHistory(){
+  document.getElementById("historyList").innerHTML =
+    history.map(h=>`<div onclick="loadVerse('${h}')" class="list-item">${h}</div>`).join("");
+}
+
+function toggleHistory(){
+  const b = document.getElementById("historyBox");
+  b.style.display = b.style.display === "block" ? "none" : "block";
+  renderHistory();
+}
+
+function toggleFavorites(){
+  const b = document.getElementById("favBox");
+  b.style.display = b.style.display === "block" ? "none" : "block";
+  renderFav();
+}
+
+function clearHistory(){
+  if(!confirm("Clear history?")) return;
+  history = [];
+  localStorage.removeItem("hist");
+  renderHistory();
+}
+
+/* ================= STREAK ================= */
+function updateStreak(){
+  const today = new Date().toDateString();
+
+  if(streak.last !== today){
+    const y = new Date();
+    y.setDate(y.getDate()-1);
+
+    if(streak.last === y.toDateString()) streak.count++;
+    else streak.count = 1;
+
+    streak.last = today;
+    localStorage.setItem("streak", JSON.stringify(streak));
+  }
+
+  document.getElementById("streakCount").innerText = streak.count;
 }
 
 /* ================= FOCUS ================= */
@@ -293,55 +393,17 @@ function focusAreaChange(){
   loadVerse(item.r);
 }
 
-/* ================= FAVORITES ================= */
-function toggleFavorite(ref){
-  if(!ref) return;
-
-  if(favorites.includes(ref)){
-    favorites = favorites.filter(f => f !== ref);
-  } else {
-    favorites.push(ref);
-  }
-
-  localStorage.setItem("favs", JSON.stringify(favorites));
-  renderFav();
-}
-
-function renderFav(){
-  document.getElementById("favList").innerHTML =
-    favorites.map(f => `<div class="list-item" onclick="loadVerse('${f}')">${f}</div>`).join("");
-}
-
-/* ================= HISTORY ================= */
-function addHistory(ref){
-  history = history.filter(h => h !== ref);
-  history.unshift(ref);
-  history = history.slice(0,50);
-  localStorage.setItem("hist", JSON.stringify(history));
-}
-
-function renderHistory(){
-  document.getElementById("historyList").innerHTML =
-    history.map(h => `<div class="list-item" onclick="loadVerse('${h}')">${h}</div>`).join("");
-}
-
-/* ================= TOGGLES ================= */
-function toggleFavorites(){
-  const b = document.getElementById("favBox");
-  b.style.display = b.style.display === "block" ? "none" : "block";
-  renderFav();
-}
-
-function toggleHistory(){
-  const b = document.getElementById("historyBox");
-  b.style.display = b.style.display === "block" ? "none" : "block";
-  renderHistory();
-}
-
 /* ================= INIT ================= */
 window.onload = () => {
+  document.documentElement.setAttribute(
+    "data-theme",
+    localStorage.getItem("theme") || "light"
+  );
+
   loadVerse("John 14:27");
+  updateStreak();
 };
+
 </script>
 
 </body>
