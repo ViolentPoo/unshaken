@@ -173,10 +173,12 @@
   </div>
 
   <div class="card">
-    <strong>Journal</strong>
+  <strong onclick="toggleJournal()" style="cursor:pointer">Journal (click to expand/collapse)</strong>
+  <div id="journalBody">
     <textarea id="journal" placeholder="Write your thoughts here..."></textarea>
     <button onclick="saveJournal()">Save Journal</button>
   </div>
+</div>
 
   <div class="history" id="historyBox">
     <strong>Verse History</strong>
@@ -191,8 +193,27 @@
 </div>
 
 <div class="card" id="missionCard">
-  <strong>Parker Family Mission Statement</strong>
-  <div id="missionText" style="font-size:13px;margin-top:8px;line-height:1.5"></div>
+  <strong onclick="toggleMission()" style="cursor:pointer">Parker Family Mission Statement (click to expand/collapse)</strong>
+
+  <div id="missionBody">
+    <div id="missionText" style="font-size:13px;margin-top:8px;line-height:1.5"></div>
+
+    <div style="margin-top:10px;font-size:12px;opacity:.8">
+      <strong>Family Values:</strong>
+      <ul style="margin:6px 0 0 18px">
+        <li>Faith in God</li>
+        <li>Love in action</li>
+        <li>Discipline & consistency</li>
+        <li>Gratitude in all things</li>
+      </ul>
+    </div>
+
+    <div id="missionPrompt" style="margin-top:10px;font-size:12px;font-style:italic"></div>
+
+    <textarea id="missionInput" placeholder="Write or edit your family mission statement..."></textarea>
+    <button onclick="saveMission()">Save Mission</button>
+  </div>
+</div>
   <textarea id="missionInput" placeholder="Write or edit your family mission statement..."></textarea>
   <button onclick="saveMission()">Save Mission</button>
 </div>
@@ -451,6 +472,41 @@ function loadMission(){
   document.getElementById('missionInput').value = m;
 }
 
+const missionPrompts=[
+  "Are my actions aligned with our mission today?",
+  "Where did I live out our values well today?",
+  "Where did I fall short of our mission today?",
+  "How can I better reflect our family faith tomorrow?",
+  "Did I love and lead well today?"
+];
+
+function updateMissionPrompt(){
+  const i=parseInt(localStorage.getItem('mission_prompt_i')||"0");
+  const next=(i+1)%missionPrompts.length;
+  localStorage.setItem('mission_prompt_i',next);
+  document.getElementById('missionPrompt').innerText=missionPrompts[next];
+}
+
+function toggleMission(){
+  const body=document.getElementById('missionBody');
+  body.style.display = body.style.display==='none'?'block':'none';
+}
+
+function saveMission(){
+  const val=document.getElementById('missionInput').value;
+  localStorage.setItem('unshaken_mission',val);
+  document.getElementById('missionText').innerText=val;
+}
+
+function toggleJournal(){
+  const j=document.getElementById('journalBody');
+  j.style.display = j.style.display==='none'?'block':'none';
+}
+  const m = localStorage.getItem('unshaken_mission') || "To walk in faith, love God, and live unshaken in truth as a family.";
+  document.getElementById('missionText').innerText = m;
+  document.getElementById('missionInput').value = m;
+}
+
 function saveMission(){
   const val=document.getElementById('missionInput').value;
   localStorage.setItem('unshaken_mission',val);
@@ -458,6 +514,13 @@ function saveMission(){
 }
 
 window.onload=()=>{
+  themeByTime();
+  setModeUI();
+  fetchDaily();
+  setExtras();
+  updateStreak();
+  loadMission();
+  updateMissionPrompt();
   themeByTime();
   setModeUI();
   fetchDaily();
