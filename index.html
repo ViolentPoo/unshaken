@@ -14,7 +14,6 @@
   --muted:#666;
 }
 
-/* DARK THEME */
 [data-theme="dark"]{
   --bg:#0f172a;
   --text:#e2e8f0;
@@ -65,31 +64,33 @@ body{
   margin-bottom:8px;
 }
 
+.verse-line{
+  font-size:1.15rem;
+  line-height:1.6;
+}
+
+.ref{
+  margin-top:10px;
+  color:var(--accent);
+  font-weight:700;
+}
+
 .controls{
   display:flex;
   flex-wrap:wrap;
   gap:8px;
 }
 
-button,select,input{
+button{
   padding:10px;
   border-radius:10px;
   border:1px solid #ccc;
-}
-
-button{
   cursor:pointer;
 }
 
 button:hover{
   background:var(--accent);
   color:white;
-}
-
-.list-item{
-  padding:8px;
-  border-bottom:1px solid rgba(0,0,0,0.1);
-  cursor:pointer;
 }
 
 .hidden{ display:none; }
@@ -113,8 +114,9 @@ button:hover{
 <!-- VERSE -->
 <div class="card">
   <div class="section-title">Verse</div>
-  <div id="verse" style="font-size:1.25rem;"></div>
-  <div id="ref" style="color:var(--accent);font-weight:700;"></div>
+
+  <div id="verse"></div>
+  <div id="ref" class="ref"></div>
 </div>
 
 <!-- CONTROLS -->
@@ -126,42 +128,20 @@ button:hover{
   <button onclick="randomVerse()">Random</button>
   <button onclick="encourageMe()">Encourage Me</button>
 
-  <button onclick="togglePanel('searchPanel')">Search</button>
-  <button onclick="togglePanel('favPanel')">Favorites</button>
-  <button onclick="togglePanel('histPanel')">History</button>
-
-  <!-- 🌗 THEME DROPDOWN -->
-  <select onchange="setTheme(this.value)">
-    <option value="system">System</option>
-    <option value="light">Day</option>
-    <option value="dark">Night</option>
-  </select>
-
 </div>
 
 </div>
 
-<!-- SEARCH -->
-<div class="card hidden" id="searchPanel">
-  <div class="section-title">Search</div>
-
-  <input id="searchBox" placeholder="Search scripture..." />
-  <button onclick="search()">Search</button>
-
-  <div id="results"></div>
+<!-- PRAYER -->
+<div class="card">
+  <div class="section-title">Prayer</div>
+  <div id="prayer"></div>
 </div>
 
-<!-- FAVORITES -->
-<div class="card hidden" id="favPanel">
-  <div class="section-title">Favorites</div>
-  <div id="favList"></div>
-</div>
-
-<!-- HISTORY -->
-<div class="card hidden" id="histPanel">
-  <div class="section-title">History</div>
-  <button onclick="clearHistory()">Clear</button>
-  <div id="historyList"></div>
+<!-- REFLECTION -->
+<div class="card">
+  <div class="section-title">Reflection</div>
+  <div id="reflection"></div>
 </div>
 
 </div>
@@ -172,77 +152,157 @@ button:hover{
 
 <script>
 
-/* ================= THEME SYSTEM ================= */
-
-function applyTheme(mode){
-  localStorage.setItem("themeMode", mode);
-
-  if(mode === "system"){
-    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-    return;
-  }
-
-  document.documentElement.setAttribute("data-theme", mode);
-}
-
-function setTheme(mode){
-  applyTheme(mode);
-}
-
-/* auto init theme */
-(function(){
-  const saved = localStorage.getItem("themeMode") || "system";
-  applyTheme(saved);
-})();
-
-/* react to system changes */
-window.matchMedia("(prefers-color-scheme: dark)")
-  .addEventListener("change", () => {
-    if(localStorage.getItem("themeMode")==="system"){
-      applyTheme("system");
-    }
-  });
-
-/* ================= DATA ================= */
+/* ================= MULTI-LINE VERSES ================= */
 
 const verses = [
-  {ref:"John 3:16", text:"For God so loved the world..."},
-  {ref:"Psalm 23:1", text:"The Lord is my shepherd..."},
-  {ref:"Isaiah 41:10", text:"Do not fear, for I am with you..."},
-  {ref:"Philippians 4:13", text:"I can do all things through Christ..."},
-  {ref:"Romans 8:28", text:"All things work together for good..."},
-  {ref:"Jeremiah 29:11", text:"For I know the plans I have for you..."}
+  {
+    ref:"John 3:16",
+    text:[
+      "For God so loved the world",
+      "that he gave his one and only Son",
+      "that whoever believes in him shall not perish but have eternal life"
+    ]
+  },
+  {
+    ref:"Psalm 23:1-3",
+    text:[
+      "The Lord is my shepherd, I lack nothing",
+      "He makes me lie down in green pastures",
+      "He restores my soul"
+    ]
+  },
+  {
+    ref:"Isaiah 41:10",
+    text:[
+      "Do not fear, for I am with you",
+      "Do not be dismayed, for I am your God",
+      "I will strengthen you and help you"
+    ]
+  },
+  {
+    ref:"Philippians 4:13",
+    text:[
+      "I can do all things",
+      "through Christ who strengthens me"
+    ]
+  },
+  {
+    ref:"Romans 8:28",
+    text:[
+      "And we know that in all things",
+      "God works for the good of those who love him",
+      "who have been called according to his purpose"
+    ]
+  }
 ];
+
+/* ================= AUTO THEME DETECTION ================= */
+
+function detectTheme(textArr){
+  const t = textArr.join(" ").toLowerCase();
+
+  const score = {
+    love:0,
+    peace:0,
+    strength:0,
+    hope:0
+  };
+
+  if(t.includes("love")) score.love += 2;
+  if(t.includes("heart")) score.love += 1;
+
+  if(t.includes("fear") || t.includes("anxious")) score.peace += 2;
+  if(t.includes("peace")) score.peace += 2;
+
+  if(t.includes("strength") || t.includes("help")) score.strength += 2;
+  if(t.includes("do not fear")) score.peace += 1;
+
+  if(t.includes("hope") || t.includes("eternal")) score.hope += 2;
+  if(t.includes("promise")) score.hope += 1;
+
+  let best="peace";
+  let max=0;
+
+  for(const k in score){
+    if(score[k] > max){
+      max = score[k];
+      best = k;
+    }
+  }
+
+  return best;
+}
+
+/* ================= PRAYER + REFLECTION ================= */
+
+const prayerMap = {
+  love:"Help me reflect Your love in my actions today.",
+  peace:"Bring peace to my heart where fear tries to enter.",
+  strength:"Give me strength when I feel weak or overwhelmed.",
+  hope:"Renew my hope in Your promises today."
+};
+
+const reflectionMap = {
+  love:"How can I love others more intentionally today?",
+  peace:"What is currently disturbing my peace?",
+  strength:"Where do I need God's strength right now?",
+  hope:"What promise am I holding onto today?"
+};
 
 /* ================= STATE ================= */
 
 let current=null;
-let favorites=JSON.parse(localStorage.getItem("fav")||"[]");
-let history=JSON.parse(localStorage.getItem("hist")||"[]");
 
 /* ================= CORE ================= */
 
 function setVerse(v){
   current=v;
 
-  document.getElementById("verse").innerText=v.text;
-  document.getElementById("ref").innerText=v.ref;
+  renderVerse(v);
+  updateDevotion(v);
+}
 
-  addHistory(v);
-  renderFav();
-  renderHistory();
+/* ================= RENDER VERSE ================= */
+
+function renderVerse(v){
+  const container=document.getElementById("verse");
+  container.innerHTML="";
+
+  v.text.forEach(line=>{
+    const div=document.createElement("div");
+    div.className="verse-line";
+    div.innerText=line;
+    container.appendChild(div);
+  });
+
+  document.getElementById("ref").innerText=v.ref;
+}
+
+/* ================= DEVOTION ================= */
+
+function updateDevotion(v){
+  const theme = detectTheme(v.text);
+
+  document.getElementById("prayer").innerText =
+    prayerMap[theme] ||
+    "Lord, guide me through this word today.";
+
+  document.getElementById("reflection").innerText =
+    reflectionMap[theme] ||
+    "What is God showing me through this verse?";
 }
 
 /* ================= DAILY ================= */
 
 function loadDaily(){
   const d=new Date().toISOString().split("T")[0];
+
   let h=0;
   for(let i=0;i<d.length;i++){
     h+=d.charCodeAt(i)*(i+1);
   }
-  setVerse(verses[h%verses.length]);
+
+  setVerse(verses[h % verses.length]);
 }
 
 /* ================= RANDOM ================= */
@@ -255,80 +315,6 @@ function randomVerse(){
 
 function encourageMe(){
   setVerse(verses[Math.floor(Math.random()*verses.length)]);
-}
-
-/* ================= PANELS ================= */
-
-function togglePanel(id){
-  document.getElementById(id).classList.toggle("hidden");
-}
-
-/* ================= SEARCH ================= */
-
-function search(){
-  const q=document.getElementById("searchBox").value.toLowerCase();
-
-  const res=verses.filter(v=>
-    v.text.toLowerCase().includes(q) ||
-    v.ref.toLowerCase().includes(q)
-  );
-
-  document.getElementById("results").innerHTML=
-    res.map(v=>
-      `<div class="list-item" onclick='setVerse(${JSON.stringify(v)})'>
-        <b>${v.ref}</b><br>${v.text}
-      </div>`
-    ).join("");
-}
-
-/* ================= FAVORITES ================= */
-
-function toggleFavorite(){
-  if(!current)return;
-
-  const exists=favorites.find(f=>f.ref===current.ref);
-
-  favorites=exists
-    ? favorites.filter(f=>f.ref!==current.ref)
-    : [...favorites,current];
-
-  localStorage.setItem("fav",JSON.stringify(favorites));
-  renderFav();
-}
-
-function renderFav(){
-  document.getElementById("favList").innerHTML=
-    favorites.map(f=>
-      `<div class="list-item" onclick='setVerse(${JSON.stringify(f)})'>
-        ${f.ref}
-      </div>`
-    ).join("");
-}
-
-/* ================= HISTORY ================= */
-
-function addHistory(v){
-  history=history.filter(h=>h.ref!==v.ref);
-  history.unshift(v);
-  history=history.slice(0,50);
-
-  localStorage.setItem("hist",JSON.stringify(history));
-}
-
-function renderHistory(){
-  document.getElementById("historyList").innerHTML=
-    history.map(h=>
-      `<div class="list-item" onclick='setVerse(${JSON.stringify(h)})'>
-        ${h.ref}
-      </div>`
-    ).join("");
-}
-
-function clearHistory(){
-  if(!confirm("Clear history?"))return;
-  history=[];
-  localStorage.removeItem("hist");
-  renderHistory();
 }
 
 /* ================= INIT ================= */
