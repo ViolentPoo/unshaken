@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Unshaken v1.7.6</title>
+<title>Unshaken v1.7.7</title>
 
 <style>
 :root{
@@ -80,10 +80,6 @@ button:hover{
   cursor:pointer;
 }
 
-.result:hover{
-  background:rgba(0,0,0,0.05);
-}
-
 .star{
   font-size:22px;
   cursor:pointer;
@@ -107,7 +103,7 @@ button:hover{
 
 <body>
 
-<div class="topbar">Unshaken v1.7.6 — Parser Fix</div>
+<div class="topbar">Unshaken v1.7.7 — Devotional Insight Engine</div>
 
 <div class="container">
 
@@ -176,7 +172,7 @@ let bibleIndex = [];
 let current = null;
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* ================= SAFE PARSER (FIXED) ================= */
+/* ================= SAFE PARSER ================= */
 
 async function loadBible(){
   const res = await fetch("web.txt");
@@ -246,7 +242,7 @@ function setVerse(v){
   updateDevotion(v);
 }
 
-/* ================= DEVOTIONAL ENGINE ================= */
+/* ================= TIME ================= */
 
 function getTimeOfDay(){
   const h = new Date().getHours();
@@ -256,37 +252,56 @@ function getTimeOfDay(){
   return "night";
 }
 
+/* ================= DEVOTIONAL ENGINE (v1.7.7 CORE) ================= */
+
+function getVerseSegments(text){
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  return sentences.slice(0, 3);
+}
+
 function getDevotion(v){
   const t = getTimeOfDay();
-  const text = v.text.toLowerCase();
+  const segments = getVerseSegments(v.text.toLowerCase());
+  const focus = segments.join(" ");
 
   let prayer = "";
   let reflection = "";
 
-  if(t === "morning"){
-    prayer = "Guide my steps and focus my heart today.";
-    reflection = "How can I start this day with intention?";
+  const base = {
+    morning: {
+      prayer: "Guide my steps and focus my heart today.",
+      reflection: "How should I begin this day with intention?"
+    },
+    day: {
+      prayer: "Give me wisdom, strength, and patience.",
+      reflection: "Am I responding with grace in this moment?"
+    },
+    night: {
+      prayer: "Thank You for today and bring me rest.",
+      reflection: "Where did I see God working today?"
+    }
+  };
+
+  prayer = base[t].prayer;
+  reflection = base[t].reflection;
+
+  if(focus.includes("fear")){
+    prayer += " Remove fear from my heart.";
+    reflection += " What fear is influencing me?";
   }
 
-  if(t === "day"){
-    prayer = "Give me strength, wisdom, and patience.";
-    reflection = "Am I responding with grace right now?";
-  }
-
-  if(t === "night"){
-    prayer = "Thank You for today and give me rest.";
-    reflection = "Where did I see God today?";
-  }
-
-  if(text.includes("fear")){
-    prayer += " Remove fear from me.";
-    reflection += " What am I trusting God with?";
-  }
-
-  if(text.includes("love")){
+  if(focus.includes("love")){
     prayer += " Help me love others well.";
     reflection += " How am I showing love?";
   }
+
+  if(focus.includes("peace")){
+    prayer += " Fill me with peace.";
+    reflection += " Where do I need to release control?";
+  }
+
+  prayer += ` (based on: "${segments[0].slice(0,50)}...")`;
+  reflection += ` (reflecting: "${segments[0].slice(0,50)}...")`;
 
   return { prayer, reflection };
 }
