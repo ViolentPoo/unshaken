@@ -156,6 +156,7 @@
     <button onclick="encouragement()">Encourage Me</button>
     <button onclick="shareVerse()">Share</button>
     <button onclick="toggleHistory()">History</button>
+    <button onclick="clearHistory()">Clear History</button>
     <button onclick="toggleFavorites()">Favorites</button>
   </div>
 
@@ -454,6 +455,15 @@ function topicChange(){
 
   currentRef=map[v];
   loadVerse(currentRef);
+}
+
+function clearHistory(){
+  const ok = confirm("Are you sure you want to clear your verse history? This cannot be undone.");
+  if(!ok) return;
+
+  history = [];
+  localStorage.removeItem('unshaken_history');
+  renderHistory();
 }
 </script>
 
