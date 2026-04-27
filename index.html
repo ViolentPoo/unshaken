@@ -50,16 +50,13 @@
       box-shadow:0 10px 25px rgba(0,0,0,.1);
     }
 
-    .greeting{
-      font-size:14px;
-      margin-bottom:10px;
-      opacity:.8;
-    }
+    .greeting{font-size:14px;margin-bottom:6px;opacity:.8;}
+    .themeSummary{font-size:13px;margin-bottom:10px;opacity:.75;}
 
     .verse{font-size:20px;line-height:1.6;margin:15px 0;}
     .ref{color:var(--accent);font-weight:bold;}
 
-    select,button{
+    select,button,textarea{
       padding:8px;
       border-radius:8px;
       border:1px solid #ccc;
@@ -69,6 +66,13 @@
       margin:4px;
       -webkit-appearance:none;
       appearance:none;
+    }
+
+    textarea{
+      width:100%;
+      min-height:60px;
+      resize:vertical;
+      cursor:text;
     }
 
     button:hover{background:var(--accent);color:white;}
@@ -126,6 +130,7 @@
 <div class="container">
 
   <div id="greeting" class="greeting"></div>
+  <div id="themeSummary" class="themeSummary"></div>
 
   <h2>Verse</h2>
   <div id="verse" class="verse">Loading...</div>
@@ -157,13 +162,19 @@
   <div class="streak" id="streakDisplay"></div>
 
   <div class="card">
-    <strong id="prayerTitle">Morning Prayer</strong>
+    <strong id="prayerTitle">Prayer</strong>
     <div id="prayer" style="font-size:13px;margin-top:5px"></div>
   </div>
 
   <div class="card">
-    <strong id="reflectionTitle">Morning Reflection</strong>
+    <strong id="reflectionTitle">Reflection</strong>
     <div id="reflection" style="font-size:13px;font-style:italic;margin-top:5px"></div>
+  </div>
+
+  <div class="card">
+    <strong>Journal</strong>
+    <textarea id="journal" placeholder="Write your thoughts here..."></textarea>
+    <button onclick="saveJournal()">Save Journal</button>
   </div>
 
   <div class="history" id="historyBox">
@@ -195,80 +206,90 @@ function getMode(){
   return "night";
 }
 
+function themeSummary(mode){
+  if(mode=="morning") return "Focus: Discipline & Direction";
+  if(mode=="day") return "Focus: Faith in Action";
+  return "Focus: Gratitude & Rest";
+}
+
 function setModeUI(){
   const mode=getMode();
-  const g=document.getElementById('greeting');
+  document.getElementById('greeting').innerText=
+    mode=="morning"?"Good Morning ☀️":mode=="day"?"Good Afternoon 🌤️":"Good Evening 🌙";
 
-  if(mode==="morning"){
-    g.innerText="Good Morning ☀️ — Start your day with truth";
-    document.getElementById('prayerTitle').innerText="Morning Prayer";
-    document.getElementById('reflectionTitle').innerText="Morning Reflection";
-  } else if(mode==="day"){
-    g.innerText="Good Afternoon 🌤️ — Stay anchored in truth";
-    document.getElementById('prayerTitle').innerText="Midday Prayer";
-    document.getElementById('reflectionTitle').innerText="Midday Reflection";
-  } else {
-    g.innerText="Good Evening 🌙 — Rest in His Word";
-    document.getElementById('prayerTitle').innerText="Night Prayer";
-    document.getElementById('reflectionTitle').innerText="Night Reflection";
-  }
+  document.getElementById('themeSummary').innerText=themeSummary(mode);
 }
 
 const prayers={
   morning:[
     "Lord, guide me today and keep my heart steady.",
     "Jesus, give me strength for what lies ahead.",
-    "Father, order my steps and thoughts today.",
-    "God, help me stay disciplined and faithful today.",
-    "Holy Spirit, lead my decisions and words."
+    "Father, order my steps today.",
+    "God, help me stay disciplined and faithful.",
+    "Holy Spirit, lead my decisions."
   ],
   day:[
-    "God, help me stay focused and faithful today.",
-    "Lord, give me wisdom in every decision.",
-    "Jesus, keep me patient with people around me.",
-    "Father, help me not lose sight of You in busyness.",
-    "Lord, strengthen me when I feel distracted."
+    "God, help me stay focused today.",
+    "Lord, give me wisdom.",
+    "Jesus, help me stay patient.",
+    "Father, keep me anchored in You.",
+    "Lord, strengthen me in distractions."
   ],
   night:[
-    "Lord, thank You for today. Help me rest in You.",
-    "Jesus, calm my heart and renew my spirit.",
-    "Father, forgive my shortcomings from today.",
-    "God, thank You for every blessing I saw today.",
-    "Lord, give me peaceful rest and deep sleep."
+    "Lord, thank You for today.",
+    "Jesus, calm my heart.",
+    "Father, forgive my shortcomings.",
+    "God, thank You for blessings.",
+    "Lord, give me restful sleep."
   ]
 };
 
 const reflections={
   morning:[
-    "What is my focus for today?",
-    "How can I walk with God intentionally today?",
-    "What challenge might God be preparing me for?",
-    "Where do I need to trust God more today?",
-    "What kind of person do I want to be today?"
+    "What is my focus today?",
+    "How can I walk with God today?",
+    "What challenge might come today?",
+    "Where do I need trust today?",
+    "What kind of person will I be today?"
   ],
   day:[
-    "How am I living out my faith right now?",
-    "Where do I need patience today?",
-    "Am I honoring God in my current decisions?",
-    "What distraction is pulling me away from God?",
-    "Who can I encourage today?"
+    "How am I living out my faith?",
+    "Where do I need patience?",
+    "Am I honoring God now?",
+    "What distracts me?",
+    "Who can I encourage?"
   ],
   night:[
     "Where did I see God today?",
-    "What am I grateful for from today?",
-    "Where did I fall short and need grace?",
-    "How did I grow spiritually today?",
-    "What do I want to do better tomorrow?"
+    "What am I grateful for?",
+    "Where did I fall short?",
+    "How did I grow?",
+    "What will I do better tomorrow?"
   ]
 };
 
+// rotation indexes
+function getIndex(key, len){
+  let i=parseInt(localStorage.getItem(key)||"0");
+  i=(i+1)%len;
+  localStorage.setItem(key,i);
+  return i;
+}
+
 function setExtras(){
   const mode=getMode();
-  document.getElementById('prayer').innerText=
-    prayers[mode][Math.floor(Math.random()*prayers[mode].length)];
 
-  document.getElementById('reflection').innerText=
-    reflections[mode][Math.floor(Math.random()*reflections[mode].length)];
+  const pIndex=getIndex(mode+"_p",prayers[mode].length);
+  const rIndex=getIndex(mode+"_r",reflections[mode].length);
+
+  document.getElementById('prayer').innerText=prayers[mode][pIndex];
+  document.getElementById('reflection').innerText=reflections[mode][rIndex];
+}
+
+function saveJournal(){
+  const key="journal_"+new Date().toDateString();
+  localStorage.setItem(key,document.getElementById('journal').value);
+  alert("Saved");
 }
 
 function toggleHistory(){
@@ -293,7 +314,7 @@ function addToHistory(ref,text){
 
 function toggleFav(ref,text){
   const exists=favorites.find(f=>f.ref===ref);
-  if(exists){favorites=favorites.filter(f=>f.ref!==ref);} 
+  if(exists){favorites=favorites.filter(f=>f.ref!==ref);}
   else {favorites.unshift({ref,text});}
   localStorage.setItem('unshaken_favs',JSON.stringify(favorites));
   renderFavorites();
@@ -342,23 +363,6 @@ function renderFavorites(){
     };
     el.appendChild(div);
   });
-}
-
-function updateStreak(){
-  const today=new Date().toDateString();
-  const last=localStorage.getItem('unshaken_last');
-  let streak=parseInt(localStorage.getItem('unshaken_streak')||'0');
-
-  if(!last) streak=1;
-  else if(last!==today){
-    const y=new Date();y.setDate(y.getDate()-1);
-    streak=(last===y.toDateString())?streak+1:1;
-  }
-
-  localStorage.setItem('unshaken_streak',streak);
-  localStorage.setItem('unshaken_last',today);
-
-  document.getElementById('streakDisplay').innerText=`🔥 ${streak} day streak`;
 }
 
 function applyTheme(t){
@@ -430,7 +434,6 @@ window.onload=()=>{
   setModeUI();
   fetchDaily();
   setExtras();
-  updateStreak();
 
   document.getElementById('translation').onchange=()=>loadVerse(currentRef);
   document.getElementById('topic').onchange=topicChange;
