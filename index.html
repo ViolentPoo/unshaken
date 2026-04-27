@@ -44,6 +44,14 @@ body{
   width:min(800px,92%);
 }
 
+.card{
+  background:var(--card);
+  padding:14px;
+  border-radius:12px;
+  margin-top:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
+}
+
 .missionHero{
   background:var(--card);
   padding:16px;
@@ -56,14 +64,6 @@ body{
   font-weight:700;
   cursor:pointer;
   margin-bottom:8px;
-}
-
-.card{
-  background:var(--card);
-  padding:14px;
-  border-radius:12px;
-  margin-top:12px;
-  box-shadow:0 4px 12px rgba(0,0,0,.06);
 }
 
 .verse{
@@ -113,10 +113,6 @@ textarea{width:100%;min-height:70px;margin-top:8px;}
 
 <div class="container">
 
-<!-- GREETING -->
-<div id="greeting"></div>
-<div id="themeSummary" style="opacity:.7;font-size:13px;margin-bottom:10px"></div>
-
 <!-- VERSE -->
 <div class="card">
   <div class="verse" id="verse">Loading...</div>
@@ -131,7 +127,7 @@ textarea{width:100%;min-height:70px;margin-top:8px;}
     <option value="esv">ESV</option>
   </select>
 
-  <select id="topic">
+  <select id="topic" onchange="topicChange()">
     <option value="daily">Verse of the Day</option>
     <option value="peace">Peace</option>
     <option value="strength">Strength</option>
@@ -147,18 +143,19 @@ textarea{width:100%;min-height:70px;margin-top:8px;}
   <button onclick="toggleFavorites()">Favorites</button>
 </div>
 
-<!-- PRAYER / REFLECTION -->
+<!-- PRAYER -->
 <div class="card">
   <strong>Prayer</strong>
   <div id="prayer"></div>
 </div>
 
+<!-- REFLECTION -->
 <div class="card">
   <strong>Reflection</strong>
   <div id="reflection"></div>
 </div>
 
-<!-- JOURNAL -->
+<!-- JOURNAL BUTTON -->
 <div class="card">
   <button onclick="toggleJournal()">Journal</button>
   <div id="journalBody" style="display:none">
@@ -166,24 +163,29 @@ textarea{width:100%;min-height:70px;margin-top:8px;}
     <button onclick="saveJournal()">Save</button>
   </div>
 </div>
-</div>
 
 <!-- HISTORY / FAVORITES -->
-<div class="card history" id="historyBox"><strong>History</strong><div id="historyList"></div></div>
-<div class="card favorites" id="favBox"><strong>Favorites</strong><div id="favList"></div></div>
+<div class="card history" id="historyBox">
+  <strong>History</strong>
+  <div id="historyList"></div>
+</div>
 
-<!-- MISSION HERO MOVED TO BOTTOM -->
+<div class="card favorites" id="favBox">
+  <strong>Favorites</strong>
+  <div id="favList"></div>
+</div>
+
+<!-- MISSION AT BOTTOM -->
 <div class="missionHero">
   <div class="missionTitle" onclick="toggleMission()">Parker Family Mission Statement</div>
   <div id="missionBody">
     <div id="missionText"></div>
-    
   </div>
 </div>
 
 </div>
 
-<div class="small footer1">est 2013</div>est 2013</div>
+<div class="small footer1">est 2013</div>
 <div class="small footer2">The Parker Family</div>
 
 <script>
@@ -195,22 +197,32 @@ function getMode(){let h=new Date().getHours();return h<12?'morning':h<18?'day':
 
 function setUI(){
   let m=getMode();
-  document.getElementById('greeting').innerText=
-    m==='morning'?'Good Morning ☀️':m==='day'?'Good Afternoon 🌤️':'Good Evening 🌙';
-  document.getElementById('themeSummary').innerText=
-    m==='morning'?'Focus: Discipline & Direction':m==='day'?'Focus: Faith in Action':'Focus: Gratitude & Rest';
 }
 
-const prayers={morning:["Guide me","Strength","Order steps","Faithful","Lead me"],day:["Focus","Wisdom","Patience","Anchored","Strength"],night:["Thank You","Calm","Forgive","Grateful","Rest"]};
-const reflections={morning:["Focus?","Walk?","Challenge?","Trust?","Identity?"],day:["Faith?","Patience?","Honor?","Distracted?","Encourage?"],night:["Seen God?","Grateful?","Missed?","Growth?","Tomorrow?"]};
+const prayers={
+  morning:["Guide me","Strength","Order steps","Faithful","Lead me"],
+  day:["Focus","Wisdom","Patience","Anchored","Strength"],
+  night:["Thank You","Calm","Forgive","Grateful","Rest"]
+};
+
+const reflections={
+  morning:["Focus?","Walk?","Challenge?","Trust?","Identity?"],
+  day:["Faith?","Patience?","Honor?","Distracted?","Encourage?"],
+  night:["Seen God?","Grateful?","Missed?","Growth?","Tomorrow?"]
+};
 
 function idx(k,l){let i=parseInt(localStorage.getItem(k)||0);i=(i+1)%l;localStorage.setItem(k,i);return i;}
 
-function setExtras(){let m=getMode();document.getElementById('prayer').innerText=prayers[m][idx(m+'_p',5)];document.getElementById('reflection').innerText=reflections[m][idx(m+'_r',5)];}
+function setExtras(){
+  let m=getMode();
+  document.getElementById('prayer').innerText=prayers[m][idx(m+'_p',5)];
+  document.getElementById('reflection').innerText=reflections[m][idx(m+'_r',5)];
+}
 
 function loadMission(){
   document.getElementById('missionText').innerText=
-  localStorage.getItem('unshaken_mission')||"As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace. We aim to live each day anchored in truth, gratitude, and purpose.";
+  localStorage.getItem('unshaken_mission')||
+  "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
 }
 
 function toggleMission(){
@@ -237,34 +249,90 @@ function toggleHistory(){
 
 function clearHistory(){if(!confirm('Clear?'))return;history=[];localStorage.removeItem('unshaken_history');renderHistory();}
 
-function toggleFavorites(){let b=document.getElementById('favBox');b.style.display=b.style.display==='block'?'none':'block';renderFavorites();}
+function toggleFavorites(){
+  let b=document.getElementById('favBox');
+  b.style.display=b.style.display==='block'?'none':'block';
+  renderFavorites();
+}
 
-function addToHistory(r,t){if(history[0]?.ref===r)return;history.unshift({ref:r,text:t});localStorage.setItem('unshaken_history',JSON.stringify(history));renderHistory();}
+function addToHistory(r,t){
+  if(history[0]?.ref===r)return;
+  history.unshift({ref:r,text:t});
+  localStorage.setItem('unshaken_history',JSON.stringify(history));
+  renderHistory();
+}
 
-function renderHistory(){let el=document.getElementById('historyList');el.innerHTML='';history.forEach(h=>{let d=document.createElement('div');d.innerText=h.ref;d.onclick=()=>loadVerse(h.ref);el.appendChild(d);});}
+function renderHistory(){
+  let el=document.getElementById('historyList');el.innerHTML='';
+  history.forEach(h=>{
+    let d=document.createElement('div');
+    d.innerText=h.ref;
+    d.onclick=()=>loadVerse(h.ref);
+    el.appendChild(d);
+  });
+}
 
-function renderFavorites(){let el=document.getElementById('favList');el.innerHTML='';favorites.forEach(f=>{let d=document.createElement('div');d.innerText=f.ref;el.appendChild(d);});}
+function renderFavorites(){
+  let el=document.getElementById('favList');el.innerHTML='';
+  favorites.forEach(f=>{
+    let d=document.createElement('div');
+    d.innerText=f.ref;
+    el.appendChild(d);
+  });
+}
 
-function themeByTime(){let h=new Date().getHours();document.documentElement.setAttribute('data-theme',h<6||h>18?'dark':'light');}
+function toggleDark(){
+  let t=document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme',t==='dark'?'light':'dark');
+}
 
-async function fetchDaily(){let r=await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');let d=await r.json();loadVerse(d.verse.details.reference);}
+async function fetchDaily(){
+  let r=await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
+  let d=await r.json();
+  loadVerse(d.verse.details.reference);
+}
 
-async function loadVerse(ref){let tr=document.getElementById('translation').value;let r=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);let d=await r.json();currentRef=ref;currentVerse=d.text;document.getElementById('verse').innerText=d.text;document.getElementById('ref').innerText=ref;addToHistory(ref,d.text);setExtras();}
+async function loadVerse(ref){
+  let tr=document.getElementById('translation').value;
+  let r=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
+  let d=await r.json();
+  currentRef=ref;
+  currentVerse=d.text;
+  document.getElementById('verse').innerText=d.text;
+  document.getElementById('ref').innerText=ref;
+  addToHistory(ref,d.text);
+  setExtras();
+}
 
-function randomVerse(){fetch('https://labs.bible.org/api/?passage=random&type=json').then(r=>r.json()).then(d=>loadVerse(d[0].bookname+' '+d[0].chapter+':'+d[0].verse));}
+function randomVerse(){
+  fetch('https://labs.bible.org/api/?passage=random&type=json')
+  .then(r=>r.json())
+  .then(d=>loadVerse(d[0].bookname+' '+d[0].chapter+':'+d[0].verse));
+}
+
 function encouragement(){loadVerse('Isaiah 41:10');}
-function toggleDark(){let t=document.documentElement.getAttribute('data-theme');document.documentElement.setAttribute('data-theme',t==='dark'?'light':'dark');}
+
+function topicChange(){
+  let v=document.getElementById('topic').value;
+  let map={
+    peace:'John 14:27',
+    strength:'Philippians 4:13',
+    hope:'Jeremiah 29:11',
+    anxiety:'Philippians 4:6'
+  };
+  if(v==='daily')return fetchDaily();
+  loadVerse(map[v]);
+}
 
 window.onload=()=>{
-  themeByTime();
-  setUI();
+  document.documentElement.setAttribute('data-theme','light');
   fetchDaily();
   setExtras();
   loadMission();
-  
   renderHistory();
   renderFavorites();
 };
 </script>
+
 </body>
 </html>
