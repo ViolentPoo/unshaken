@@ -116,12 +116,6 @@ button:hover{
   font-weight:700;
 }
 
-/* panels */
-.panel{
-  display:none;
-}
-
-/* footer */
 .footer{
   position: fixed;
   right: 12px;
@@ -223,21 +217,39 @@ button:hover{
 let currentRef = "";
 
 /* =========================
-   MISSION (FIXED)
+   TIME OF DAY (NEW v1.3.0)
+========================= */
+
+function getTimeOfDay(){
+  const h = new Date().getHours();
+
+  if(h >= 5 && h < 12) return "morning";
+  if(h >= 12 && h < 17) return "afternoon";
+  if(h >= 17 && h < 21) return "evening";
+  return "night";
+}
+
+function applyTimeTone(text){
+  const t = getTimeOfDay();
+
+  if(t === "morning") return "☀️ Morning: " + text;
+  if(t === "afternoon") return "🌤️ Afternoon: " + text;
+  if(t === "evening") return "🌇 Evening: " + text;
+  return "🌙 Night: " + text;
+}
+
+/* =========================
+   MISSION
 ========================= */
 
 const missionDefault =
   "We seek to follow Jesus faithfully, grow in wisdom, and live with purpose as a family.";
 
-const savedMission = localStorage.getItem("unshaken_mission");
-
 document.getElementById("missionText").innerText =
-  savedMission && savedMission.trim().length > 0
-    ? savedMission
-    : missionDefault;
+  localStorage.getItem("unshaken_mission") || missionDefault;
 
 /* =========================
-   STREAK (FIXED)
+   STREAK (stable)
 ========================= */
 
 let streak = { count: 0, lastDate: null };
@@ -248,9 +260,7 @@ try {
     streak.count = Number(raw.count) || 0;
     streak.lastDate = raw.lastDate || null;
   }
-} catch {
-  streak = { count: 0, lastDate: null };
-}
+} catch {}
 
 function getToday(){
   return new Date().toDateString();
@@ -264,34 +274,32 @@ function updateStreak(){
   const y = new Date();
   y.setDate(y.getDate() - 1);
 
-  if (streak.lastDate === y.toDateString()) {
-    streak.count++;
-  } else {
-    streak.count = 1;
-  }
+  if (streak.lastDate === y.toDateString()) streak.count++;
+  else streak.count = 1;
 
   streak.lastDate = today;
+
   localStorage.setItem("unshaken_streak", JSON.stringify(streak));
 
   renderStreak();
 }
 
 function renderStreak(){
-  const el = document.getElementById("streakCount");
-  const msg = document.getElementById("streakMessage");
-
   const c = Number(streak.count) || 0;
-  el.innerText = c;
 
-  if (c >= 30) msg.innerText = "🔥 Incredible consistency.";
-  else if (c >= 14) msg.innerText = "Strong discipline forming.";
-  else if (c >= 7) msg.innerText = "Momentum building.";
-  else if (c >= 3) msg.innerText = "Keep going.";
-  else msg.innerText = "Start today.";
+  document.getElementById("streakCount").innerText = c;
+
+  let msg = "Start today.";
+  if(c >= 30) msg = "🔥 Incredible consistency.";
+  else if(c >= 14) msg = "Strong discipline forming.";
+  else if(c >= 7) msg = "Momentum building.";
+  else if(c >= 3) msg = "Keep going.";
+
+  document.getElementById("streakMessage").innerText = msg;
 }
 
 /* =========================
-   VERSE (simplified safe)
+   VERSE ENGINE
 ========================= */
 
 async function fetchDaily(){
@@ -324,13 +332,13 @@ function reloadCurrentVerse(){
 }
 
 /* =========================
-   FOCUS SYSTEM (unchanged logic)
+   FOCUS SYSTEM
 ========================= */
 
 const pools = {
-  peace:[{r:"John 14:27",p:"Peace Lord.",f:"What steals my peace?"}],
+  peace:[{r:"John 14:27",p:"Give me peace.",f:"What steals my peace?"}],
   strength:[{r:"Isaiah 41:10",p:"Strengthen me.",f:"Where am I weak?"}],
-  hope:[{r:"Jeremiah 29:11",p:"Renew hope.",f:"What future do I fear?"}],
+  hope:[{r:"Jeremiah 29:11",p:"Renew hope.",f:"What future do I trust?"}],
   anxiety:[{r:"Philippians 4:6",p:"Release worry.",f:"What am I holding?"}],
   faith:[{r:"Hebrews 11:1",p:"Grow faith.",f:"Where do I doubt?"}],
   love:[{r:"1 Corinthians 13:4",p:"Teach love.",f:"Who needs grace?"}],
@@ -347,14 +355,17 @@ function focusAreaChange(){
 
   const item = pools[a][0];
 
-  document.getElementById("prayer").innerText = item.p;
-  document.getElementById("reflection").innerText = item.f;
+  document.getElementById("prayer").innerText =
+    applyTimeTone(item.p);
+
+  document.getElementById("reflection").innerText =
+    applyTimeTone(item.f);
 
   loadVerse(item.r);
 }
 
 /* =========================
-   OTHER
+   BUTTONS
 ========================= */
 
 function encouragement(){
