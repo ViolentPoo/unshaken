@@ -88,7 +88,7 @@
       background:rgba(255,255,255,.06);
     }
 
-    .history{
+    .history,.favorites{
       margin-top:15px;
       max-height:180px;
       overflow-y:auto;
@@ -97,25 +97,36 @@
       display:none;
     }
 
-    .history-item{
+    .history-item,.fav-item{
       font-size:13px;
       padding:6px;
       cursor:pointer;
       border-radius:6px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
     }
 
-    .history-item:hover{
+    .history-item:hover,.fav-item:hover{
       background:rgba(0,0,0,.05);
     }
 
-    [data-theme="dark"] .history-item:hover{
+    [data-theme="dark"] .history-item:hover,
+    [data-theme="dark"] .fav-item:hover{
       background:rgba(255,255,255,.08);
     }
 
-    .streak{
-      font-size:13px;
-      margin-top:5px;
+    .star{
+      cursor:pointer;
+      margin-left:10px;
+      opacity:.7;
     }
+
+    .star.fav{
+      opacity:1;
+    }
+
+    .streak{font-size:13px;margin-top:5px;}
   </style>
 </head>
 <body>
@@ -148,6 +159,7 @@
     <button onclick="encouragement()">Encourage Me</button>
     <button onclick="shareVerse()">Share</button>
     <button onclick="toggleHistory()">History</button>
+    <button onclick="toggleFavorites()">Favorites</button>
   </div>
 
   <div class="streak" id="streakDisplay"></div>
@@ -167,6 +179,11 @@
     <div id="historyList"></div>
   </div>
 
+  <div class="favorites" id="favBox">
+    <strong>Favorite Verses</strong>
+    <div id="favList"></div>
+  </div>
+
 </div>
 
 <div class="small footer1">est 2013</div>
@@ -175,7 +192,9 @@
 <script>
 let currentRef="";
 let currentVerse="";
+
 let history=JSON.parse(localStorage.getItem('unshaken_history')||'[]');
+let favorites=JSON.parse(localStorage.getItem('unshaken_favs')||'[]');
 
 const prayers=[
 "Lord, guide me today and keep my heart steady.",
@@ -205,10 +224,30 @@ function toggleHistory(){
   box.style.display=box.style.display==='block'?'none':'block';
 }
 
+function toggleFavorites(){
+  const box=document.getElementById('favBox');
+  box.style.display=box.style.display==='block'?'none':'block';
+  renderFavorites();
+}
+
 function addToHistory(ref,text){
+  if(history.length && history[0].ref===ref) return;
+  history = history.filter(h=>!(h.ref===ref && h.text===text));
   history.unshift({ref,text});
   if(history.length>20) history.pop();
   localStorage.setItem('unshaken_history',JSON.stringify(history));
+  renderHistory();
+}
+
+function toggleFav(ref,text){
+  const exists=favorites.find(f=>f.ref===ref);
+  if(exists){
+    favorites=favorites.filter(f=>f.ref!==ref);
+  }else{
+    favorites.unshift({ref,text});
+  }
+  localStorage.setItem('unshaken_favs',JSON.stringify(favorites));
+  renderFavorites();
   renderHistory();
 }
 
@@ -218,12 +257,39 @@ function renderHistory(){
   history.forEach(h=>{
     const div=document.createElement('div');
     div.className='history-item';
-    div.innerText=h.ref;
-    div.onclick=()=>{
+
+    const left=document.createElement('span');
+    left.innerText=h.ref;
+    left.onclick=()=>{
       currentRef=h.ref;
       currentVerse=h.text;
       document.getElementById('verse').innerText=h.text;
       document.getElementById('ref').innerText=h.ref;
+    };
+
+    const star=document.createElement('span');
+    star.className='star '+(favorites.find(f=>f.ref===h.ref)?'fav':'');
+    star.innerText='★';
+    star.onclick=()=>toggleFav(h.ref,h.text);
+
+    div.appendChild(left);
+    div.appendChild(star);
+    el.appendChild(div);
+  });
+}
+
+function renderFavorites(){
+  const el=document.getElementById('favList');
+  el.innerHTML="";
+  favorites.forEach(f=>{
+    const div=document.createElement('div');
+    div.className='fav-item';
+    div.innerText=f.ref;
+    div.onclick=()=>{
+      currentRef=f.ref;
+      currentVerse=f.text;
+      document.getElementById('verse').innerText=f.text;
+      document.getElementById('ref').innerText=f.ref;
     };
     el.appendChild(div);
   });
@@ -241,17 +307,15 @@ function themeByTime(){
   document.documentElement.setAttribute('data-theme',h<6||h>18?'dark':'light');
 }
 
-// STREAK
 function updateStreak(){
   const today=new Date().toDateString();
   const last=localStorage.getItem('unshaken_last');
   let streak=parseInt(localStorage.getItem('unshaken_streak')||'0');
 
-  if(!last){streak=1;}
+  if(!last) streak=1;
   else if(last!==today){
     const y=new Date();y.setDate(y.getDate()-1);
-    if(last===y.toDateString()) streak++;
-    else streak=1;
+    streak=(last===y.toDateString())?streak+1:1;
   }
 
   localStorage.setItem('unshaken_streak',streak);
@@ -271,6 +335,7 @@ async function loadVerse(ref){
   const tr=document.getElementById('translation').value;
   const res=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
   const data=await res.json();
+
   currentVerse=data.text;
   currentRef=ref;
 
@@ -334,6 +399,8 @@ window.onload=()=>{
 
   document.getElementById('translation').onchange=()=>loadVerse(currentRef);
   document.getElementById('topic').onchange=topicChange;
+  renderHistory();
+  renderFavorites();
 };
 </script>
 
