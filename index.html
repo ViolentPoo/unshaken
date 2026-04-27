@@ -154,9 +154,9 @@
     <button onclick="toggleDark()">Dark Mode</button>
     <button onclick="randomVerse()">Random</button>
     <button onclick="encouragement()">Encourage Me</button>
-    <button onclick="shareVerse()">Share</button>
+    <button id="shareBtn" style="display:none" onclick="shareVerse()">Share</button>
     <button onclick="toggleHistory()">History</button>
-    <button onclick="clearHistory()">Clear History</button>
+    <button id="clearHistoryBtn" style="display:none" onclick="clearHistory()">Clear History</button>
     <button onclick="toggleFavorites()">Favorites</button>
   </div>
 
@@ -295,7 +295,15 @@ function saveJournal(){
 
 function toggleHistory(){
   const box=document.getElementById('historyBox');
-  box.style.display=box.style.display==='block'?'none':'block';
+  const btn=document.getElementById('clearHistoryBtn');
+  const isOpen = box.style.display==='block';
+
+  box.style.display=isOpen?'none':'block';
+
+  // show clear button only when history is visible
+  if(btn){
+    btn.style.display = isOpen ? 'none' : 'inline-block';
+  }
 }
 
 function toggleFavorites(){
