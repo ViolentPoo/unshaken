@@ -32,6 +32,7 @@ body{
   padding:72px 0 40px;
   display:flex;
   justify-content:center;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .topbar{
@@ -53,6 +54,7 @@ body{
   padding:16px;
   border-radius:14px;
   margin-top:14px;
+  transition: background 0.3s ease;
 }
 
 .section-title{
@@ -95,13 +97,6 @@ button:hover{
   color:white;
 }
 
-.star{
-  font-size:1.5rem;
-  cursor:pointer;
-  background:none;
-  border:none;
-}
-
 .list-item{
   padding:8px;
   border-bottom:1px solid rgba(0,0,0,0.1);
@@ -133,11 +128,6 @@ button:hover{
 <div class="card">
   <div class="section-title">Verse</div>
 
-  <div style="display:flex;justify-content:space-between;align-items:center;">
-    <div></div>
-    <button class="star" onclick="toggleFavorite()">★</button>
-  </div>
-
   <div id="verse" class="verse">Loading...</div>
   <div id="ref" class="ref"></div>
 </div>
@@ -153,6 +143,10 @@ button:hover{
 
   <input id="searchBox" placeholder="Search (love, peace...)" />
   <button onclick="search()">Search</button>
+  <button onclick="hideSearch()">Hide Results</button>
+
+  <!-- 🌗 NEW DAY/NIGHT TOGGLE -->
+  <button onclick="toggleTheme()">Day / Night</button>
 
 </div>
 
@@ -165,7 +159,7 @@ button:hover{
 </div>
 
 <!-- FAVORITES -->
-<div class="card" id="favBox">
+<div class="card">
   <div class="section-title">Favorites</div>
   <div id="favList"></div>
 </div>
@@ -197,6 +191,26 @@ button:hover{
 
 <script>
 
+/* ================= THEME ================= */
+
+function applyTheme(theme){
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+}
+
+function toggleTheme(){
+  const current = localStorage.getItem("theme") || "light";
+  const next = current === "dark" ? "light" : "dark";
+  applyTheme(next);
+}
+
+/* ================= INIT THEME ================= */
+
+(function(){
+  const saved = localStorage.getItem("theme") || "light";
+  applyTheme(saved);
+})();
+
 /* ================= DATA ================= */
 
 const verses = [
@@ -215,17 +229,6 @@ let current = null;
 let favorites = JSON.parse(localStorage.getItem("fav")||"[]");
 let history = JSON.parse(localStorage.getItem("hist")||"[]");
 
-/* ================= SEED ================= */
-
-function seed(){
-  const d = new Date().toISOString().split("T")[0];
-  let h = 0;
-  for(let i=0;i<d.length;i++){
-    h += d.charCodeAt(i)*(i+1);
-  }
-  return h;
-}
-
 /* ================= CORE ================= */
 
 function setVerse(v){
@@ -243,13 +246,18 @@ function setVerse(v){
   addHistory(v);
   renderFav();
   renderHistory();
-  updateStar();
 }
 
 /* ================= DAILY ================= */
 
 function loadDaily(){
-  setVerse(verses[seed() % verses.length]);
+  const seed = new Date().toISOString().split("T")[0];
+  let h = 0;
+  for(let i=0;i<seed.length;i++){
+    h += seed.charCodeAt(i)*(i+1);
+  }
+
+  setVerse(verses[h % verses.length]);
 }
 
 /* ================= RANDOM ================= */
@@ -284,6 +292,11 @@ function search(){
     `).join("");
 }
 
+function hideSearch(){
+  document.getElementById("resultsBox").style.display="none";
+  document.getElementById("searchBox").value="";
+}
+
 /* ================= FAVORITES ================= */
 
 function toggleFavorite(){
@@ -299,15 +312,6 @@ function toggleFavorite(){
 
   localStorage.setItem("fav",JSON.stringify(favorites));
   renderFav();
-  updateStar();
-}
-
-function updateStar(){
-  const star = document.querySelector(".star");
-  if(!current) return;
-
-  star.innerText =
-    favorites.find(f=>f.ref===current.ref) ? "★" : "☆";
 }
 
 function renderFav(){
