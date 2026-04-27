@@ -71,7 +71,7 @@ body{
   font-weight:700;
 }
 
-button, select, input{
+button, input, select{
   padding:8px;
   border-radius:8px;
   border:1px solid #ccc;
@@ -81,6 +81,7 @@ button, select, input{
 button:hover{
   background:var(--accent);
   color:white;
+  cursor:pointer;
 }
 
 .controls{
@@ -90,13 +91,13 @@ button:hover{
   align-items:center;
 }
 
+.hidden{ display:none; }
+
 .star{
-  cursor:pointer;
   font-size:20px;
+  cursor:pointer;
   user-select:none;
 }
-
-.hidden{ display:none; }
 
 .footer{
   position:fixed;
@@ -123,7 +124,7 @@ button:hover{
 
   <div class="star" onclick="toggleFavorite()" id="star">☆</div>
 
-  <div id="status" style="font-size:12px;color:var(--muted);margin-top:5px;"></div>
+  <div id="status" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
 </div>
 
 <!-- CONTROLS -->
@@ -135,20 +136,21 @@ button:hover{
 <button onclick="toggleSearch()">Search</button>
 <button onclick="toggleFavorites()">Favorites</button>
 
-<select onchange="setTheme(this.value)" id="themeSelect">
-  <option value="system">System</option>
-  <option value="light">Day</option>
-  <option value="dark">Night</option>
-</select>
-
 </div>
 </div>
 
-<!-- SEARCH -->
+<!-- SEARCH (FIXED) -->
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search Verses</div>
-  <input id="searchInput" placeholder="Search keyword..." oninput="runSearch()"/>
-  <div id="searchResults"></div>
+
+  <input id="searchInput" placeholder="Search keyword..." />
+
+  <div class="controls">
+    <button onclick="runSearch()">Search</button>
+    <button onclick="clearSearch()">Clear</button>
+  </div>
+
+  <div id="searchResults" style="margin-top:10px;"></div>
 </div>
 
 <!-- FAVORITES -->
@@ -169,7 +171,7 @@ button:hover{
   <div id="reflection"></div>
 </div>
 
-<!-- TIME MESSAGE -->
+<!-- TIME -->
 <div class="card">
   <div id="timeMessage"></div>
 </div>
@@ -209,59 +211,6 @@ const verses = [
 let current=null;
 let favorites=JSON.parse(localStorage.getItem("fav")||"[]");
 
-/* ================= THEME ================= */
-
-function setTheme(mode){
-  localStorage.setItem("theme",mode);
-
-  if(mode==="system"){
-    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    document.documentElement.setAttribute("data-theme", dark?"dark":"light");
-  } else {
-    document.documentElement.setAttribute("data-theme", mode);
-  }
-}
-
-/* ================= DAILY SEED ================= */
-
-function getSeed(){
-  const d=new Date().toISOString().split("T")[0];
-  let h=0;
-  for(let i=0;i<d.length;i++){
-    h=(h*31+d.charCodeAt(i))>>>0;
-  }
-  return h+812;
-}
-
-async function loadDaily(){
-  document.getElementById("status").innerText="Loading...";
-
-  try{
-    const res=await fetch(`${API_BASE}?seed=${getSeed()}`);
-    const data=await res.json();
-    setVerse(data.verse);
-    document.getElementById("status").innerText="Synced ✔";
-  } catch(e){
-    setVerse(verses[0]);
-    document.getElementById("status").innerText="Offline fallback";
-  }
-}
-
-/* ================= RANDOM ================= */
-
-function loadRandom(){
-  fetch("https://www.ourmanna.com/api/v1/get/?format=json&order=random")
-  .then(r=>r.json())
-  .then(d=>{
-    const v={
-      id:d.verse.details.reference,
-      ref:d.verse.details.reference,
-      text:[d.verse.details.text]
-    };
-    setVerse(v);
-  });
-}
-
 /* ================= VERSE RENDER ================= */
 
 function setVerse(v){
@@ -271,16 +220,58 @@ function setVerse(v){
   box.innerHTML="";
 
   v.text.forEach(t=>{
-    let div=document.createElement("div");
-    div.className="verse-line";
-    div.innerText=t;
-    box.appendChild(div);
+    const d=document.createElement("div");
+    d.className="verse-line";
+    d.innerText=t;
+    box.appendChild(d);
   });
 
   document.getElementById("ref").innerText=v.ref;
 
   updateStar();
   updateDevotion(v);
+}
+
+/* ================= SEARCH FIX ================= */
+
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+}
+
+function runSearch(){
+  const q=document.getElementById("searchInput").value.trim().toLowerCase();
+  const box=document.getElementById("searchResults");
+
+  box.innerHTML="";
+
+  if(!q){
+    box.innerHTML="<div style='color:gray'>Enter a search term</div>";
+    return;
+  }
+
+  const results = verses.filter(v =>
+    v.text.join(" ").toLowerCase().includes(q) ||
+    v.ref.toLowerCase().includes(q)
+  );
+
+  if(results.length === 0){
+    box.innerHTML="<div style='color:gray'>No results found</div>";
+    return;
+  }
+
+  results.forEach(v=>{
+    const d=document.createElement("div");
+    d.style.padding="6px";
+    d.style.cursor="pointer";
+    d.innerText=v.ref;
+    d.onclick=()=>setVerse(v);
+    box.appendChild(d);
+  });
+}
+
+function clearSearch(){
+  document.getElementById("searchInput").value="";
+  document.getElementById("searchResults").innerHTML="";
 }
 
 /* ================= FAVORITES ================= */
@@ -298,7 +289,6 @@ function toggleFavorite(){
 
   localStorage.setItem("fav",JSON.stringify(favorites));
   updateStar();
-  renderFavorites();
 }
 
 function updateStar(){
@@ -308,60 +298,61 @@ function updateStar(){
 }
 
 function toggleFavorites(){
-  const b=document.getElementById("favoritesBox");
-  b.classList.toggle("hidden");
-  renderFavorites();
+  document.getElementById("favoritesBox").classList.toggle("hidden");
 }
 
-function renderFavorites(){
-  const box=document.getElementById("favoritesList");
-  box.innerHTML="Favorites saved: "+favorites.length;
-}
+/* ================= RANDOM ================= */
 
-/* ================= SEARCH ================= */
-
-function toggleSearch(){
-  document.getElementById("searchBox").classList.toggle("hidden");
-}
-
-function runSearch(){
-  const q=document.getElementById("searchInput").value.toLowerCase();
-
-  const results=verses.filter(v =>
-    v.text.join(" ").toLowerCase().includes(q)
-  );
-
-  const box=document.getElementById("searchResults");
-  box.innerHTML="";
-
-  results.forEach(v=>{
-    let div=document.createElement("div");
-    div.innerText=v.ref;
-    div.onclick=()=>setVerse(v);
-    box.appendChild(div);
+function loadRandom(){
+  fetch("https://www.ourmanna.com/api/v1/get/?format=json&order=random")
+  .then(r=>r.json())
+  .then(d=>{
+    setVerse({
+      id:d.verse.details.reference,
+      ref:d.verse.details.reference,
+      text:[d.verse.details.text]
+    });
   });
 }
 
-/* ================= PRAYER / REFLECTION ================= */
+/* ================= DAILY ================= */
+
+function getSeed(){
+  const d=new Date().toISOString().split("T")[0];
+  let h=0;
+  for(let i=0;i<d.length;i++){
+    h=(h*31+d.charCodeAt(i))>>>0;
+  }
+  return h+812;
+}
+
+async function loadDaily(){
+  try{
+    const res=await fetch(`${API_BASE}?seed=${getSeed()}`);
+    const data=await res.json();
+    setVerse(data.verse);
+  }catch(e){
+    setVerse(verses[0]);
+  }
+}
+
+/* ================= PRAYER ================= */
 
 function detectTheme(text){
   const t=text.join(" ").toLowerCase();
   if(t.includes("fear")) return "peace";
   if(t.includes("strength")) return "strength";
-  if(t.includes("love")) return "love";
   return "peace";
 }
 
 const prayerMap={
   peace:"Bring peace to my heart.",
-  strength:"Give me strength.",
-  love:"Help me love others well."
+  strength:"Give me strength."
 };
 
 const reflectionMap={
   peace:"What is troubling me?",
-  strength:"Where do I need strength?",
-  love:"How can I show love today?"
+  strength:"Where do I need strength?"
 };
 
 function updateDevotion(v){
@@ -370,15 +361,15 @@ function updateDevotion(v){
   document.getElementById("reflection").innerText=reflectionMap[t];
 }
 
-/* ================= TIME MESSAGE ================= */
+/* ================= TIME ================= */
 
 function timeMessage(){
   const h=new Date().getHours();
-
   let msg="";
-  if(h<12) msg="Start your day with truth.";
-  else if(h<17) msg="Stay steady in Him today.";
-  else msg="Rest in what God has done.";
+
+  if(h<12) msg="Start your day strong.";
+  else if(h<18) msg="Stay faithful today.";
+  else msg="Rest in Him tonight.";
 
   document.getElementById("timeMessage").innerText=msg;
 }
@@ -386,7 +377,6 @@ function timeMessage(){
 /* ================= INIT ================= */
 
 window.onload=()=>{
-  setTheme(localStorage.getItem("theme")||"system");
   loadDaily();
   timeMessage();
 };
