@@ -32,7 +32,6 @@ body{
   padding:72px 0 40px;
   display:flex;
   justify-content:center;
-  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .topbar{
@@ -54,7 +53,6 @@ body{
   padding:16px;
   border-radius:14px;
   margin-top:14px;
-  transition: background 0.3s ease;
 }
 
 .section-title{
@@ -79,7 +77,6 @@ body{
   display:flex;
   flex-wrap:wrap;
   gap:8px;
-  align-items:center;
 }
 
 button,input{
@@ -103,9 +100,8 @@ button:hover{
   cursor:pointer;
 }
 
-.small-btn{
-  font-size:0.8rem;
-  padding:6px 10px;
+.hidden{
+  display:none;
 }
 
 .footer{
@@ -141,33 +137,37 @@ button:hover{
   <button onclick="randomVerse()">Random</button>
   <button onclick="encourageMe()">Encourage Me</button>
 
+  <button onclick="togglePanel('searchPanel')">Search</button>
+  <button onclick="togglePanel('favPanel')">Favorites</button>
+  <button onclick="togglePanel('histPanel')">History</button>
+
+</div>
+
+</div>
+
+<!-- SEARCH PANEL -->
+<div class="card hidden" id="searchPanel">
+  <div class="section-title">Search Scripture</div>
+
   <input id="searchBox" placeholder="Search (love, peace...)" />
   <button onclick="search()">Search</button>
-  <button onclick="hideSearch()">Hide Results</button>
+  <button onclick="hideSearch()">Clear Results</button>
 
-  <!-- 🌗 NEW DAY/NIGHT TOGGLE -->
-  <button onclick="toggleTheme()">Day / Night</button>
-
-</div>
-
-</div>
-
-<!-- SEARCH RESULTS -->
-<div class="card" id="resultsBox" style="display:none;">
-  <div class="section-title">Search Results</div>
-  <div id="results"></div>
+  <div id="resultsBox" style="margin-top:10px;">
+    <div id="results"></div>
+  </div>
 </div>
 
 <!-- FAVORITES -->
-<div class="card">
+<div class="card hidden" id="favPanel">
   <div class="section-title">Favorites</div>
   <div id="favList"></div>
 </div>
 
 <!-- HISTORY -->
-<div class="card">
+<div class="card hidden" id="histPanel">
   <div class="section-title">History</div>
-  <button class="small-btn" onclick="clearHistory()">Clear</button>
+  <button onclick="clearHistory()">Clear History</button>
   <div id="historyList"></div>
 </div>
 
@@ -191,26 +191,6 @@ button:hover{
 
 <script>
 
-/* ================= THEME ================= */
-
-function applyTheme(theme){
-  document.documentElement.setAttribute("data-theme", theme);
-  localStorage.setItem("theme", theme);
-}
-
-function toggleTheme(){
-  const current = localStorage.getItem("theme") || "light";
-  const next = current === "dark" ? "light" : "dark";
-  applyTheme(next);
-}
-
-/* ================= INIT THEME ================= */
-
-(function(){
-  const saved = localStorage.getItem("theme") || "light";
-  applyTheme(saved);
-})();
-
 /* ================= DATA ================= */
 
 const verses = [
@@ -225,22 +205,22 @@ const verses = [
 
 /* ================= STATE ================= */
 
-let current = null;
-let favorites = JSON.parse(localStorage.getItem("fav")||"[]");
-let history = JSON.parse(localStorage.getItem("hist")||"[]");
+let current=null;
+let favorites=JSON.parse(localStorage.getItem("fav")||"[]");
+let history=JSON.parse(localStorage.getItem("hist")||"[]");
 
 /* ================= CORE ================= */
 
 function setVerse(v){
-  current = v;
+  current=v;
 
-  document.getElementById("verse").innerText = v.text;
-  document.getElementById("ref").innerText = v.ref;
+  document.getElementById("verse").innerText=v.text;
+  document.getElementById("ref").innerText=v.ref;
 
-  document.getElementById("prayer").innerText =
+  document.getElementById("prayer").innerText=
     "Lord, guide me through " + v.ref;
 
-  document.getElementById("reflection").innerText =
+  document.getElementById("reflection").innerText=
     "What is God showing me through this verse?";
 
   addHistory(v);
@@ -251,13 +231,12 @@ function setVerse(v){
 /* ================= DAILY ================= */
 
 function loadDaily(){
-  const seed = new Date().toISOString().split("T")[0];
-  let h = 0;
+  const seed=new Date().toISOString().split("T")[0];
+  let h=0;
   for(let i=0;i<seed.length;i++){
-    h += seed.charCodeAt(i)*(i+1);
+    h+=seed.charCodeAt(i)*(i+1);
   }
-
-  setVerse(verses[h % verses.length]);
+  setVerse(verses[h%verses.length]);
 }
 
 /* ================= RANDOM ================= */
@@ -272,50 +251,52 @@ function encourageMe(){
   setVerse(verses[Math.floor(Math.random()*verses.length)]);
 }
 
+/* ================= TOGGLES ================= */
+
+function togglePanel(id){
+  document.getElementById(id).classList.toggle("hidden");
+}
+
 /* ================= SEARCH ================= */
 
 function search(){
   const q=document.getElementById("searchBox").value.toLowerCase();
 
-  const res=verses.filter(v =>
+  const res=verses.filter(v=>
     v.text.toLowerCase().includes(q) ||
     v.ref.toLowerCase().includes(q)
   );
 
-  document.getElementById("resultsBox").style.display="block";
-
-  document.getElementById("results").innerHTML =
-    res.map(v=>`
-      <div class="list-item" onclick='setVerse(${JSON.stringify(v)})'>
+  document.getElementById("results").innerHTML=
+    res.map(v=>
+      `<div class="list-item" onclick='setVerse(${JSON.stringify(v)})'>
         <b>${v.ref}</b><br>${v.text}
-      </div>
-    `).join("");
+      </div>`
+    ).join("");
 }
 
 function hideSearch(){
-  document.getElementById("resultsBox").style.display="none";
+  document.getElementById("results").innerHTML="";
   document.getElementById("searchBox").value="";
 }
 
 /* ================= FAVORITES ================= */
 
 function toggleFavorite(){
-  if(!current) return;
+  if(!current)return;
 
-  const exists = favorites.find(f=>f.ref===current.ref);
+  const exists=favorites.find(f=>f.ref===current.ref);
 
-  if(exists){
-    favorites = favorites.filter(f=>f.ref!==current.ref);
-  } else {
-    favorites.push(current);
-  }
+  favorites=exists
+    ? favorites.filter(f=>f.ref!==current.ref)
+    : [...favorites,current];
 
   localStorage.setItem("fav",JSON.stringify(favorites));
   renderFav();
 }
 
 function renderFav(){
-  document.getElementById("favList").innerHTML =
+  document.getElementById("favList").innerHTML=
     favorites.map(f=>
       `<div class="list-item" onclick='setVerse(${JSON.stringify(f)})'>
         ${f.ref}
@@ -326,15 +307,15 @@ function renderFav(){
 /* ================= HISTORY ================= */
 
 function addHistory(v){
-  history = history.filter(h=>h.ref!==v.ref);
+  history=history.filter(h=>h.ref!==v.ref);
   history.unshift(v);
-  history = history.slice(0,50);
+  history=history.slice(0,50);
 
   localStorage.setItem("hist",JSON.stringify(history));
 }
 
 function renderHistory(){
-  document.getElementById("historyList").innerHTML =
+  document.getElementById("historyList").innerHTML=
     history.map(h=>
       `<div class="list-item" onclick='setVerse(${JSON.stringify(h)})'>
         ${h.ref}
@@ -343,7 +324,7 @@ function renderHistory(){
 }
 
 function clearHistory(){
-  if(!confirm("Clear history?")) return;
+  if(!confirm("Clear history?"))return;
   history=[];
   localStorage.removeItem("hist");
   renderHistory();
