@@ -57,10 +57,13 @@
       padding:8px;
       border-radius:8px;
       border:1px solid #ccc;
-      background:transparent;
+      background:var(--card);
       color:var(--text);
       cursor:pointer;
       margin:4px;
+      -webkit-appearance:none;
+      appearance:none;
+    }
     }
 
     button:hover{background:var(--accent);color:white;}
@@ -102,7 +105,7 @@
     <button onclick="toggleDark()">Dark Mode</button>
     <button onclick="randomVerse()">Random</button>
     <button onclick="encouragement()">Encourage Me</button>
-    <button onclick="generateWallpaper()">Wallpaper</button>
+    
     <button onclick="shareVerse()">Share</button>
   </div>
 
@@ -198,37 +201,7 @@ function shareVerse(){
   else{navigator.clipboard.writeText(text);alert("Copied");}
 }
 
-function generateWallpaper(){
-  const canvas=document.createElement('canvas');
-  canvas.width=1080;
-  canvas.height=1920;
-  const ctx=canvas.getContext('2d');
 
-  const dark=document.documentElement.getAttribute('data-theme')==='dark';
-
-  const grad=ctx.createLinearGradient(0,0,0,1920);
-  grad.addColorStop(0,dark?'#0f172a':'#dbeafe');
-  grad.addColorStop(1,dark?'#1e293b':'#ffffff');
-
-  ctx.fillStyle=grad;
-  ctx.fillRect(0,0,1080,1920);
-
-  ctx.fillStyle=dark?'#fff':'#111';
-  ctx.font='bold 54px system-ui';
-  ctx.fillText('Unshaken',60,120);
-
-  ctx.font='36px system-ui';
-  wrapText(ctx,currentVerse||'',60,300,960,50);
-
-  ctx.font='30px system-ui';
-  ctx.fillStyle=dark?'#60a5fa':'#2b6cb0';
-  ctx.fillText(currentRef||'',60,1700);
-
-  const link=document.createElement('a');
-  link.download='unshaken-verse.png';
-  link.href=canvas.toDataURL();
-  link.click();
-}
 
 function wrapText(ctx,text,x,y,maxWidth,lineHeight){
   const words=text.split(' ');
