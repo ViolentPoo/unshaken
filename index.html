@@ -69,10 +69,7 @@ body{
   font-weight:700;
 }
 
-/* =========================
-   UI UPGRADE: SECTION TITLES
-========================= */
-
+/* SECTION TITLES (v1.3 UI STYLE) */
 .section-title{
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.05rem;
@@ -83,12 +80,9 @@ body{
   margin-bottom: 8px;
 }
 
-/* CONTENT TYPOGRAPHY (slight improvement) */
-#prayer,
-#reflection,
-#missionText{
-  font-size: 1.1rem;
-  line-height: 1.7;
+#prayer,#reflection,#missionText{
+  font-size:1.1rem;
+  line-height:1.7;
 }
 
 .controls{
@@ -117,11 +111,6 @@ button:hover{
   align-items:center;
 }
 
-.small{
-  font-size:.9rem;
-  color:var(--muted);
-}
-
 .star-btn{
   border:none;
   background:transparent;
@@ -134,7 +123,20 @@ button:hover{
   font-weight:700;
 }
 
-/* footer */
+/* PANELS */
+.panel{
+  display:none;
+  max-height:260px;
+  overflow:auto;
+}
+
+.list-item{
+  padding:8px 0;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  cursor:pointer;
+}
+
+/* FOOTER */
 .footer{
   position: fixed;
   right: 12px;
@@ -161,7 +163,7 @@ button:hover{
 <div class="card">
   <div class="row">
     <div class="section-title">Today’s Verse</div>
-    <button id="mainStar" class="star-btn" onclick="toggleFavorite(currentRef)">☆</button>
+    <button class="star-btn" onclick="toggleFavorite(currentRef)">☆</button>
   </div>
 
   <div id="verse" class="verse">Loading...</div>
@@ -192,13 +194,14 @@ button:hover{
     <button onclick="randomVerse()">Random</button>
     <button onclick="encouragement()">Encourage Me</button>
     <button onclick="toggleDark()">Dark Mode</button>
+    <button onclick="toggleFavorites()">Favorites</button>
+    <button onclick="toggleHistory()">History</button>
 
   </div>
 
   <div class="streak">
-    🔥 Streak: <span id="streakCount">0</span> days
+    🔥 Streak: <span id="streakCount">0</span>
   </div>
-  <div id="streakMessage" class="small"></div>
 </div>
 
 <!-- PRAYER -->
@@ -211,6 +214,18 @@ button:hover{
 <div class="card">
   <div class="section-title">Reflection</div>
   <div id="reflection"></div>
+</div>
+
+<!-- FAVORITES -->
+<div class="card panel" id="favBox">
+  <div class="section-title">Favorites</div>
+  <div id="favList"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="card panel" id="historyBox">
+  <div class="section-title">History</div>
+  <div id="historyList"></div>
 </div>
 
 <!-- MISSION -->
@@ -229,85 +244,104 @@ button:hover{
 
 <script>
 
-/* =========================
-   STATE
-========================= */
-
+/* ================= STATE ================= */
 let currentRef = "";
+let favorites = JSON.parse(localStorage.getItem("favs") || "[]");
+let history = JSON.parse(localStorage.getItem("hist") || "[]");
 
-/* =========================
-   MISSION
-========================= */
+/* ================= VERSE ================= */
+async function loadVerse(ref){
+  try{
+    const r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=web`);
+    const d = await r.json();
 
-const missionDefault =
-  "We seek to follow Jesus faithfully, grow in wisdom, and live with purpose as a family.";
+    currentRef = ref;
 
-document.getElementById("missionText").innerText =
-  localStorage.getItem("unshaken_mission") || missionDefault;
+    document.getElementById("verse").innerText = d.text || "Unavailable";
+    document.getElementById("ref").innerText = ref;
 
-/* =========================
-   STREAK
-========================= */
-
-let streak = { count: 0, lastDate: null };
-
-try {
-  const raw = JSON.parse(localStorage.getItem("unshaken_streak"));
-  if (raw) {
-    streak.count = Number(raw.count) || 0;
-    streak.lastDate = raw.lastDate || null;
+    addHistory(ref);
+  }catch{
+    document.getElementById("verse").innerText = "Error loading verse.";
   }
-} catch {}
-
-function getToday(){
-  return new Date().toDateString();
 }
 
-function updateStreak(){
-  const today = getToday();
-
-  if (streak.lastDate === today) return;
-
-  const y = new Date();
-  y.setDate(y.getDate() - 1);
-
-  if (streak.lastDate === y.toDateString()) streak.count++;
-  else streak.count = 1;
-
-  streak.lastDate = today;
-
-  localStorage.setItem("unshaken_streak", JSON.stringify(streak));
-  renderStreak();
-}
-
-function renderStreak(){
-  const c = Number(streak.count) || 0;
-
-  document.getElementById("streakCount").innerText = c;
-
-  let msg = "Start today.";
-  if(c >= 30) msg = "🔥 Incredible consistency.";
-  else if(c >= 14) msg = "Strong discipline forming.";
-  else if(c >= 7) msg = "Momentum building.";
-  else if(c >= 3) msg = "Keep going.";
-
-  document.getElementById("streakMessage").innerText = msg;
-}
-
-/* =========================
-   INIT
-========================= */
-
-window.onload = () => {
-  document.documentElement.setAttribute(
-    "data-theme",
-    localStorage.getItem("theme") || "light"
-  );
-
-  updateStreak();
-  renderStreak();
+/* ================= FOCUS ================= */
+const pools = {
+  peace:[{r:"John 14:27",p:"Peace Lord.",f:"What steals my peace?"}],
+  strength:[{r:"Isaiah 41:10",p:"Strengthen me.",f:"Where am I weak?"}],
+  hope:[{r:"Jeremiah 29:11",p:"Renew hope.",f:"What future do I trust?"}],
+  anxiety:[{r:"Philippians 4:6",p:"Release worry.",f:"What am I holding?"}],
+  faith:[{r:"Hebrews 11:1",p:"Grow faith.",f:"Where do I doubt?"}],
+  love:[{r:"1 Corinthians 13:4",p:"Teach love.",f:"Who needs grace?"}],
+  wisdom:[{r:"James 1:5",p:"Give wisdom.",f:"What needs clarity?"}]
 };
 
+function focusAreaChange(){
+  const a = document.getElementById("focusArea").value;
+
+  if(a === "daily"){
+    loadVerse("John 14:27");
+    return;
+  }
+
+  const item = pools[a][0];
+
+  document.getElementById("prayer").innerText = item.p;
+  document.getElementById("reflection").innerText = item.f;
+
+  loadVerse(item.r);
+}
+
+/* ================= FAVORITES ================= */
+function toggleFavorite(ref){
+  if(!ref) return;
+
+  if(favorites.includes(ref)){
+    favorites = favorites.filter(f => f !== ref);
+  } else {
+    favorites.push(ref);
+  }
+
+  localStorage.setItem("favs", JSON.stringify(favorites));
+  renderFav();
+}
+
+function renderFav(){
+  document.getElementById("favList").innerHTML =
+    favorites.map(f => `<div class="list-item" onclick="loadVerse('${f}')">${f}</div>`).join("");
+}
+
+/* ================= HISTORY ================= */
+function addHistory(ref){
+  history = history.filter(h => h !== ref);
+  history.unshift(ref);
+  history = history.slice(0,50);
+  localStorage.setItem("hist", JSON.stringify(history));
+}
+
+function renderHistory(){
+  document.getElementById("historyList").innerHTML =
+    history.map(h => `<div class="list-item" onclick="loadVerse('${h}')">${h}</div>`).join("");
+}
+
+/* ================= TOGGLES ================= */
+function toggleFavorites(){
+  const b = document.getElementById("favBox");
+  b.style.display = b.style.display === "block" ? "none" : "block";
+  renderFav();
+}
+
+function toggleHistory(){
+  const b = document.getElementById("historyBox");
+  b.style.display = b.style.display === "block" ? "none" : "block";
+  renderHistory();
+}
+
+/* ================= INIT ================= */
+window.onload = () => {
+  loadVerse("John 14:27");
+};
 </script>
 
 </body>
