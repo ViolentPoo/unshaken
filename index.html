@@ -32,7 +32,7 @@ body{
   padding:72px 0 40px;
   display:flex;
   justify-content:center;
-  transition:background 0.3s, color 0.3s;
+  transition:0.3s;
 }
 
 .topbar{
@@ -75,14 +75,7 @@ body{
   font-weight:700;
 }
 
-.controls{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  align-items:center;
-}
-
-button, select{
+button,select{
   padding:10px;
   border-radius:10px;
   border:1px solid #ccc;
@@ -92,6 +85,12 @@ button, select{
 button:hover{
   background:var(--accent);
   color:white;
+}
+
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
 }
 
 .footer{
@@ -112,9 +111,12 @@ button:hover{
 
 <!-- VERSE -->
 <div class="card">
-  <div class="section-title">Verse</div>
+  <div class="section-title">Daily Verse</div>
+
   <div id="verse"></div>
   <div id="ref" class="ref"></div>
+
+  <div id="status" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
 </div>
 
 <!-- CONTROLS -->
@@ -122,11 +124,9 @@ button:hover{
 
 <div class="controls">
 
-  <button onclick="loadDaily()">Daily</button>
+  <button onclick="loadDaily()">Load Daily Verse</button>
   <button onclick="randomVerse()">Random</button>
-  <button onclick="encourageMe()">Encourage Me</button>
 
-  <!-- 🌗 THEME TOGGLE -->
   <select onchange="setTheme(this.value)" id="themeSelect">
     <option value="system">System</option>
     <option value="light">Day</option>
@@ -157,7 +157,7 @@ button:hover{
 
 <script>
 
-/* ================= THEME SYSTEM ================= */
+/* ================= THEME ================= */
 
 function applyTheme(mode){
   localStorage.setItem("themeMode", mode);
@@ -175,56 +175,51 @@ function setTheme(mode){
   applyTheme(mode);
 }
 
-/* init theme */
 (function(){
   const saved = localStorage.getItem("themeMode") || "system";
   applyTheme(saved);
 
-  // sync dropdown
   const select = document.getElementById("themeSelect");
   if(select) select.value = saved;
 })();
 
-/* react to system changes */
-window.matchMedia("(prefers-color-scheme: dark)")
-  .addEventListener("change", () => {
-    if(localStorage.getItem("themeMode") === "system"){
-      applyTheme("system");
-    }
+/* ================= API CONFIG ================= */
+
+const API_BASE = "https://your-api.com/daily-verse";
+
+/* ================= SEED GENERATOR ================= */
+
+function getDailySeed(){
+  const d = new Date().toISOString().split("T")[0];
+
+  let hash = 0;
+  for(let i=0;i<d.length;i++){
+    hash = (hash * 31 + d.charCodeAt(i)) >>> 0;
+  }
+
+  return hash + 812;
+}
+
+/* ================= VERSE RENDER ================= */
+
+function renderVerse(v){
+  const box = document.getElementById("verse");
+  box.innerHTML = "";
+
+  v.text.forEach(line=>{
+    const div = document.createElement("div");
+    div.className = "verse-line";
+    div.innerText = line;
+    box.appendChild(div);
   });
 
-/* ================= VERSES ================= */
+  document.getElementById("ref").innerText = v.ref;
+}
 
-const verses = [
-  {
-    ref:"John 3:16",
-    text:[
-      "For God so loved the world",
-      "that he gave his one and only Son",
-      "that whoever believes in him shall not perish but have eternal life"
-    ]
-  },
-  {
-    ref:"Isaiah 41:10",
-    text:[
-      "Do not fear, for I am with you",
-      "Do not be dismayed, for I am your God",
-      "I will strengthen you and help you"
-    ]
-  },
-  {
-    ref:"Philippians 4:13",
-    text:[
-      "I can do all things",
-      "through Christ who strengthens me"
-    ]
-  }
-];
+/* ================= PRAYER ENGINE ================= */
 
-/* ================= THEME DETECTION ================= */
-
-function detectTheme(textArr){
-  const t = textArr.join(" ").toLowerCase();
+function detectTheme(text){
+  const t = text.join(" ").toLowerCase();
 
   if(t.includes("fear")) return "peace";
   if(t.includes("love")) return "love";
@@ -234,69 +229,67 @@ function detectTheme(textArr){
   return "peace";
 }
 
-/* ================= DEVOTION ================= */
-
 const prayerMap={
   love:"Help me reflect Your love today.",
   peace:"Bring peace to my heart.",
-  strength:"Give me strength when I feel weak.",
+  strength:"Give me strength when I am weak.",
   hope:"Renew my hope in You."
 };
 
 const reflectionMap={
-  love:"How can I love others better today?",
-  peace:"What is stealing my peace?",
-  strength:"Where do I need strength right now?",
-  hope:"What promise am I holding onto?"
+  love:"How can I love others better?",
+  peace:"What is disturbing my peace?",
+  strength:"Where do I need strength?",
+  hope:"What am I trusting God for?"
 };
 
-/* ================= STATE ================= */
+function updateDevotion(v){
+  const theme = detectTheme(v.text);
 
-let current=null;
-
-/* ================= CORE ================= */
-
-function setVerse(v){
-  current=v;
-
-  const box=document.getElementById("verse");
-  box.innerHTML="";
-
-  v.text.forEach(line=>{
-    const div=document.createElement("div");
-    div.className="verse-line";
-    div.innerText=line;
-    box.appendChild(div);
-  });
-
-  document.getElementById("ref").innerText=v.ref;
-
-  const theme=detectTheme(v.text);
-
-  document.getElementById("prayer").innerText=
+  document.getElementById("prayer").innerText =
     prayerMap[theme];
 
-  document.getElementById("reflection").innerText=
+  document.getElementById("reflection").innerText =
     reflectionMap[theme];
 }
 
-/* ================= MODES ================= */
+/* ================= DAILY VERSE (API) ================= */
 
-function loadDaily(){
-  const d=new Date().toISOString().split("T")[0];
-  let h=0;
-  for(let i=0;i<d.length;i++){
-    h+=d.charCodeAt(i)*(i+1);
+async function loadDaily(){
+  const seed = getDailySeed();
+
+  document.getElementById("status").innerText =
+    "Loading daily verse...";
+
+  try{
+    const res = await fetch(`${API_BASE}?seed=${seed}`);
+    const data = await res.json();
+
+    renderVerse(data.verse);
+    updateDevotion(data.verse);
+
+    document.getElementById("status").innerText =
+      "Synced daily verse ✔";
+
+  } catch(e){
+    document.getElementById("status").innerText =
+      "Failed to load verse (offline fallback needed)";
   }
-  setVerse(verses[h%verses.length]);
 }
+
+/* ================= RANDOM (local fallback) ================= */
 
 function randomVerse(){
-  setVerse(verses[Math.floor(Math.random()*verses.length)]);
-}
+  const fallback = {
+    ref:"Psalm 23:1",
+    text:[
+      "The Lord is my shepherd",
+      "I lack nothing"
+    ]
+  };
 
-function encourageMe(){
-  setVerse(verses[Math.floor(Math.random()*verses.length)]);
+  renderVerse(fallback);
+  updateDevotion(fallback);
 }
 
 /* ================= INIT ================= */
