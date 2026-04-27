@@ -158,26 +158,19 @@
   </div>
 
   <div class="card">
-    <strong>Journal</strong>
-    <div id="journalBody">
-      <textarea id="journal"></textarea>
-      <button onclick="saveJournal()">Save Journal</button>
-    </div>
+  <strong onclick="toggleJournal()" style="cursor:pointer">Journal (click to expand/collapse)</strong>
+  <div id="journalBody">
+    <textarea id="journal"></textarea>
+    <button onclick="saveJournal()">Save Journal</button>
+  </div>
+</div>
   </div>
 
   <div class="card" id="missionCard">
     <strong onclick="toggleMission()" style="cursor:pointer">Parker Family Mission Statement</strong>
     <div id="missionBody">
       <div id="missionText"></div>
-      <div style="margin-top:8px;font-size:12px;opacity:.8">
-        <strong>Family Values:</strong>
-        <ul>
-          <li>Faith in God</li>
-          <li>Love in action</li>
-          <li>Discipline & consistency</li>
-          <li>Gratitude in all things</li>
-        </ul>
-      </div>
+      <div id="missionPrompt" style="font-size:12px;font-style:italic;margin-top:8px"></div>
       <div id="missionPrompt" style="font-size:12px;font-style:italic;margin-top:8px"></div>
     </div>
   </div>
