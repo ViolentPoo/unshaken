@@ -22,14 +22,12 @@
   --muted:#94a3b8;
 }
 
-*{box-sizing:border-box;}
-
 body{
   margin:0;
   font-family:system-ui;
   background:var(--bg);
   color:var(--text);
-  padding:72px 0 40px;
+  padding:70px 0 40px;
   display:flex;
   justify-content:center;
   transition:0.3s;
@@ -37,13 +35,11 @@ body{
 
 .topbar{
   position:fixed;
-  top:0;
-  left:0;
-  right:0;
+  top:0;left:0;right:0;
   background:var(--accent);
   color:white;
   text-align:center;
-  padding:14px;
+  padding:12px;
   font-weight:700;
 }
 
@@ -51,9 +47,9 @@ body{
 
 .card{
   background:var(--card);
-  padding:16px;
-  border-radius:14px;
-  margin-top:14px;
+  padding:14px;
+  border-radius:12px;
+  margin-top:12px;
 }
 
 .section-title{
@@ -65,21 +61,21 @@ body{
 }
 
 .verse-line{
-  font-size:1.15rem;
+  font-size:1.1rem;
   line-height:1.6;
 }
 
 .ref{
-  margin-top:10px;
+  margin-top:8px;
   color:var(--accent);
   font-weight:700;
 }
 
-button,select{
-  padding:10px;
-  border-radius:10px;
+button, select, input{
+  padding:8px;
+  border-radius:8px;
   border:1px solid #ccc;
-  cursor:pointer;
+  margin:3px;
 }
 
 button:hover{
@@ -90,8 +86,17 @@ button:hover{
 .controls{
   display:flex;
   flex-wrap:wrap;
-  gap:8px;
+  gap:6px;
+  align-items:center;
 }
+
+.star{
+  cursor:pointer;
+  font-size:20px;
+  user-select:none;
+}
+
+.hidden{ display:none; }
 
 .footer{
   position:fixed;
@@ -116,25 +121,40 @@ button:hover{
   <div id="verse"></div>
   <div id="ref" class="ref"></div>
 
-  <div id="status" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+  <div class="star" onclick="toggleFavorite()" id="star">☆</div>
+
+  <div id="status" style="font-size:12px;color:var(--muted);margin-top:5px;"></div>
 </div>
 
 <!-- CONTROLS -->
 <div class="card">
-
 <div class="controls">
 
-  <button onclick="loadDaily()">Load Daily Verse</button>
-  <button onclick="randomVerse()">Random</button>
+<button onclick="loadDaily()">Daily</button>
+<button onclick="loadRandom()">Random</button>
+<button onclick="toggleSearch()">Search</button>
+<button onclick="toggleFavorites()">Favorites</button>
 
-  <select onchange="setTheme(this.value)" id="themeSelect">
-    <option value="system">System</option>
-    <option value="light">Day</option>
-    <option value="dark">Night</option>
-  </select>
+<select onchange="setTheme(this.value)" id="themeSelect">
+  <option value="system">System</option>
+  <option value="light">Day</option>
+  <option value="dark">Night</option>
+</select>
 
 </div>
+</div>
 
+<!-- SEARCH -->
+<div class="card hidden" id="searchBox">
+  <div class="section-title">Search Verses</div>
+  <input id="searchInput" placeholder="Search keyword..." oninput="runSearch()"/>
+  <div id="searchResults"></div>
+</div>
+
+<!-- FAVORITES -->
+<div class="card hidden" id="favoritesBox">
+  <div class="section-title">Favorites</div>
+  <div id="favoritesList"></div>
 </div>
 
 <!-- PRAYER -->
@@ -149,153 +169,226 @@ button:hover{
   <div id="reflection"></div>
 </div>
 
+<!-- TIME MESSAGE -->
+<div class="card">
+  <div id="timeMessage"></div>
 </div>
 
-<div class="footer">
-  est. 2013 — The Parker Family
 </div>
+
+<div class="footer">est. 2013 — The Parker Family</div>
 
 <script>
 
-/* ================= THEME ================= */
-
-function applyTheme(mode){
-  localStorage.setItem("themeMode", mode);
-
-  if(mode === "system"){
-    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-    return;
-  }
-
-  document.documentElement.setAttribute("data-theme", mode);
-}
-
-function setTheme(mode){
-  applyTheme(mode);
-}
-
-(function(){
-  const saved = localStorage.getItem("themeMode") || "system";
-  applyTheme(saved);
-
-  const select = document.getElementById("themeSelect");
-  if(select) select.value = saved;
-})();
-
-/* ================= API CONFIG ================= */
+/* ================= DATA ================= */
 
 const API_BASE = "https://your-api.com/daily-verse";
 
-/* ================= SEED GENERATOR ================= */
+const verses = [
+{
+  id:"isaiah41_10",
+  ref:"Isaiah 41:10",
+  text:[
+    "Do not fear, for I am with you",
+    "Do not be dismayed, for I am your God",
+    "I will strengthen you and help you"
+  ]
+},
+{
+  id:"phil4_13",
+  ref:"Philippians 4:13",
+  text:[
+    "I can do all things",
+    "through Christ who strengthens me"
+  ]
+}
+];
 
-function getDailySeed(){
-  const d = new Date().toISOString().split("T")[0];
+/* ================= STATE ================= */
 
-  let hash = 0;
-  for(let i=0;i<d.length;i++){
-    hash = (hash * 31 + d.charCodeAt(i)) >>> 0;
+let current=null;
+let favorites=JSON.parse(localStorage.getItem("fav")||"[]");
+
+/* ================= THEME ================= */
+
+function setTheme(mode){
+  localStorage.setItem("theme",mode);
+
+  if(mode==="system"){
+    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.setAttribute("data-theme", dark?"dark":"light");
+  } else {
+    document.documentElement.setAttribute("data-theme", mode);
   }
+}
 
-  return hash + 812;
+/* ================= DAILY SEED ================= */
+
+function getSeed(){
+  const d=new Date().toISOString().split("T")[0];
+  let h=0;
+  for(let i=0;i<d.length;i++){
+    h=(h*31+d.charCodeAt(i))>>>0;
+  }
+  return h+812;
+}
+
+async function loadDaily(){
+  document.getElementById("status").innerText="Loading...";
+
+  try{
+    const res=await fetch(`${API_BASE}?seed=${getSeed()}`);
+    const data=await res.json();
+    setVerse(data.verse);
+    document.getElementById("status").innerText="Synced ✔";
+  } catch(e){
+    setVerse(verses[0]);
+    document.getElementById("status").innerText="Offline fallback";
+  }
+}
+
+/* ================= RANDOM ================= */
+
+function loadRandom(){
+  fetch("https://www.ourmanna.com/api/v1/get/?format=json&order=random")
+  .then(r=>r.json())
+  .then(d=>{
+    const v={
+      id:d.verse.details.reference,
+      ref:d.verse.details.reference,
+      text:[d.verse.details.text]
+    };
+    setVerse(v);
+  });
 }
 
 /* ================= VERSE RENDER ================= */
 
-function renderVerse(v){
-  const box = document.getElementById("verse");
-  box.innerHTML = "";
+function setVerse(v){
+  current=v;
 
-  v.text.forEach(line=>{
-    const div = document.createElement("div");
-    div.className = "verse-line";
-    div.innerText = line;
+  const box=document.getElementById("verse");
+  box.innerHTML="";
+
+  v.text.forEach(t=>{
+    let div=document.createElement("div");
+    div.className="verse-line";
+    div.innerText=t;
     box.appendChild(div);
   });
 
-  document.getElementById("ref").innerText = v.ref;
+  document.getElementById("ref").innerText=v.ref;
+
+  updateStar();
+  updateDevotion(v);
 }
 
-/* ================= PRAYER ENGINE ================= */
+/* ================= FAVORITES ================= */
+
+function toggleFavorite(){
+  if(!current) return;
+
+  const i=favorites.indexOf(current.id);
+
+  if(i>-1){
+    favorites.splice(i,1);
+  } else {
+    favorites.push(current.id);
+  }
+
+  localStorage.setItem("fav",JSON.stringify(favorites));
+  updateStar();
+  renderFavorites();
+}
+
+function updateStar(){
+  if(!current) return;
+  document.getElementById("star").innerText =
+    favorites.includes(current.id) ? "★" : "☆";
+}
+
+function toggleFavorites(){
+  const b=document.getElementById("favoritesBox");
+  b.classList.toggle("hidden");
+  renderFavorites();
+}
+
+function renderFavorites(){
+  const box=document.getElementById("favoritesList");
+  box.innerHTML="Favorites saved: "+favorites.length;
+}
+
+/* ================= SEARCH ================= */
+
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+}
+
+function runSearch(){
+  const q=document.getElementById("searchInput").value.toLowerCase();
+
+  const results=verses.filter(v =>
+    v.text.join(" ").toLowerCase().includes(q)
+  );
+
+  const box=document.getElementById("searchResults");
+  box.innerHTML="";
+
+  results.forEach(v=>{
+    let div=document.createElement("div");
+    div.innerText=v.ref;
+    div.onclick=()=>setVerse(v);
+    box.appendChild(div);
+  });
+}
+
+/* ================= PRAYER / REFLECTION ================= */
 
 function detectTheme(text){
-  const t = text.join(" ").toLowerCase();
-
+  const t=text.join(" ").toLowerCase();
   if(t.includes("fear")) return "peace";
-  if(t.includes("love")) return "love";
   if(t.includes("strength")) return "strength";
-  if(t.includes("hope")) return "hope";
-
+  if(t.includes("love")) return "love";
   return "peace";
 }
 
 const prayerMap={
-  love:"Help me reflect Your love today.",
   peace:"Bring peace to my heart.",
-  strength:"Give me strength when I am weak.",
-  hope:"Renew my hope in You."
+  strength:"Give me strength.",
+  love:"Help me love others well."
 };
 
 const reflectionMap={
-  love:"How can I love others better?",
-  peace:"What is disturbing my peace?",
+  peace:"What is troubling me?",
   strength:"Where do I need strength?",
-  hope:"What am I trusting God for?"
+  love:"How can I show love today?"
 };
 
 function updateDevotion(v){
-  const theme = detectTheme(v.text);
-
-  document.getElementById("prayer").innerText =
-    prayerMap[theme];
-
-  document.getElementById("reflection").innerText =
-    reflectionMap[theme];
+  const t=detectTheme(v.text);
+  document.getElementById("prayer").innerText=prayerMap[t];
+  document.getElementById("reflection").innerText=reflectionMap[t];
 }
 
-/* ================= DAILY VERSE (API) ================= */
+/* ================= TIME MESSAGE ================= */
 
-async function loadDaily(){
-  const seed = getDailySeed();
+function timeMessage(){
+  const h=new Date().getHours();
 
-  document.getElementById("status").innerText =
-    "Loading daily verse...";
+  let msg="";
+  if(h<12) msg="Start your day with truth.";
+  else if(h<17) msg="Stay steady in Him today.";
+  else msg="Rest in what God has done.";
 
-  try{
-    const res = await fetch(`${API_BASE}?seed=${seed}`);
-    const data = await res.json();
-
-    renderVerse(data.verse);
-    updateDevotion(data.verse);
-
-    document.getElementById("status").innerText =
-      "Synced daily verse ✔";
-
-  } catch(e){
-    document.getElementById("status").innerText =
-      "Failed to load verse (offline fallback needed)";
-  }
-}
-
-/* ================= RANDOM (local fallback) ================= */
-
-function randomVerse(){
-  const fallback = {
-    ref:"Psalm 23:1",
-    text:[
-      "The Lord is my shepherd",
-      "I lack nothing"
-    ]
-  };
-
-  renderVerse(fallback);
-  updateDevotion(fallback);
+  document.getElementById("timeMessage").innerText=msg;
 }
 
 /* ================= INIT ================= */
 
 window.onload=()=>{
+  setTheme(localStorage.getItem("theme")||"system");
   loadDaily();
+  timeMessage();
 };
 
 </script>
