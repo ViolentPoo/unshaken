@@ -47,9 +47,7 @@ body{
   z-index:1000;
 }
 
-.container{
-  width:min(850px,92%);
-}
+.container{ width:min(850px,92%); }
 
 .card{
   background:var(--card);
@@ -66,16 +64,9 @@ body{
   min-height:80px;
 }
 
-.ref{
-  color:var(--accent);
-  font-weight:700;
-}
+.ref{ color:var(--accent); font-weight:700; }
 
-.controls{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-}
+.controls{ display:flex; flex-wrap:wrap; gap:8px; }
 
 button,select{
   padding:10px 12px;
@@ -84,19 +75,11 @@ button,select{
   background:var(--card);
   color:var(--text);
   cursor:pointer;
-  font-size:.95rem;
 }
 
-button:hover{
-  background:var(--accent);
-  color:#fff;
-}
+button:hover{ background:var(--accent); color:#fff; }
 
-.panel{
-  display:none;
-  max-height:260px;
-  overflow:auto;
-}
+.panel{ display:none; }
 
 .list-item{
   padding:8px 0;
@@ -104,41 +87,25 @@ button:hover{
   cursor:pointer;
 }
 
-.list-item:last-child{
-  border-bottom:none;
-}
-
 .row{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  gap:10px;
 }
 
-.small{
-  font-size:.9rem;
-  color:var(--muted);
-}
+.small{ font-size:.9rem; color:var(--muted); }
 
 .star-btn{
   border:none;
   background:transparent;
   font-size:1.4rem;
   cursor:pointer;
-  padding:0;
 }
 
-.section-title{
-  font-weight:700;
-  margin-bottom:8px;
-}
+.section-title{ font-weight:700; }
 
-.streak{
-  margin-top:10px;
-  font-weight:700;
-}
+.streak{ margin-top:10px; font-weight:700; }
 
-/* FOOTER */
 .footer{
   position: fixed;
   right: 12px;
@@ -147,10 +114,10 @@ button:hover{
   color: var(--muted);
   font-size: 10px;
   line-height: 1.2;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:2px;
 }
 </style>
 </head>
@@ -196,13 +163,11 @@ button:hover{
     <button onclick="randomVerse()">Random</button>
     <button onclick="encouragement()">Encourage Me</button>
     <button onclick="toggleDark()">Dark Mode</button>
-    <button onclick="toggleFavorites()">Favorites</button>
-    <button onclick="toggleHistory()">History</button>
 
   </div>
 
   <div class="streak">
-    🔥 Streak: <span id="streakCount">0</span> days
+    🔥 Streak: <span id="streakCount">0</span>
   </div>
   <div id="streakMessage" class="small"></div>
 </div>
@@ -217,21 +182,6 @@ button:hover{
 <div class="card">
   <div class="section-title">Reflection</div>
   <div id="reflection"></div>
-</div>
-
-<!-- FAVORITES -->
-<div class="card panel" id="favBox">
-  <div class="section-title">Favorites</div>
-  <div id="favList"></div>
-</div>
-
-<!-- HISTORY -->
-<div class="card panel" id="historyBox">
-  <div class="row">
-    <div class="section-title">History</div>
-    <button onclick="clearHistory()">Clear</button>
-  </div>
-  <div id="historyList"></div>
 </div>
 
 <!-- MISSION -->
@@ -249,61 +199,71 @@ button:hover{
 </div>
 
 <script>
-let currentRef = "";
-let currentText = "";
 
-let favorites = JSON.parse(localStorage.getItem("unshaken_favs") || "[]");
-let history = JSON.parse(localStorage.getItem("unshaken_history") || "[]");
+let currentRef="";
+let currentText="";
 
-let streak;
-try{
-  const raw = JSON.parse(localStorage.getItem("unshaken_streak"));
-  streak = {
-    count:Number(raw?.count)||0,
-    lastDate:raw?.lastDate||null
-  };
-}catch{
-  streak={count:0,lastDate:null};
+/* SAFE DEVOTIONAL ENGINE (FIXED) */
+const pools={
+  peace:[
+    {r:"John 14:27",p:"Jesus, give me peace.",f:"What steals my peace?"},
+    {r:"Philippians 4:7",p:"Guard my heart.",f:"Where do I need calm?"}
+  ],
+  strength:[
+    {r:"Isaiah 41:10",p:"Strengthen me Lord.",f:"Where am I weak?"}
+  ],
+  hope:[
+    {r:"Jeremiah 29:11",p:"Renew my hope.",f:"What future do I fear?"}
+  ],
+  anxiety:[
+    {r:"Philippians 4:6",p:"I release worry.",f:"What am I holding?"}
+  ],
+  faith:[
+    {r:"Hebrews 11:1",p:"Grow my faith.",f:"Where do I doubt?"}
+  ],
+  love:[
+    {r:"1 Corinthians 13:4",p:"Teach me love.",f:"Who needs grace?"}
+  ],
+  wisdom:[
+    {r:"James 1:5",p:"Give wisdom.",f:"What decision needs clarity?"}
+  ]
+};
+
+function focusAreaChange(){
+  const a=document.getElementById("focusArea").value;
+
+  if(a==="daily"){
+    fetchDaily();
+    return;
+  }
+
+  const list=pools[a];
+  const item=list[getDayIndex(list.length)];
+
+  document.getElementById("prayer").innerText=item.p;
+  document.getElementById("reflection").innerText=item.f;
+
+  loadVerse(item.r);
 }
 
-/* DAILY KEY */
-function getDayKey(){
-  const d=new Date();
-  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+/* FIXED LOADVERSE (NO BROKEN CALLS) */
+async function loadVerse(ref){
+  try{
+    const r=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=web`);
+    const d=await r.json();
+
+    currentRef=ref;
+    currentText=d.text||"";
+
+    document.getElementById("verse").innerText=currentText;
+    document.getElementById("ref").innerText=ref;
+
+  }catch{
+    document.getElementById("verse").innerText="Verse unavailable.";
+  }
 }
 
-/* STREAK */
-function updateStreak(){
-  const today=getDayKey();
-
-  if(streak.lastDate===today) return;
-
-  const y=new Date();
-  y.setDate(y.getDate()-1);
-  const yKey=`${y.getFullYear()}-${y.getMonth()+1}-${y.getDate()}`;
-
-  if(streak.lastDate===yKey) streak.count++;
-  else streak.count=1;
-
-  streak.lastDate=today;
-  localStorage.setItem("unshaken_streak",JSON.stringify(streak));
-  renderStreak();
-}
-
-function renderStreak(){
-  const c=Number(streak.count)||0;
-  document.getElementById("streakCount").innerText=c;
-
-  let msg="Start today.";
-  if(c>=3) msg="Keep going.";
-  if(c>=7) msg="Momentum building.";
-  if(c>=14) msg="Strong discipline.";
-  if(c>=30) msg="Deep consistency.";
-
-  document.getElementById("streakMessage").innerText=msg;
-}
-
-/* VERSES */
+/* DAILY */
 async function fetchDaily(){
   try{
     const r=await fetch("https://beta.ourmanna.com/api/v1/get/?format=json&order=daily");
@@ -314,173 +274,13 @@ async function fetchDaily(){
   }
 }
 
-async function loadVerse(ref){
-  try{
-    const tr=document.getElementById("translation").value;
-    const r=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
-    const d=await r.json();
-
-    currentRef=ref;
-    currentText=(d.text||"").trim();
-
-    document.getElementById("verse").innerText=currentText||"Unavailable.";
-    document.getElementById("ref").innerText=ref;
-
-    addToHistory(ref);
-    updateMainStar();
-    applyDevotional(ref);
-
-  }catch{
-    document.getElementById("verse").innerText="Unavailable.";
-    document.getElementById("ref").innerText=ref;
-  }
-}
-
-function reloadCurrentVerse(){
-  if(currentRef) loadVerse(currentRef);
-}
-
-/* CLEAN DEVOTIONAL ENGINE */
-const pools={
-  peace:[
-    {r:"John 14:27",p:"Jesus, give me Your peace.",f:"What is disturbing my peace?"},
-    {r:"Philippians 4:7",p:"Guard my heart with peace.",f:"Where do I need calm today?"}
-  ],
-  strength:[
-    {r:"Isaiah 41:10",p:"Strengthen me Lord.",f:"Where do I feel weak?"},
-    {r:"Philippians 4:13",p:"Help me endure.",f:"What challenge am I facing?"}
-  ],
-  hope:[
-    {r:"Jeremiah 29:11",p:"Renew my hope.",f:"What future am I trusting God with?"}
-  ],
-  anxiety:[
-    {r:"Philippians 4:6",p:"I release my worries.",f:"What am I holding too tightly?"}
-  ],
-  faith:[
-    {r:"Hebrews 11:1",p:"Grow my faith.",f:"Where do I need trust?"}
-  ],
-  love:[
-    {r:"1 Corinthians 13:4",p:"Teach me love.",f:"Who needs grace today?"}
-  ],
-  wisdom:[
-    {r:"James 1:5",p:"Give me wisdom.",f:"What decision needs clarity?"}
-  ]
-};
-
-function focusAreaChange(){
-  const area=document.getElementById("focusArea").value;
-
-  if(area==="daily"){
-    fetchDaily();
-    return;
-  }
-
-  const list=pools[area];
-  const item=list[getDayIndex(list.length)];
-
-  document.getElementById("prayer").innerText=item.p;
-  document.getElementById("reflection").innerText=item.f;
-
-  loadVerse(item.r);
-}
-
 function getDayIndex(len){
   const now=new Date();
   const start=new Date(now.getFullYear(),0,0);
   return Math.floor((now-start)/86400000)%len;
 }
 
-/* FAVORITES */
-function toggleFavorite(ref){
-  if(!ref) return;
-
-  if(favorites.find(f=>f.ref===ref)){
-    favorites=favorites.filter(f=>f.ref!==ref);
-  }else{
-    favorites.push({ref});
-  }
-
-  localStorage.setItem("unshaken_favs",JSON.stringify(favorites));
-  renderFavorites();
-  updateMainStar();
-}
-
-function renderFavorites(){
-  const el=document.getElementById("favList");
-  el.innerHTML="";
-
-  if(!favorites.length){
-    el.innerHTML=`<div class="small">No favorites</div>`;
-    return;
-  }
-
-  favorites.forEach(f=>{
-    const d=document.createElement("div");
-    d.className="list-item";
-    d.innerText=f.ref;
-    d.onclick=()=>loadVerse(f.ref);
-    el.appendChild(d);
-  });
-}
-
-function updateMainStar(){
-  document.getElementById("mainStar").innerText=
-    favorites.find(f=>f.ref===currentRef)?"⭐":"☆";
-}
-
-function toggleFavorites(){
-  const b=document.getElementById("favBox");
-  b.style.display=b.style.display==="block"?"none":"block";
-}
-
-/* HISTORY */
-function addToHistory(ref){
-  history=history.filter(h=>h.ref!==ref);
-  history.unshift({ref});
-  history=history.slice(0,50);
-
-  localStorage.setItem("unshaken_history",JSON.stringify(history));
-  renderHistory();
-}
-
-function renderHistory(){
-  const el=document.getElementById("historyList");
-  el.innerHTML="";
-
-  if(!history.length){
-    el.innerHTML=`<div class="small">No history</div>`;
-    return;
-  }
-
-  history.forEach(h=>{
-    const d=document.createElement("div");
-    d.className="list-item";
-    d.innerText=h.ref;
-    d.onclick=()=>loadVerse(h.ref);
-    el.appendChild(d);
-  });
-}
-
-function toggleHistory(){
-  const b=document.getElementById("historyBox");
-  b.style.display=b.style.display==="block"?"none":"block";
-}
-
-function clearHistory(){
-  if(!confirm("Clear history?")) return;
-  history=[];
-  localStorage.removeItem("unshaken_history");
-  renderHistory();
-}
-
-/* OTHER */
-function toggleDark(){
-  const t=document.documentElement.getAttribute("data-theme");
-  const n=t==="dark"?"light":"dark";
-  document.documentElement.setAttribute("data-theme",n);
-  localStorage.setItem("theme",n);
-}
-
+/* OTHER SIMPLE BUTTONS */
 function encouragement(){
   loadVerse("Isaiah 41:10");
 }
@@ -491,26 +291,17 @@ function randomVerse(){
     .then(d=>{
       const v=d[0];
       loadVerse(`${v.bookname} ${v.chapter}:${v.verse}`);
-    })
-    .catch(()=>loadVerse("Romans 8:28"));
+    });
+}
+
+function reloadCurrentVerse(){
+  if(currentRef) loadVerse(currentRef);
 }
 
 window.onload=()=>{
-  document.documentElement.setAttribute(
-    "data-theme",
-    localStorage.getItem("theme")||"light"
-  );
-
-  document.getElementById("missionText").innerText=
-    localStorage.getItem("unshaken_mission")||
-    "We seek to follow Jesus faithfully and live with purpose.";
-
-  renderFavorites();
-  renderHistory();
-  updateStreak();
-  renderStreak();
   fetchDaily();
 };
+
 </script>
 
 </body>
