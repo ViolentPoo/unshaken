@@ -9,7 +9,7 @@
 :root{
   --bg:#f5f5f5;
   --text:#111;
-  --card:#fff;
+  --card:#ffffff;
   --accent:#2b6cb0;
 }
 
@@ -31,6 +31,15 @@ body{
   align-items:center;
 }
 
+/* MAIN CONTAINER */
+.container{
+  width:min(800px,92%);
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+}
+
+/* TOP BAR */
 .topbar{
   position:fixed;
   top:0;left:0;right:0;
@@ -42,32 +51,27 @@ body{
   z-index:1000;
 }
 
-.container{
-  width:min(800px,92%);
-}
-
+/* CARDS (UNIFIED SYSTEM) */
 .card{
   background:var(--card);
   padding:14px;
   border-radius:12px;
   margin-top:12px;
   box-shadow:0 4px 12px rgba(0,0,0,.06);
+  box-sizing:border-box;
 }
 
+/* MISSION FIXED (NOW MATCHES CARDS EXACTLY) */
 .missionHero{
   background:var(--card);
-  padding:16px;
-  border-radius:14px;
-  margin-bottom:12px;
-  box-shadow:0 6px 18px rgba(0,0,0,.08);
+  padding:14px;
+  border-radius:12px;
+  margin-top:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
+  box-sizing:border-box;
 }
 
-.missionTitle{
-  font-weight:700;
-  cursor:pointer;
-  margin-bottom:8px;
-}
-
+/* VERSE */
 .verse{
   font-size:20px;
   line-height:1.6;
@@ -79,6 +83,7 @@ body{
   font-weight:700;
 }
 
+/* CONTROLS */
 button,select{
   padding:8px;
   margin:4px;
@@ -94,6 +99,7 @@ button:hover{
   color:#fff;
 }
 
+/* HISTORY / FAVORITES */
 .history,.favorites{
   display:none;
   margin-top:10px;
@@ -103,13 +109,13 @@ button:hover{
   overflow:auto;
 }
 
+/* FOOTER */
 .small{
   position:fixed;
   right:10px;
   font-size:12px;
   opacity:.7;
 }
-
 .footer1{bottom:22px;}
 .footer2{bottom:8px;}
 </style>
@@ -176,13 +182,13 @@ button:hover{
   <div id="favList"></div>
 </div>
 
-<!-- MISSION -->
-<div class="missionHero">
-  <div class="missionTitle" onclick="toggleMission()">
-    Parker Family Mission Statement
-  </div>
-  <div id="missionBody">
-    <div id="missionText"></div>
+<!-- MISSION (NOW MATCHES CARDS PERFECTLY) -->
+<div class="container">
+  <div class="missionHero">
+    <strong>Parker Family Mission Statement</strong>
+    <div id="missionBody" style="margin-top:8px">
+      <div id="missionText"></div>
+    </div>
   </div>
 </div>
 
@@ -218,19 +224,17 @@ function idx(k,l){
 
 function setExtras(){
   let m=getMode();
-  document.getElementById('prayer').innerText=prayers[m][idx(m+'_p',5)];
-  document.getElementById('reflection').innerText=reflections[m][idx(m+'_r',5)];
+  document.getElementById('prayer').innerText =
+    prayers[m][idx(m+'_p',5)];
+
+  document.getElementById('reflection').innerText =
+    reflections[m][idx(m+'_r',5)];
 }
 
 function loadMission(){
   document.getElementById('missionText').innerText =
   localStorage.getItem('unshaken_mission') ||
   "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
-}
-
-function toggleMission(){
-  let b=document.getElementById('missionBody');
-  b.style.display = (b.style.display==='none'?'block':'none');
 }
 
 function toggleHistory(){
@@ -268,6 +272,7 @@ async function loadVerse(ref){
 
   document.getElementById('verse').innerText=d.text;
   document.getElementById('ref').innerText=ref;
+
   setExtras();
 }
 
