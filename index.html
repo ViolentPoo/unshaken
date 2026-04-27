@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Unshaken v1.7.5</title>
+<title>Unshaken v1.7.6</title>
 
 <style>
 :root{
   --bg:#f5f5f5;
   --text:#111;
-  --card:#fff;
+  --card:#ffffff;
   --accent:#2b6cb0;
   --muted:#666;
 }
@@ -107,7 +107,7 @@ button:hover{
 
 <body>
 
-<div class="topbar">Unshaken v1.7.5 — Fixed Verse Engine</div>
+<div class="topbar">Unshaken v1.7.6 — Parser Fix</div>
 
 <div class="container">
 
@@ -176,26 +176,24 @@ let bibleIndex = [];
 let current = null;
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* ================= LOAD BIBLE (FIXED PARSER) ================= */
+/* ================= SAFE PARSER (FIXED) ================= */
 
 async function loadBible(){
   const res = await fetch("web.txt");
   const text = await res.text();
 
-  bibleIndex = text.split("\n").filter(Boolean).map(line => {
-    const firstSpace = line.indexOf(" ");
-    const secondSpace = line.indexOf(" ", firstSpace + 1);
+  bibleIndex = text
+    .split("\n")
+    .filter(Boolean)
+    .map(line => {
+      const parts = line.trim().split(/\s+/);
 
-    const book = line.slice(0, firstSpace);
-    const ref = line.slice(firstSpace + 1, secondSpace);
-    const verseText = line.slice(secondSpace + 1);
-
-    return {
-      book,
-      ref,
-      text: verseText
-    };
-  });
+      return {
+        book: parts[0],
+        ref: parts[1],
+        text: parts.slice(2).join(" ")
+      };
+    });
 
   loadDaily();
 }
@@ -219,19 +217,18 @@ function loadDaily(){
   const date = new Date().toISOString().split("T")[0];
   const seed = hashSeed(date);
 
-  const v = bibleIndex[seed % bibleIndex.length];
-  setVerse(v);
+  setVerse(bibleIndex[seed % bibleIndex.length]);
 }
 
 /* ================= RANDOM ================= */
 
 function loadRandom(){
   const seed = hashSeed(Date.now().toString());
-  const v = bibleIndex[seed % bibleIndex.length];
-  setVerse(v);
+
+  setVerse(bibleIndex[seed % bibleIndex.length]);
 }
 
-/* ================= VERSE DISPLAY (FIXED) ================= */
+/* ================= VERSE DISPLAY ================= */
 
 function setVerse(v){
   current = v;
@@ -249,7 +246,7 @@ function setVerse(v){
   updateDevotion(v);
 }
 
-/* ================= DEVOTION ================= */
+/* ================= DEVOTIONAL ENGINE ================= */
 
 function getTimeOfDay(){
   const h = new Date().getHours();
@@ -296,6 +293,7 @@ function getDevotion(v){
 
 function updateDevotion(v){
   const d = getDevotion(v);
+
   document.getElementById("prayer").innerText = d.prayer;
   document.getElementById("reflection").innerText = d.reflection;
 }
@@ -305,9 +303,9 @@ function updateDevotion(v){
 function toggleFavorite(){
   if(!current) return;
 
-  const i = favorites.indexOf(current.book + " " + current.ref);
-
   const key = current.book + " " + current.ref;
+
+  const i = favorites.indexOf(key);
 
   if(i > -1) favorites.splice(i,1);
   else favorites.push(key);
@@ -345,9 +343,6 @@ function toggleSearch(){
 
 function runSearch(){
   const q = document.getElementById("searchInput").value.toLowerCase();
-  const box = document.getElementById("searchResults");
-
-  box.innerHTML = "";
 
   const results = bibleIndex.filter(v =>
     v.text.toLowerCase().includes(q)
@@ -355,6 +350,9 @@ function runSearch(){
 
   document.getElementById("searchMeta").innerText =
     `Found ${results.length} results`;
+
+  const box = document.getElementById("searchResults");
+  box.innerHTML = "";
 
   results.slice(0,50).forEach(v=>{
     const d = document.createElement("div");
