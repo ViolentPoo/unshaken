@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Unshaken</title>
+<title>Unshaken v1.0.1</title>
 
 <style>
 :root{
@@ -105,7 +105,7 @@ button:hover{
 
 <body>
 
-<div class="topbar">Unshaken Bible Verse of the Day</div>
+<div class="topbar">Unshaken Bible Verse of the Day (v1.0.1)</div>
 
 <div class="container">
 
@@ -193,7 +193,7 @@ button:hover{
 <script>
 
 /* =========================
-   STATE
+   STATE (FIXED STREAK INIT)
 ========================= */
 
 let currentRef = "";
@@ -202,7 +202,19 @@ let currentText = "";
 let favorites = JSON.parse(localStorage.getItem('unshaken_favs') || '[]');
 let history = JSON.parse(localStorage.getItem('unshaken_history') || '[]');
 
-let streak = JSON.parse(localStorage.getItem('unshaken_streak') || '{"count":0,"lastDate":null}');
+/* SAFE STREAK INIT (FIX FOR UNDEFINED) */
+let streak;
+try {
+  const raw = JSON.parse(localStorage.getItem('unshaken_streak'));
+
+  streak = {
+    count: Number(raw?.count) || 0,
+    lastDate: raw?.lastDate || null
+  };
+
+} catch {
+  streak = { count: 0, lastDate: null };
+}
 
 /* =========================
    INIT
@@ -216,7 +228,7 @@ window.onload = () => {
 
   document.getElementById('missionText').innerText =
     localStorage.getItem('unshaken_mission') ||
-    "We seek to follow Jesus, love each other well, and walk in faith daily.";
+    "We seek to follow Jesus faithfully and live with purpose daily.";
 
   fetchDaily();
   renderFavorites();
@@ -226,7 +238,7 @@ window.onload = () => {
 };
 
 /* =========================
-   STREAK
+   STREAK (FIXED)
 ========================= */
 
 function getDayKey(){
@@ -237,14 +249,21 @@ function getDayKey(){
 function updateStreak(){
   const today = getDayKey();
 
-  if(streak.lastDate === today) return;
+  if(!streak || typeof streak !== "object"){
+    streak = { count: 0, lastDate: null };
+  }
+
+  if(streak.lastDate === today){
+    renderStreak();
+    return;
+  }
 
   const y = new Date();
-  y.setDate(y.getDate()-1);
+  y.setDate(y.getDate() - 1);
   const yKey = `${y.getFullYear()}-${y.getMonth()+1}-${y.getDate()}`;
 
   if(streak.lastDate === yKey){
-    streak.count++;
+    streak.count = (Number(streak.count) || 0) + 1;
   } else {
     streak.count = 1;
   }
@@ -256,26 +275,33 @@ function updateStreak(){
 }
 
 function renderStreak(){
-  document.getElementById('streakCount').innerText = streak.count;
+  const el = document.getElementById('streakCount');
+  const msg = document.getElementById('streakMessage');
 
-  let msg = document.getElementById('streakMessage');
+  const count = Number(streak?.count) || 0;
 
-  if(streak.count === 1) msg.innerText = "Start strong.";
-  else if(streak.count < 5) msg.innerText = "Keep going.";
-  else if(streak.count < 10) msg.innerText = "Momentum building.";
-  else if(streak.count < 30) msg.innerText = "Strong discipline.";
+  if(el) el.innerText = count;
+
+  if(!msg) return;
+
+  if(count === 0) msg.innerText = "Start your journey today.";
+  else if(count < 5) msg.innerText = "Keep going.";
+  else if(count < 10) msg.innerText = "Momentum building.";
+  else if(count < 30) msg.innerText = "Strong discipline.";
   else msg.innerText = "Deep consistency.";
 }
 
 /* =========================
-   VERSE
+   VERSE SYSTEM
 ========================= */
 
 async function fetchDaily(){
-  try{
-    let r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
-    let d = await r.json();
+  try {
+    const r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
+    const d = await r.json();
+
     loadVerse(d?.verse?.details?.reference || "John 14:27");
+
   } catch {
     loadVerse("John 14:27");
   }
@@ -354,16 +380,16 @@ function renderFavorites(){
   el.innerHTML = '';
 
   favorites.forEach(f=>{
-    let row = document.createElement('div');
+    let row=document.createElement('div');
     row.style.display="flex";
     row.style.justifyContent="space-between";
 
-    let t = document.createElement('div');
+    let t=document.createElement('div');
     t.innerText=f.ref;
-    t.style.cursor="pointer";
     t.onclick=()=>loadVerse(f.ref);
+    t.style.cursor="pointer";
 
-    let s = document.createElement('button');
+    let s=document.createElement('button');
     s.innerText="⭐";
     s.style.background="transparent";
     s.style.border="none";
