@@ -71,9 +71,11 @@
       font-size:12px;
       opacity:.7;
       position:fixed;
-      bottom:8px;
       right:10px;
     }
+
+    .footer1{bottom:22px;}
+    .footer2{bottom:8px;}
 
     .card{
       background:rgba(0,0,0,.03);
@@ -109,6 +111,11 @@
     [data-theme="dark"] .history-item:hover{
       background:rgba(255,255,255,.08);
     }
+
+    .streak{
+      font-size:13px;
+      margin-top:5px;
+    }
   </style>
 </head>
 <body>
@@ -143,6 +150,8 @@
     <button onclick="toggleHistory()">History</button>
   </div>
 
+  <div class="streak" id="streakDisplay"></div>
+
   <div class="card">
     <strong>Prayer</strong>
     <div id="prayer" style="font-size:13px;margin-top:5px"></div>
@@ -160,12 +169,13 @@
 
 </div>
 
-<div class="small">The Parker Family</div>
+<div class="small footer1">est 2013</div>
+<div class="small footer2">The Parker Family</div>
 
 <script>
 let currentRef="";
 let currentVerse="";
-let history=[];
+let history=JSON.parse(localStorage.getItem('unshaken_history')||'[]');
 
 const prayers=[
 "Lord, guide me today and keep my heart steady.",
@@ -198,6 +208,7 @@ function toggleHistory(){
 function addToHistory(ref,text){
   history.unshift({ref,text});
   if(history.length>20) history.pop();
+  localStorage.setItem('unshaken_history',JSON.stringify(history));
   renderHistory();
 }
 
@@ -228,6 +239,25 @@ function themeByTime(){
   if(saved){document.documentElement.setAttribute('data-theme',saved);return;}
   const h=new Date().getHours();
   document.documentElement.setAttribute('data-theme',h<6||h>18?'dark':'light');
+}
+
+// STREAK
+function updateStreak(){
+  const today=new Date().toDateString();
+  const last=localStorage.getItem('unshaken_last');
+  let streak=parseInt(localStorage.getItem('unshaken_streak')||'0');
+
+  if(!last){streak=1;}
+  else if(last!==today){
+    const y=new Date();y.setDate(y.getDate()-1);
+    if(last===y.toDateString()) streak++;
+    else streak=1;
+  }
+
+  localStorage.setItem('unshaken_streak',streak);
+  localStorage.setItem('unshaken_last',today);
+
+  document.getElementById('streakDisplay').innerText=`🔥 ${streak} day streak`;
 }
 
 async function fetchDaily(){
@@ -300,6 +330,7 @@ window.onload=()=>{
   themeByTime();
   fetchDaily();
   setExtras();
+  updateStreak();
 
   document.getElementById('translation').onchange=()=>loadVerse(currentRef);
   document.getElementById('topic').onchange=topicChange;
