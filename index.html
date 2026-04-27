@@ -88,7 +88,7 @@ button:hover{
   margin-top:10px;
   padding-top:10px;
   border-top:1px solid rgba(0,0,0,.1);
-  max-height:200px;
+  max-height:220px;
   overflow:auto;
 }
 
@@ -113,7 +113,7 @@ button:hover{
 <div class="card">
   <button id="mainStar"
     onclick="toggleFavorite(currentRef)"
-    style="float:right; font-size:20px; border:none; background:transparent; cursor:pointer;">
+    style="float:right; font-size:22px; border:none; background:transparent; cursor:pointer;">
     ☆
   </button>
 
@@ -123,6 +123,7 @@ button:hover{
 
 <!-- CONTROLS -->
 <div class="card">
+
   <select id="translation">
     <option value="kjv">KJV</option>
     <option value="web" selected>WEB</option>
@@ -143,6 +144,13 @@ button:hover{
 
   <button onclick="toggleFavorites()">Favorites</button>
   <button onclick="toggleHistory()">History</button>
+
+  <!-- STREAK -->
+  <div style="margin-top:10px; font-weight:600;">
+    🔥 Streak: <span id="streakCount">0</span> days
+  </div>
+  <div id="streakMessage" style="font-size:14px; opacity:.85;"></div>
+
 </div>
 
 <!-- PRAYER -->
@@ -168,14 +176,12 @@ button:hover{
   <strong>History</strong>
   <div id="historyList"></div>
 
-  <button onclick="clearHistory()" style="margin-top:10px;">
-    Clear History
-  </button>
+  <button onclick="clearHistory()">Clear History</button>
 </div>
 
 <!-- MISSION -->
 <div class="card">
-  <strong>Parker Family Mission Statement</strong>
+  <strong>Family Mission Statement</strong>
   <div id="missionText" style="margin-top:8px;"></div>
 </div>
 
@@ -196,6 +202,8 @@ let currentText = "";
 let favorites = JSON.parse(localStorage.getItem('unshaken_favs') || '[]');
 let history = JSON.parse(localStorage.getItem('unshaken_history') || '[]');
 
+let streak = JSON.parse(localStorage.getItem('unshaken_streak') || '{"count":0,"lastDate":null}');
+
 /* =========================
    INIT
 ========================= */
@@ -208,15 +216,17 @@ window.onload = () => {
 
   document.getElementById('missionText').innerText =
     localStorage.getItem('unshaken_mission') ||
-    "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
+    "We seek to follow Jesus, love each other well, and walk in faith daily.";
 
-  renderHistory();
-  renderFavorites();
   fetchDaily();
+  renderFavorites();
+  renderHistory();
+  updateStreak();
+  renderStreak();
 };
 
 /* =========================
-   DAILY VERSE
+   STREAK
 ========================= */
 
 function getDayKey(){
@@ -224,23 +234,52 @@ function getDayKey(){
   return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
 }
 
+function updateStreak(){
+  const today = getDayKey();
+
+  if(streak.lastDate === today) return;
+
+  const y = new Date();
+  y.setDate(y.getDate()-1);
+  const yKey = `${y.getFullYear()}-${y.getMonth()+1}-${y.getDate()}`;
+
+  if(streak.lastDate === yKey){
+    streak.count++;
+  } else {
+    streak.count = 1;
+  }
+
+  streak.lastDate = today;
+  localStorage.setItem('unshaken_streak', JSON.stringify(streak));
+
+  renderStreak();
+}
+
+function renderStreak(){
+  document.getElementById('streakCount').innerText = streak.count;
+
+  let msg = document.getElementById('streakMessage');
+
+  if(streak.count === 1) msg.innerText = "Start strong.";
+  else if(streak.count < 5) msg.innerText = "Keep going.";
+  else if(streak.count < 10) msg.innerText = "Momentum building.";
+  else if(streak.count < 30) msg.innerText = "Strong discipline.";
+  else msg.innerText = "Deep consistency.";
+}
+
+/* =========================
+   VERSE
+========================= */
+
 async function fetchDaily(){
-  try {
-    const r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
-    const d = await r.json();
-
-    const ref = d?.verse?.details?.reference || "John 14:27";
-
-    loadVerse(ref);
-
+  try{
+    let r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
+    let d = await r.json();
+    loadVerse(d?.verse?.details?.reference || "John 14:27");
   } catch {
     loadVerse("John 14:27");
   }
 }
-
-/* =========================
-   VERSE LOADER
-========================= */
 
 async function loadVerse(ref){
   try{
@@ -249,24 +288,21 @@ async function loadVerse(ref){
     let r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
     let d = await r.json();
 
-    let text = d?.text?.trim();
-    if(!text) throw new Error();
-
-    document.getElementById('verse').innerText = text;
-    document.getElementById('ref').innerText = ref;
+    let text = d.text.trim();
 
     currentRef = ref;
     currentText = text;
 
+    document.getElementById('verse').innerText = text;
+    document.getElementById('ref').innerText = ref;
+
     setExtras();
     addToHistory(ref);
     updateMainStar();
+    updateStreak();
 
   } catch {
-    document.getElementById('verse').innerText =
-      "Verse temporarily unavailable.";
-
-    document.getElementById('ref').innerText = ref || "";
+    document.getElementById('verse').innerText = "Unavailable";
   }
 }
 
@@ -275,11 +311,11 @@ async function loadVerse(ref){
 ========================= */
 
 const devotional = {
-  peace:{ prayer:"Lord, bring peace.", reflection:"Where do I need peace?" },
-  strength:{ prayer:"God, strengthen me.", reflection:"Where do I need courage?" },
-  hope:{ prayer:"Lord, give hope.", reflection:"What am I trusting?" },
-  anxiety:{ prayer:"Jesus, calm me.", reflection:"What fear must I release?" },
-  daily:{ prayer:"Guide me today.", reflection:"What is God saying?" }
+  peace:{prayer:"Peace Lord",reflection:"Where do I need peace?"},
+  strength:{prayer:"Strength Lord",reflection:"Where do I need strength?"},
+  hope:{prayer:"Hope Lord",reflection:"What am I trusting?"},
+  anxiety:{prayer:"Calm me Lord",reflection:"What fear do I release?"},
+  daily:{prayer:"Guide me",reflection:"What is God saying?"}
 };
 
 function setExtras(){
@@ -304,10 +340,11 @@ function toggleFavorite(ref){
   if(isFavorite(ref)){
     favorites = favorites.filter(f => f.ref !== ref);
   } else {
-    favorites.push({ ref, text: currentText });
+    favorites.push({ref,text:currentText});
   }
 
   localStorage.setItem('unshaken_favs', JSON.stringify(favorites));
+
   renderFavorites();
   updateMainStar();
 }
@@ -316,80 +353,67 @@ function renderFavorites(){
   let el = document.getElementById('favList');
   el.innerHTML = '';
 
-  favorites.forEach(f => {
+  favorites.forEach(f=>{
     let row = document.createElement('div');
-    row.style.display = "flex";
-    row.style.justifyContent = "space-between";
-    row.style.margin = "6px 0";
+    row.style.display="flex";
+    row.style.justifyContent="space-between";
 
-    let text = document.createElement('div');
-    text.innerText = f.ref;
-    text.style.cursor = "pointer";
-    text.onclick = () => loadVerse(f.ref);
+    let t = document.createElement('div');
+    t.innerText=f.ref;
+    t.style.cursor="pointer";
+    t.onclick=()=>loadVerse(f.ref);
 
-    let star = document.createElement('button');
-    star.innerText = "⭐";
-    star.style.border = "none";
-    star.style.background = "transparent";
-    star.onclick = () => toggleFavorite(f.ref);
+    let s = document.createElement('button');
+    s.innerText="⭐";
+    s.style.background="transparent";
+    s.style.border="none";
+    s.onclick=()=>toggleFavorite(f.ref);
 
-    row.appendChild(text);
-    row.appendChild(star);
+    row.appendChild(t);
+    row.appendChild(s);
     el.appendChild(row);
   });
 }
 
 function updateMainStar(){
-  let star = document.getElementById('mainStar');
-  if(!star) return;
-
-  star.innerText = isFavorite(currentRef) ? "⭐" : "☆";
+  document.getElementById('mainStar').innerText =
+    isFavorite(currentRef) ? "⭐" : "☆";
 }
 
 /* =========================
-   🔥 OPTIMIZED HISTORY (NO DUPLICATES EVER)
+   HISTORY (NO DUPLICATES)
 ========================= */
 
 function addToHistory(ref){
-  if(!ref) return;
-
-  // remove existing occurrence anywhere
-  history = history.filter(h => h.ref !== ref);
-
-  // add to top
-  history.unshift({ ref });
-
-  // limit size
-  history = history.slice(0, 50);
+  history = history.filter(h=>h.ref!==ref);
+  history.unshift({ref});
+  history = history.slice(0,50);
 
   localStorage.setItem('unshaken_history', JSON.stringify(history));
-
   renderHistory();
 }
 
 function renderHistory(){
-  let el = document.getElementById('historyList');
-  el.innerHTML = '';
+  let el=document.getElementById('historyList');
+  el.innerHTML='';
 
-  history.forEach(h => {
-    let div = document.createElement('div');
-    div.innerText = h.ref;
-    div.style.cursor = "pointer";
-    div.style.margin = "6px 0";
-    div.onclick = () => loadVerse(h.ref);
-    el.appendChild(div);
+  history.forEach(h=>{
+    let d=document.createElement('div');
+    d.innerText=h.ref;
+    d.style.cursor="pointer";
+    d.onclick=()=>loadVerse(h.ref);
+    el.appendChild(d);
   });
 }
 
 function toggleHistory(){
-  let b = document.getElementById('historyBox');
-  b.style.display = b.style.display === 'block' ? 'none' : 'block';
+  let b=document.getElementById('historyBox');
+  b.style.display=b.style.display==='block'?'none':'block';
 }
 
 function clearHistory(){
-  if(!confirm("Clear all history?")) return;
-
-  history = [];
+  if(!confirm("Clear history?")) return;
+  history=[];
   localStorage.removeItem('unshaken_history');
   renderHistory();
 }
@@ -398,19 +422,10 @@ function clearHistory(){
    CONTROLS
 ========================= */
 
-function topicChange(){
-  let v = document.getElementById('topic').value;
-
-  const map = {
-    peace:"John 14:27",
-    strength:"Philippians 4:13",
-    hope:"Jeremiah 29:11",
-    anxiety:"Philippians 4:6",
-    daily:"daily"
-  };
-
-  if(v === "daily") return fetchDaily();
-  loadVerse(map[v]);
+function toggleDark(){
+  let t=document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme',t==='dark'?'light':'dark');
+  localStorage.setItem('theme',t==='dark'?'light':'dark');
 }
 
 function encouragement(){
@@ -425,14 +440,24 @@ function randomVerse(){
   });
 }
 
-/* =========================
-   THEME
-========================= */
+function topicChange(){
+  let v=document.getElementById('topic').value;
 
-function toggleDark(){
-  let t = document.documentElement.getAttribute('data-theme');
-  document.documentElement.setAttribute('data-theme', t==='dark'?'light':'dark');
-  localStorage.setItem('theme', t==='dark'?'light':'dark');
+  const map={
+    peace:"John 14:27",
+    strength:"Philippians 4:13",
+    hope:"Jeremiah 29:11",
+    anxiety:"Philippians 4:6",
+    daily:"daily"
+  };
+
+  if(v==="daily") return fetchDaily();
+  loadVerse(map[v]);
+}
+
+function toggleFavorites(){
+  let b=document.getElementById('favBox');
+  b.style.display=b.style.display==='block'?'none':'block';
 }
 
 </script>
