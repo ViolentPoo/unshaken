@@ -1,5 +1,66 @@
- margin:14px 0;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Unshaken</title>
+
+<style>
+:root{
+  --bg:#f5f5f5;
+  --text:#111;
+  --card:#ffffff;
+  --accent:#2b6cb0;
+}
+
+[data-theme="dark"]{
+  --bg:#0f172a;
+  --text:#e2e8f0;
+  --card:#1e293b;
+  --accent:#60a5fa;
+}
+
+body{
+  margin:0;
+  font-family:system-ui;
+  background:var(--bg);
+  color:var(--text);
+  padding:70px 0 50px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+.topbar{
+  position:fixed;
+  top:0;left:0;right:0;
+  background:var(--accent);
+  color:#fff;
+  text-align:center;
+  padding:12px;
+  font-weight:700;
+  z-index:1000;
+}
+
+.container{
+  width:min(800px,92%);
+  display:flex;
+  flex-direction:column;
+}
+
+.card{
+  background:var(--card);
+  padding:14px;
+  border-radius:12px;
+  margin-top:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
+}
+
+.verse{
+  font-size:20px;
+  line-height:1.6;
   min-height:60px;
+  margin:14px 0;
 }
 
 .ref{
@@ -22,7 +83,7 @@ button:hover{
   color:#fff;
 }
 
-.favorites{
+.panel{
   display:none;
   margin-top:10px;
   padding-top:10px;
@@ -73,6 +134,11 @@ button:hover{
   <button onclick="toggleDark()">Dark Mode</button>
   <button onclick="randomVerse()">Random</button>
   <button onclick="encouragement()">Encourage Me</button>
+
+  <button onclick="toggleFavorites()">Favorites</button>
+  <button onclick="addFavorite()">⭐ Save Favorite</button>
+
+  <button onclick="toggleHistory()">History</button>
 </div>
 
 <!-- PRAYER -->
@@ -88,9 +154,25 @@ button:hover{
 </div>
 
 <!-- FAVORITES -->
-<div class="card favorites" id="favBox">
+<div class="card panel" id="favBox">
   <strong>Favorites</strong>
   <div id="favList"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="card panel" id="historyBox">
+  <strong>History</strong>
+  <div id="historyList"></div>
+
+  <button onclick="clearHistory()" style="margin-top:10px;">
+    Clear History
+  </button>
+</div>
+
+<!-- MISSION -->
+<div class="card">
+  <strong>Parker Family Mission Statement</strong>
+  <div id="missionText" style="margin-top:8px;"></div>
 </div>
 
 </div>
@@ -101,15 +183,44 @@ button:hover{
 <script>
 
 /* =========================
-   STATE
+   SAFE STATE
 ========================= */
 
 let currentRef = "";
 let currentText = "";
+
 let favorites = JSON.parse(localStorage.getItem('unshaken_favs') || '[]');
+let history = JSON.parse(localStorage.getItem('unshaken_history') || '[]');
 
 /* =========================
-   DAILY VERSE SYNC
+   SAFE INIT (FIXED CRASH POINT)
+========================= */
+
+window.onload = () => {
+  try {
+    document.documentElement.setAttribute(
+      'data-theme',
+      localStorage.getItem('theme') || 'light'
+    );
+
+    const mission = document.getElementById('missionText');
+    if (mission) {
+      mission.innerText =
+        localStorage.getItem('unshaken_mission') ||
+        "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
+    }
+
+    renderHistory?.();
+    renderFavorites?.();
+    fetchDaily();
+
+  } catch (e) {
+    console.error("Init error:", e);
+  }
+};
+
+/* =========================
+   DAILY VERSE
 ========================= */
 
 function getDayKey(){
@@ -118,32 +229,39 @@ function getDayKey(){
 }
 
 async function fetchDaily(){
-  const key = getDayKey();
-  const storageKey = "unshaken_daily_" + key;
+  try {
+    const key = getDayKey();
+    const storageKey = "unshaken_daily_" + key;
 
-  const cached = localStorage.getItem(storageKey);
+    const cached = localStorage.getItem(storageKey);
 
-  if(cached){
-    const data = JSON.parse(cached);
-    loadVerse(data.ref);
-    return;
+    if(cached){
+      loadVerse(JSON.parse(cached).ref);
+      return;
+    }
+
+    let r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
+    let d = await r.json();
+
+    const ref = d?.verse?.details?.reference || "John 14:27";
+
+    localStorage.setItem(storageKey, JSON.stringify({ ref, date:key }));
+
+    loadVerse(ref);
+
+  } catch (e) {
+    console.error("Daily fetch failed:", e);
+    loadVerse("John 14:27");
   }
-
-  let r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
-  let d = await r.json();
-
-  const ref = d?.verse?.details?.reference || "John 14:27";
-
-  localStorage.setItem(storageKey, JSON.stringify({ ref, date:key }));
-
-  loadVerse(ref);
 }
 
 /* =========================
-   VERSE LOADER
+   VERSE LOADER (FIXED SAFETY)
 ========================= */
 
 async function loadVerse(ref){
+  if(!ref) return;
+
   try{
     let tr = document.getElementById('translation').value;
 
@@ -151,6 +269,7 @@ async function loadVerse(ref){
     let d = await r.json();
 
     let text = d?.text?.trim();
+
     if(!text) throw new Error("No verse text");
 
     document.getElementById('verse').innerText = text;
@@ -160,71 +279,117 @@ async function loadVerse(ref){
     currentText = text;
 
     setExtras();
+    addToHistory(ref);
 
   } catch(e){
+    console.error(e);
+
     document.getElementById('verse').innerText =
-      "Verse unavailable right now. Please try again.";
+      "Verse temporarily unavailable.";
 
     document.getElementById('ref').innerText = ref || "";
   }
 }
 
 /* =========================
-   ALIGNMENT SYSTEM
-========================= */
-
-function getMode(){
-  let h = new Date().getHours();
-  return h < 12 ? "morning" : h < 18 ? "day" : "night";
-}
-
-function hash(str){
-  let h = 0;
-  for(let i=0;i<str.length;i++){
-    h = ((h<<5)-h)+str.charCodeAt(i);
-    h |= 0;
-  }
-  return Math.abs(h);
-}
-
-/* =========================
-   THEMATIC PAIRINGS
+   DEVOTIONAL ALIGNMENT
 ========================= */
 
 const devotional = {
-  peace: {
-    prayer:"Lord, calm my heart and steady my thoughts.",
-    reflection:"Where am I resisting God's peace?"
-  },
-  strength: {
-    prayer:"God, strengthen me for what lies ahead.",
-    reflection:"Where do I need courage today?"
-  },
-  hope: {
-    prayer:"Father, remind me that You are working.",
-    reflection:"What am I hoping for in faith?"
-  },
-  anxiety: {
-    prayer:"Jesus, I surrender what I cannot control.",
-    reflection:"What worry do I need to release?"
-  },
-  daily: {
-    prayer:"Lord, guide me in today’s verse.",
-    reflection:"How does this speak into my life today?"
-  }
+  peace:{ prayer:"Lord, bring peace.", reflection:"Where do I need peace?" },
+  strength:{ prayer:"God, strengthen me.", reflection:"Where do I need courage?" },
+  hope:{ prayer:"Lord, give hope.", reflection:"What am I trusting?" },
+  anxiety:{ prayer:"Jesus, calm me.", reflection:"What fear must I release?" },
+  daily:{ prayer:"Guide me today.", reflection:"What is God saying?" }
 };
 
+function setExtras(){
+  let t = document.getElementById('topic').value;
+  let d = devotional[t] || devotional.daily;
+
+  document.getElementById('prayer').innerText = d.prayer;
+  document.getElementById('reflection').innerText = d.reflection;
+}
+
 /* =========================
-   ALIGN PRAYER + REFLECTION
+   HISTORY (FIXED)
 ========================= */
 
-function setExtras(){
-  let topic = document.getElementById('topic').value;
+function addToHistory(ref){
+  if(history.length && history[0]?.ref === ref) return;
 
-  let base = devotional[topic] || devotional.daily;
+  history.unshift({ ref });
+  history = history.slice(0, 50);
 
-  document.getElementById('prayer').innerText = base.prayer;
-  document.getElementById('reflection').innerText = base.reflection;
+  localStorage.setItem('unshaken_history', JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory(){
+  let el = document.getElementById('historyList');
+  if(!el) return;
+
+  el.innerHTML = '';
+
+  history.forEach(h => {
+    let div = document.createElement('div');
+    div.style.cursor = "pointer";
+    div.style.margin = "6px 0";
+    div.innerText = h.ref;
+    div.onclick = () => loadVerse(h.ref);
+    el.appendChild(div);
+  });
+}
+
+function toggleHistory(){
+  let b = document.getElementById('historyBox');
+  if(!b) return;
+  b.style.display = b.style.display === 'block' ? 'none' : 'block';
+}
+
+function clearHistory(){
+  if(!confirm("Clear all history?")) return;
+
+  history = [];
+  localStorage.removeItem('unshaken_history');
+  renderHistory();
+}
+
+/* =========================
+   FAVORITES (SAFE)
+========================= */
+
+function addFavorite(){
+  if(!currentRef) return;
+
+  if(!favorites.some(f => f.ref === currentRef)){
+    favorites.push({ ref: currentRef, text: currentText });
+
+    localStorage.setItem('unshaken_favs', JSON.stringify(favorites));
+    renderFavorites();
+  }
+}
+
+function renderFavorites(){
+  let el = document.getElementById('favList');
+  if(!el) return;
+
+  el.innerHTML = '';
+
+  favorites.forEach(f => {
+    let div = document.createElement('div');
+    div.style.cursor = "pointer";
+    div.style.margin = "6px 0";
+    div.innerText = f.ref;
+    div.onclick = () => loadVerse(f.ref);
+    el.appendChild(div);
+  });
+}
+
+function toggleFavorites(){
+  let b = document.getElementById('favBox');
+  if(!b) return;
+  b.style.display = b.style.display === 'block' ? 'none' : 'block';
 }
 
 /* =========================
@@ -267,19 +432,6 @@ function toggleDark(){
   document.documentElement.setAttribute('data-theme', t==='dark'?'light':'dark');
   localStorage.setItem('theme', t==='dark'?'light':'dark');
 }
-
-/* =========================
-   INIT
-========================= */
-
-window.onload = () => {
-  document.documentElement.setAttribute(
-    'data-theme',
-    localStorage.getItem('theme') || 'light'
-  );
-
-  fetchDaily();
-};
 
 </script>
 
