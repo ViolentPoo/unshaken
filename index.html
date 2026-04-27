@@ -209,6 +209,20 @@
     </div>
 
     <div id="missionPrompt" style="margin-top:10px;font-size:12px;font-style:italic"></div>
+  </div>
+</div>
+
+    <div style="margin-top:10px;font-size:12px;opacity:.8">
+      <strong>Family Values:</strong>
+      <ul style="margin:6px 0 0 18px">
+        <li>Faith in God</li>
+        <li>Love in action</li>
+        <li>Discipline & consistency</li>
+        <li>Gratitude in all things</li>
+      </ul>
+    </div>
+
+    <div id="missionPrompt" style="margin-top:10px;font-size:12px;font-style:italic"></div>
 
     <textarea id="missionInput" placeholder="Write or edit your family mission statement..."></textarea>
     <button onclick="saveMission()">Save Mission</button>
@@ -332,14 +346,9 @@ function updateMissionPrompt(){
 function loadMission(){
   const m = localStorage.getItem('unshaken_mission') || "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace. We aim to live each day anchored in truth, gratitude, and purpose.";
   document.getElementById('missionText').innerText=m;
-  document.getElementById('missionInput').value=m;
 }
 
-function saveMission(){
-  const val=document.getElementById('missionInput').value;
-  localStorage.setItem('unshaken_mission',val);
-  document.getElementById('missionText').innerText=val;
-}
+
 
 function toggleMission(){
   const body=document.getElementById('missionBody');
@@ -494,7 +503,9 @@ function toggleDark(){
 }
 
 function shareVerse(){
-  const text=currentRef+"\n\n"+currentVerse;
+  const text=currentRef+"
+
+"+currentVerse;
   if(navigator.share){navigator.share({title:"Unshaken",text});}
   else navigator.clipboard.writeText(text);
 }
