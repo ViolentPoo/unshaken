@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unshaken v1.7.8</title>
+<title>Unshaken v1.7.9</title>
 
 <style>
 :root{
@@ -121,6 +121,17 @@ button:hover{
   color:var(--muted);
 }
 
+/* VERSION FOOTER (BOTTOM LEFT) */
+.footer-left{
+  position:fixed;
+  left:10px;
+  bottom:10px;
+  font-size:10px;
+  color:var(--muted);
+  opacity:0.7;
+  user-select:none;
+}
+
 .footer{
   position:fixed;
   right:10px;
@@ -133,7 +144,7 @@ button:hover{
 
 <body>
 
-<div class="topbar">Unshaken v1.7.8 — Smart Parser Edition</div>
+<div class="topbar">Unshaken Bible Verse</div>
 
 <div class="container">
 
@@ -190,6 +201,9 @@ button:hover{
 
 </div>
 
+<!-- VERSION LABEL -->
+<div class="footer-left">v1.7.9</div>
+
 <div class="footer">est. 2013 — The Parker Family</div>
 
 <script>
@@ -218,17 +232,13 @@ async function loadBible(){
       const ref = parts[refIndex];
       const verseText = parts.slice(refIndex + 1).join(" ");
 
-      return {
-        book,
-        ref,
-        text: verseText
-      };
+      return { book, ref, text: verseText };
     });
 
   loadDaily();
 }
 
-/* ================= HASH ENGINE ================= */
+/* ================= HASH ================= */
 
 function hashSeed(input){
   let hash = 81213;
@@ -261,7 +271,7 @@ function loadRandom(){
   setVerse(bibleIndex[seed % bibleIndex.length]);
 }
 
-/* ================= DISPLAY ================= */
+/* ================= VERSE ================= */
 
 function setVerse(v){
   current = v;
@@ -279,7 +289,6 @@ function setVerse(v){
 
 function getTimeOfDay(){
   const h = new Date().getHours();
-
   if(h < 12) return "morning";
   if(h < 18) return "day";
   return "night";
@@ -316,18 +325,18 @@ function getDevotion(v){
   let reflection = base[t].reflection;
 
   if(focus.includes("fear")){
-    prayer += " Remove fear from what I’m facing.";
-    reflection += " What fear is influencing my thinking?";
+    prayer += " Remove fear from my heart.";
+    reflection += " What fear is influencing me?";
   }
 
   if(focus.includes("love")){
     prayer += " Help me love others well.";
-    reflection += " Who needs love from me today?";
+    reflection += " Who needs love from me?";
   }
 
   if(focus.includes("peace")){
     prayer += " Fill me with peace.";
-    reflection += " What is disturbing my peace?";
+    reflection += " Where do I need to release control?";
   }
 
   if(focus.includes("hope")){
@@ -344,7 +353,6 @@ function getDevotion(v){
 
 function updateDevotion(v){
   const d = getDevotion(v);
-
   document.getElementById("prayer").innerText = d.prayer;
   document.getElementById("reflection").innerText = d.reflection;
 }
@@ -380,11 +388,8 @@ function toggleFavorites(){
 }
 
 function renderFavorites(){
-  const box = document.getElementById("favoritesList");
-
-  box.innerHTML = favorites.length
-    ? favorites.join("<br>")
-    : "No favorites yet.";
+  document.getElementById("favoritesList").innerHTML =
+    favorites.length ? favorites.join("<br>") : "No favorites yet.";
 }
 
 /* ================= SEARCH ================= */
@@ -394,16 +399,7 @@ function toggleSearch(){
 }
 
 function runSearch(){
-  const q = document.getElementById("searchInput").value.trim().toLowerCase();
-  const box = document.getElementById("searchResults");
-
-  box.innerHTML = "";
-
-  if(!q){
-    document.getElementById("searchMeta").innerText = "";
-    return;
-  }
-
+  const q = document.getElementById("searchInput").value.toLowerCase();
   const results = bibleIndex.filter(v =>
     v.text.toLowerCase().includes(q)
   );
@@ -411,13 +407,13 @@ function runSearch(){
   document.getElementById("searchMeta").innerText =
     `Found ${results.length} results`;
 
+  const box = document.getElementById("searchResults");
+  box.innerHTML = "";
+
   results.slice(0,50).forEach(v=>{
     const el = document.createElement("div");
     el.className = "result";
-    el.innerHTML = `
-      <strong>${v.book} ${v.ref}</strong><br>
-      ${v.text}
-    `;
+    el.innerHTML = `<strong>${v.book} ${v.ref}</strong><br>${v.text}`;
     el.onclick = () => setVerse(v);
     box.appendChild(el);
   });
@@ -435,7 +431,7 @@ function setTheme(mode){
   if(mode === "system"){
     const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-  }else{
+  } else {
     document.documentElement.setAttribute("data-theme", mode);
   }
 }
