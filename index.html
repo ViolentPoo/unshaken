@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Unshaken v1.7.1</title>
+<title>Unshaken v1.7.4</title>
 
 <style>
 :root{
@@ -80,10 +80,6 @@ button:hover{
   cursor:pointer;
 }
 
-.result:hover{
-  background:rgba(0,0,0,0.05);
-}
-
 .star{
   font-size:22px;
   cursor:pointer;
@@ -107,13 +103,13 @@ button:hover{
 
 <body>
 
-<div class="topbar">Unshaken v1.7.1</div>
+<div class="topbar">Unshaken v1.7.4 — Devotional Engine</div>
 
 <div class="container">
 
-<!-- DAILY -->
+<!-- VERSE -->
 <div class="card">
-  <div class="section-title">Daily Verse</div>
+  <div class="section-title">Verse</div>
 
   <div id="verse"></div>
   <div id="ref" style="color:var(--accent);font-weight:700;margin-top:6px;"></div>
@@ -171,7 +167,7 @@ button:hover{
 
 <script>
 
-/* ================= BIBLE INDEX ================= */
+/* ================= CORE STATE ================= */
 
 let bibleIndex = [];
 let current = null;
@@ -194,38 +190,38 @@ async function loadBible(){
   loadDaily();
 }
 
-/* ================= DAILY SEED (HASH BASED) ================= */
+/* ================= HASH ENGINE ================= */
 
-function getSeed(){
-  const date = new Date().toISOString().split("T")[0];
+function hashSeed(input){
   let hash = 81213;
+  const str = input.toString();
 
-  for(let i=0;i<date.length;i++){
-    hash = (hash * 31 + date.charCodeAt(i)) >>> 0;
+  for(let i=0;i<str.length;i++){
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
   }
 
   return hash;
 }
 
+/* ================= DAILY ================= */
+
 function loadDaily(){
-  const v = bibleIndex[getSeed() % bibleIndex.length];
+  const date = new Date().toISOString().split("T")[0];
+  const seed = hashSeed(date);
+
+  const v = bibleIndex[seed % bibleIndex.length];
   setVerse(v);
 }
 
-/* ================= RANDOM (OURMANNA) ================= */
+/* ================= RANDOM ================= */
 
 function loadRandom(){
-  fetch("https://www.ourmanna.com/api/v1/get/?format=json&order=random")
-  .then(r=>r.json())
-  .then(d=>{
-    setVerse({
-      ref:d.verse.details.reference,
-      text:d.verse.details.text
-    });
-  });
+  const seed = hashSeed(Date.now().toString());
+  const v = bibleIndex[seed % bibleIndex.length];
+  setVerse(v);
 }
 
-/* ================= VERSE DISPLAY ================= */
+/* ================= VERSE ENGINE ================= */
 
 function setVerse(v){
   current = v;
@@ -235,6 +231,65 @@ function setVerse(v){
 
   updateStar();
   updateDevotion(v);
+}
+
+/* ================= TIME OF DAY ================= */
+
+function getTimeOfDay(){
+  const h = new Date().getHours();
+
+  if(h < 12) return "morning";
+  if(h < 18) return "day";
+  return "night";
+}
+
+/* ================= DEVOTIONAL ENGINE ================= */
+
+function getDevotion(v){
+  const t = getTimeOfDay();
+  const text = v.text.toLowerCase();
+
+  let prayer = "";
+  let reflection = "";
+
+  if(t === "morning"){
+    prayer = "Guide my steps and focus my heart today.";
+    reflection = "How can I start this day with intention?";
+  }
+
+  if(t === "day"){
+    prayer = "Give me strength, wisdom, and patience today.";
+    reflection = "Am I responding with grace in this moment?";
+  }
+
+  if(t === "night"){
+    prayer = "Thank You for today and give me restful peace.";
+    reflection = "Where did I see God working today?";
+  }
+
+  if(text.includes("fear")){
+    prayer += " Remove fear from my heart.";
+    reflection += " What am I trusting God with?";
+  }
+
+  if(text.includes("love")){
+    prayer += " Teach me to love others well.";
+    reflection += " How am I showing love today?";
+  }
+
+  if(text.includes("peace")){
+    prayer += " Fill me with Your peace.";
+    reflection += " Where do I need to release control?";
+  }
+
+  return { prayer, reflection };
+}
+
+function updateDevotion(v){
+  const d = getDevotion(v);
+
+  document.getElementById("prayer").innerText = d.prayer;
+  document.getElementById("reflection").innerText = d.reflection;
 }
 
 /* ================= FAVORITES ================= */
@@ -291,7 +346,7 @@ function runSearch(){
 
   results.slice(0,50).forEach(v=>{
     const d = document.createElement("div");
-    d.className = "result";
+    d.className="result";
     d.innerHTML = `<strong>${v.ref}</strong><br>${v.text}`;
     d.onclick = ()=>setVerse(v);
     box.appendChild(d);
@@ -299,9 +354,9 @@ function runSearch(){
 }
 
 function clearSearch(){
-  document.getElementById("searchInput").value = "";
-  document.getElementById("searchResults").innerHTML = "";
-  document.getElementById("searchMeta").innerText = "";
+  document.getElementById("searchInput").value="";
+  document.getElementById("searchResults").innerHTML="";
+  document.getElementById("searchMeta").innerText="";
 }
 
 /* ================= THEME ================= */
@@ -309,23 +364,9 @@ function clearSearch(){
 function setTheme(mode){
   if(mode === "system"){
     const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    document.documentElement.setAttribute("data-theme", dark ? "dark":"light");
+    document.documentElement.setAttribute("data-theme", dark?"dark":"light");
   } else {
     document.documentElement.setAttribute("data-theme", mode);
-  }
-}
-
-/* ================= PRAYER / REFLECTION ================= */
-
-function updateDevotion(v){
-  const t = v.text.toLowerCase();
-
-  if(t.includes("fear")){
-    document.getElementById("prayer").innerText = "Give me peace today.";
-    document.getElementById("reflection").innerText = "What am I afraid of?";
-  } else {
-    document.getElementById("prayer").innerText = "Guide my steps today.";
-    document.getElementById("reflection").innerText = "How can I grow today?";
   }
 }
 
