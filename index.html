@@ -1,115 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Unshaken</title>
-  <style>
-    :root{
-      --bg:#f5f5f5;
-      --text:#111;
-      --card:#fff;
-      --accent:#2b6cb0;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Unshaken</title>
+<style>
+:root{
+  --bg:#f5f5f5;
+  --text:#111;
+  --card:#ffffff;
+  --accent:#2b6cb0;
+}
 
-    [data-theme="dark"]{
-      --bg:#0f172a;
-      --text:#e2e8f0;
-      --card:#1e293b;
-      --accent:#60a5fa;
-    }
+[data-theme="dark"]{
+  --bg:#0f172a;
+  --text:#e2e8f0;
+  --card:#1e293b;
+  --accent:#60a5fa;
+}
 
-    body{
-      margin:0;
-      font-family:system-ui;
-      background:var(--bg);
-      color:var(--text);
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      min-height:100vh;
-      padding-top:70px;
-    }
+body{
+  margin:0;
+  font-family:system-ui;
+  background:var(--bg);
+  color:var(--text);
+  padding:70px 0 40px;
+  display:flex;
+  justify-content:center;
+}
 
-    .topbar{
-      position:fixed;
-      top:0;left:0;right:0;
-      background:var(--accent);
-      color:white;
-      text-align:center;
-      padding:12px;
-      font-weight:700;
-      z-index:1000;
-    }
+.topbar{
+  position:fixed;
+  top:0;left:0;right:0;
+  background:var(--accent);
+  color:white;
+  text-align:center;
+  padding:12px;
+  font-weight:700;
+  z-index:1000;
+}
 
-    .container{
-      width:min(750px,92%);
-      background:var(--card);
-      padding:20px;
-      border-radius:14px;
-      box-shadow:0 10px 25px rgba(0,0,0,.1);
-    }
+.container{
+  width:min(800px,92%);
+}
 
-    .greeting{font-size:14px;margin-bottom:6px;opacity:.8;}
-    .themeSummary{font-size:13px;margin-bottom:10px;opacity:.75;}
+.missionHero{
+  background:var(--card);
+  padding:16px;
+  border-radius:14px;
+  margin-bottom:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,.08);
+}
 
-    .verse{font-size:20px;line-height:1.6;margin:15px 0;}
-    .ref{color:var(--accent);font-weight:bold;}
+.missionTitle{
+  font-weight:700;
+  cursor:pointer;
+  margin-bottom:8px;
+}
 
-    select,button{
-      padding:8px;
-      border-radius:8px;
-      border:1px solid #ccc;
-      background:var(--card);
-      color:var(--text);
-      cursor:pointer;
-      margin:4px;
-      appearance:none;
-    }
+.card{
+  background:var(--card);
+  padding:14px;
+  border-radius:12px;
+  margin-top:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
+}
 
-    button:hover{background:var(--accent);color:#fff;}
+.verse{
+  font-size:20px;
+  line-height:1.6;
+  margin:14px 0;
+}
 
-    .small{
-      font-size:12px;
-      opacity:.7;
-      position:fixed;
-      right:10px;
-    }
+.ref{color:var(--accent);font-weight:700;}
 
-    .footer1{bottom:22px;}
-    .footer2{bottom:8px;}
+button,select{
+  padding:8px;
+  margin:4px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  background:var(--card);
+  color:var(--text);
+  cursor:pointer;
+}
 
-    .card{
-      background:rgba(0,0,0,.03);
-      padding:10px;
-      border-radius:10px;
-      margin-top:10px;
-    }
+button:hover{background:var(--accent);color:white;}
 
-    [data-theme="dark"] .card{background:rgba(255,255,255,.06);}
+textarea{width:100%;min-height:70px;margin-top:8px;}
 
-    .history,.favorites{
-      margin-top:15px;
-      max-height:180px;
-      overflow-y:auto;
-      display:none;
-      border-top:1px solid rgba(0,0,0,.1);
-      padding-top:10px;
-    }
+.history,.favorites{
+  display:none;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid rgba(0,0,0,.1);
+  max-height:200px;
+  overflow:auto;
+}
 
-    .history-item,.fav-item{
-      font-size:13px;
-      padding:6px;
-      display:flex;
-      justify-content:space-between;
-      cursor:pointer;
-    }
-
-    .star{opacity:.5;cursor:pointer;}
-    .star.fav{opacity:1;}
-
-    textarea{width:100%;min-height:60px;margin-top:8px;}
-  </style>
+.small{
+  position:fixed;
+  right:10px;
+  font-size:12px;
+  opacity:.7;
+}
+.footer1{bottom:22px;}
+.footer2{bottom:8px;}
+</style>
 </head>
 <body>
 
@@ -117,66 +113,72 @@
 
 <div class="container">
 
-  <div id="greeting" class="greeting"></div>
-  <div id="themeSummary" class="themeSummary"></div>
-
-  <div class="verse" id="verse">Loading...</div>
-  <div class="ref" id="ref"></div>
-
-  <div>
-    <select id="translation">
-      <option value="kjv">KJV</option>
-      <option value="web" selected>WEB</option>
-      <option value="esv">ESV</option>
-    </select>
-
-    <select id="topic">
-      <option value="daily" selected>Verse of the Day</option>
-      <option value="peace">Peace</option>
-      <option value="strength">Strength</option>
-      <option value="hope">Hope</option>
-      <option value="anxiety">Anxiety</option>
-    </select>
-
-    <button onclick="toggleDark()">Dark Mode</button>
-    <button onclick="randomVerse()">Random</button>
-    <button onclick="encouragement()">Encourage Me</button>
-    <button id="shareBtn" style="display:none" onclick="shareVerse()">Share</button>
-    <button onclick="toggleHistory()">History</button>
-    <button id="clearHistoryBtn" style="display:none" onclick="clearHistory()">Clear History</button>
-    <button onclick="toggleFavorites()">Favorites</button>
-  </div>
-
-  <div class="card">
-    <strong id="prayerTitle">Prayer</strong>
-    <div id="prayer"></div>
-  </div>
-
-  <div class="card">
-    <strong id="reflectionTitle">Reflection</strong>
-    <div id="reflection"></div>
-  </div>
-
-  <div class="card">
-  <strong onclick="toggleJournal()" style="cursor:pointer">Journal (click to expand/collapse)</strong>
-  <div id="journalBody">
-    <textarea id="journal"></textarea>
-    <button onclick="saveJournal()">Save Journal</button>
+<!-- MISSION HERO (HOME IDENTITY) -->
+<div class="missionHero">
+  <div class="missionTitle" onclick="toggleMission()">Parker Family Mission Statement</div>
+  <div id="missionBody">
+    <div id="missionText"></div>
+    <div id="missionPrompt" style="font-size:12px;font-style:italic;margin-top:8px"></div>
   </div>
 </div>
-  </div>
 
-  <div class="card" id="missionCard">
-    <strong onclick="toggleMission()" style="cursor:pointer">Parker Family Mission Statement</strong>
-    <div id="missionBody">
-      <div id="missionText"></div>
-      <div id="missionPrompt" style="font-size:12px;font-style:italic;margin-top:8px"></div>
-      <div id="missionPrompt" style="font-size:12px;font-style:italic;margin-top:8px"></div>
-    </div>
-  </div>
+<!-- GREETING -->
+<div id="greeting"></div>
+<div id="themeSummary" style="opacity:.7;font-size:13px;margin-bottom:10px"></div>
 
-  <div class="history" id="historyBox"><strong>History</strong><div id="historyList"></div></div>
-  <div class="favorites" id="favBox"><strong>Favorites</strong><div id="favList"></div></div>
+<!-- VERSE -->
+<div class="card">
+  <div class="verse" id="verse">Loading...</div>
+  <div class="ref" id="ref"></div>
+</div>
+
+<!-- CONTROLS -->
+<div class="card">
+  <select id="translation">
+    <option value="kjv">KJV</option>
+    <option value="web" selected>WEB</option>
+    <option value="esv">ESV</option>
+  </select>
+
+  <select id="topic">
+    <option value="daily">Verse of the Day</option>
+    <option value="peace">Peace</option>
+    <option value="strength">Strength</option>
+    <option value="hope">Hope</option>
+    <option value="anxiety">Anxiety</option>
+  </select>
+
+  <button onclick="toggleDark()">Dark Mode</button>
+  <button onclick="randomVerse()">Random</button>
+  <button onclick="encouragement()">Encourage Me</button>
+  <button onclick="toggleHistory()">History</button>
+  <button onclick="clearHistory()" id="clearHistoryBtn" style="display:none">Clear History</button>
+  <button onclick="toggleFavorites()">Favorites</button>
+</div>
+
+<!-- PRAYER / REFLECTION -->
+<div class="card">
+  <strong>Prayer</strong>
+  <div id="prayer"></div>
+</div>
+
+<div class="card">
+  <strong>Reflection</strong>
+  <div id="reflection"></div>
+</div>
+
+<!-- JOURNAL -->
+<div class="card">
+  <strong onclick="toggleJournal()" style="cursor:pointer">Journal</strong>
+  <div id="journalBody">
+    <textarea id="journal"></textarea>
+    <button onclick="saveJournal()">Save</button>
+  </div>
+</div>
+
+<!-- HISTORY / FAVORITES -->
+<div class="card history" id="historyBox"><strong>History</strong><div id="historyList"></div></div>
+<div class="card favorites" id="favBox"><strong>Favorites</strong><div id="favList"></div></div>
 
 </div>
 
@@ -189,47 +191,85 @@ let history=JSON.parse(localStorage.getItem('unshaken_history')||'[]');
 let favorites=JSON.parse(localStorage.getItem('unshaken_favs')||'[]');
 
 function getMode(){let h=new Date().getHours();return h<12?'morning':h<18?'day':'night';}
-function themeSummary(m){return m==='morning'?'Focus: Discipline & Direction':m==='day'?'Focus: Faith in Action':'Focus: Gratitude & Rest';}
-function setModeUI(){let m=getMode();document.getElementById('greeting').innerText=m==='morning'?'Good Morning ☀️':m==='day'?'Good Afternoon 🌤️':'Good Evening 🌙';document.getElementById('themeSummary').innerText=themeSummary(m);}
 
-const prayers={morning:["Guide me Lord","Strength today","Order my steps","Stay faithful","Lead me"],day:["Focus me","Give wisdom","Patience Lord","Stay anchored","Strengthen me"],night:["Thank You","Calm me","Forgive me","Grateful heart","Rest well"]};
-const reflections={morning:["Focus today?","Walk with God?","Challenges?","Trust God?","Who be?"],day:["Faith now?","Patience?","Honor God?","Distractions?","Encourage who?"],night:["God seen?","Grateful?","Shortcomings?","Growth?","Tomorrow?"]};
+function setUI(){
+  let m=getMode();
+  document.getElementById('greeting').innerText=
+    m==='morning'?'Good Morning ☀️':m==='day'?'Good Afternoon 🌤️':'Good Evening 🌙';
+  document.getElementById('themeSummary').innerText=
+    m==='morning'?'Focus: Discipline & Direction':m==='day'?'Focus: Faith in Action':'Focus: Gratitude & Rest';
+}
+
+const prayers={morning:["Guide me","Strength","Order steps","Faithful","Lead me"],day:["Focus","Wisdom","Patience","Anchored","Strength"],night:["Thank You","Calm","Forgive","Grateful","Rest"]};
+const reflections={morning:["Focus?","Walk?","Challenge?","Trust?","Identity?"],day:["Faith?","Patience?","Honor?","Distracted?","Encourage?"],night:["Seen God?","Grateful?","Missed?","Growth?","Tomorrow?"]};
 
 function idx(k,l){let i=parseInt(localStorage.getItem(k)||0);i=(i+1)%l;localStorage.setItem(k,i);return i;}
+
 function setExtras(){let m=getMode();document.getElementById('prayer').innerText=prayers[m][idx(m+'_p',5)];document.getElementById('reflection').innerText=reflections[m][idx(m+'_r',5)];}
 
-function loadMission(){let m=localStorage.getItem('unshaken_mission')||"As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace. We aim to live each day anchored in truth, gratitude, and purpose.";document.getElementById('missionText').innerText=m;}
-function updateMissionPrompt(){let p=["Aligned today?","Lived values?","Missed moments?","Improve tomorrow?","Loved well?"];let i=parseInt(localStorage.getItem('mp')||0);i=(i+1)%5;localStorage.setItem('mp',i);document.getElementById('missionPrompt').innerText=p[i];}
+function loadMission(){
+  document.getElementById('missionText').innerText=
+  localStorage.getItem('unshaken_mission')||"As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace. We aim to live each day anchored in truth, gratitude, and purpose.";
+}
 
-function toggleMission(){let b=document.getElementById('missionBody');b.style.display=b.style.display==='none'?'block':'none';}
-function toggleJournal(){let j=document.getElementById('journalBody');j.style.display=j.style.display==='none'?'block':'none';}
-function saveJournal(){localStorage.setItem('journal_'+new Date().toDateString(),document.getElementById('journal').value);alert('Saved');}
+function updateMissionPrompt(){
+  const p=["Aligned?","Lived values?","Missed?","Improve?","Loved well?"];
+  let i=parseInt(localStorage.getItem('mp')||0);i=(i+1)%5;localStorage.setItem('mp',i);
+  document.getElementById('missionPrompt').innerText=p[i];
+}
 
-function toggleHistory(){let b=document.getElementById('historyBox');let c=document.getElementById('clearHistoryBtn');let o=b.style.display==='block';b.style.display=o?'none':'block';if(c)c.style.display=o?'none':'inline-block';}
-function clearHistory(){if(!confirm('Clear history?'))return;history=[];localStorage.removeItem('unshaken_history');renderHistory();}
+function toggleMission(){
+  let b=document.getElementById('missionBody');
+  b.style.display=b.style.display==='none'?'block':'none';
+}
+
+function toggleJournal(){
+  let j=document.getElementById('journalBody');
+  j.style.display=j.style.display==='none'?'block':'none';
+}
+
+function saveJournal(){
+  localStorage.setItem('journal_'+new Date().toDateString(),document.getElementById('journal').value);
+}
+
+function toggleHistory(){
+  let b=document.getElementById('historyBox');
+  let c=document.getElementById('clearHistoryBtn');
+  let o=b.style.display==='block';
+  b.style.display=o?'none':'block';
+  c.style.display=o?'none':'inline-block';
+}
+
+function clearHistory(){if(!confirm('Clear?'))return;history=[];localStorage.removeItem('unshaken_history');renderHistory();}
 
 function toggleFavorites(){let b=document.getElementById('favBox');b.style.display=b.style.display==='block'?'none':'block';renderFavorites();}
 
-function addToHistory(r,t){if(history[0]?.ref===r)return;history.unshift({ref:r,text:t});if(history.length>20)history.pop();localStorage.setItem('unshaken_history',JSON.stringify(history));renderHistory();}
+function addToHistory(r,t){if(history[0]?.ref===r)return;history.unshift({ref:r,text:t});localStorage.setItem('unshaken_history',JSON.stringify(history));renderHistory();}
 
-function renderHistory(){let el=document.getElementById('historyList');el.innerHTML='';history.forEach(h=>{let d=document.createElement('div');d.className='history-item';d.innerHTML='<span>'+h.ref+'</span><span class="star">★</span>';d.onclick=()=>{currentRef=h.ref;currentVerse=h.text;document.getElementById('verse').innerText=h.text;document.getElementById('ref').innerText=h.ref;};el.appendChild(d);});}
-function renderFavorites(){let el=document.getElementById('favList');el.innerHTML='';favorites.forEach(f=>{let d=document.createElement('div');d.className='fav-item';d.innerText=f.ref;el.appendChild(d);});}
+function renderHistory(){let el=document.getElementById('historyList');el.innerHTML='';history.forEach(h=>{let d=document.createElement('div');d.innerText=h.ref;d.onclick=()=>loadVerse(h.ref);el.appendChild(d);});}
 
-function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('theme',t);}
-function themeByTime(){let s=localStorage.getItem('theme');if(s)return applyTheme(s);let h=new Date().getHours();applyTheme(h<6||h>18?'dark':'light');}
+function renderFavorites(){let el=document.getElementById('favList');el.innerHTML='';favorites.forEach(f=>{let d=document.createElement('div');d.innerText=f.ref;el.appendChild(d);});}
+
+function themeByTime(){let h=new Date().getHours();document.documentElement.setAttribute('data-theme',h<6||h>18?'dark':'light');}
 
 async function fetchDaily(){let r=await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');let d=await r.json();loadVerse(d.verse.details.reference);}
+
 async function loadVerse(ref){let tr=document.getElementById('translation').value;let r=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);let d=await r.json();currentRef=ref;currentVerse=d.text;document.getElementById('verse').innerText=d.text;document.getElementById('ref').innerText=ref;addToHistory(ref,d.text);setExtras();}
 
 function randomVerse(){fetch('https://labs.bible.org/api/?passage=random&type=json').then(r=>r.json()).then(d=>loadVerse(d[0].bookname+' '+d[0].chapter+':'+d[0].verse));}
 function encouragement(){loadVerse('Isaiah 41:10');}
-function toggleDark(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
-function shareVerse(){let t=currentRef+'\n\n'+currentVerse;navigator.share?navigator.share({title:'Unshaken',text:t}):navigator.clipboard.writeText(t);}
+function toggleDark(){let t=document.documentElement.getAttribute('data-theme');document.documentElement.setAttribute('data-theme',t==='dark'?'light':'dark');}
 
-window.onload=()=>{themeByTime();setModeUI();fetchDaily();setExtras();loadMission();updateMissionPrompt();renderHistory();renderFavorites();};
-
-function topicChange(){let v=document.getElementById('topic').value;if(v==='daily')return fetchDaily();let map={peace:'John 14:27',strength:'Philippians 4:13',hope:'Jeremiah 29:11',anxiety:'Philippians 4:6'};loadVerse(map[v]);}
+window.onload=()=>{
+  themeByTime();
+  setUI();
+  fetchDaily();
+  setExtras();
+  loadMission();
+  updateMissionPrompt();
+  renderHistory();
+  renderFavorites();
+};
 </script>
-
 </body>
 </html>
