@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Unshaken v1.7.1</title>
 
@@ -9,7 +9,7 @@
 :root{
   --bg:#f5f5f5;
   --text:#111;
-  --card:#fff;
+  --card:#ffffff;
   --accent:#2b6cb0;
   --muted:#666;
 }
@@ -59,7 +59,7 @@ body{
   margin-bottom:10px;
 }
 
-input, button{
+input, button, select{
   padding:8px;
   border-radius:8px;
   border:1px solid #ccc;
@@ -84,15 +84,15 @@ button:hover{
   background:rgba(0,0,0,0.05);
 }
 
+.star{
+  font-size:22px;
+  cursor:pointer;
+  user-select:none;
+}
+
 .small{
   font-size:12px;
   color:var(--muted);
-}
-
-.pagination{
-  display:flex;
-  justify-content:space-between;
-  margin-top:10px;
 }
 
 .footer{
@@ -107,34 +107,62 @@ button:hover{
 
 <body>
 
-<div class="topbar">Unshaken Bible Engine v1.7.1</div>
+<div class="topbar">Unshaken v1.7.1</div>
 
 <div class="container">
 
-<!-- SEARCH -->
+<!-- DAILY -->
 <div class="card">
-  <div class="section-title">Bible Search</div>
+  <div class="section-title">Daily Verse</div>
 
-  <input id="searchInput" placeholder="Search (e.g. love, faith, hope)" />
+  <div id="verse"></div>
+  <div id="ref" style="color:var(--accent);font-weight:700;margin-top:6px;"></div>
 
+  <div class="star" onclick="toggleFavorite()" id="star">☆</div>
+</div>
+
+<!-- CONTROLS -->
+<div class="card">
+  <button onclick="loadDaily()">Daily</button>
+  <button onclick="loadRandom()">Random</button>
+  <button onclick="toggleSearch()">Search</button>
+  <button onclick="toggleFavorites()">Favorites</button>
+
+  <select onchange="setTheme(this.value)">
+    <option value="system">System</option>
+    <option value="light">Day</option>
+    <option value="dark">Night</option>
+  </select>
+</div>
+
+<!-- SEARCH -->
+<div class="card hidden" id="searchBox">
+  <div class="section-title">Search Bible</div>
+
+  <input id="searchInput" placeholder="Search (love, faith, hope)"/>
   <button onclick="runSearch()">Search</button>
   <button onclick="clearSearch()">Clear</button>
 
   <div id="searchMeta" class="small"></div>
-
   <div id="searchResults"></div>
-
-  <div class="pagination">
-    <button onclick="prevPage()">Prev</button>
-    <button onclick="nextPage()">Next</button>
-  </div>
 </div>
 
-<!-- VERSE VIEW -->
+<!-- FAVORITES -->
+<div class="card hidden" id="favoritesBox">
+  <div class="section-title">Favorites</div>
+  <div id="favoritesList"></div>
+</div>
+
+<!-- PRAYER -->
 <div class="card">
-  <div class="section-title">Current Verse</div>
-  <div id="verse"></div>
-  <div id="ref" style="color:var(--accent);font-weight:700;margin-top:6px;"></div>
+  <div class="section-title">Prayer</div>
+  <div id="prayer"></div>
+</div>
+
+<!-- REFLECTION -->
+<div class="card">
+  <div class="section-title">Reflection</div>
+  <div id="reflection"></div>
 </div>
 
 </div>
@@ -146,114 +174,164 @@ button:hover{
 /* ================= BIBLE INDEX ================= */
 
 let bibleIndex = [];
-let searchResults = [];
-let currentPage = 0;
-const pageSize = 25;
+let current = null;
+let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* ================= LOAD BIBLE FILE ================= */
+/* ================= LOAD BIBLE ================= */
 
 async function loadBible(){
   const res = await fetch("web.txt");
   const text = await res.text();
 
-  bibleIndex = text
-    .split("\n")
-    .filter(Boolean)
-    .map(line => {
-      const firstSpace = line.indexOf(" ");
-      return {
-        ref: line.slice(0, firstSpace),
-        text: line.slice(firstSpace + 1)
-      };
-    });
+  bibleIndex = text.split("\n").filter(Boolean).map(line=>{
+    const i = line.indexOf(" ");
+    return {
+      ref: line.slice(0,i),
+      text: line.slice(i+1)
+    };
+  });
 
-  console.log("Bible loaded:", bibleIndex.length, "verses");
+  loadDaily();
+}
+
+/* ================= DAILY SEED (HASH BASED) ================= */
+
+function getSeed(){
+  const date = new Date().toISOString().split("T")[0];
+  let hash = 81213;
+
+  for(let i=0;i<date.length;i++){
+    hash = (hash * 31 + date.charCodeAt(i)) >>> 0;
+  }
+
+  return hash;
+}
+
+function loadDaily(){
+  const v = bibleIndex[getSeed() % bibleIndex.length];
+  setVerse(v);
+}
+
+/* ================= RANDOM (OURMANNA) ================= */
+
+function loadRandom(){
+  fetch("https://www.ourmanna.com/api/v1/get/?format=json&order=random")
+  .then(r=>r.json())
+  .then(d=>{
+    setVerse({
+      ref:d.verse.details.reference,
+      text:d.verse.details.text
+    });
+  });
+}
+
+/* ================= VERSE DISPLAY ================= */
+
+function setVerse(v){
+  current = v;
+
+  document.getElementById("verse").innerHTML = v.text;
+  document.getElementById("ref").innerText = v.ref;
+
+  updateStar();
+  updateDevotion(v);
+}
+
+/* ================= FAVORITES ================= */
+
+function toggleFavorite(){
+  if(!current) return;
+
+  const i = favorites.indexOf(current.ref);
+
+  if(i > -1) favorites.splice(i,1);
+  else favorites.push(current.ref);
+
+  localStorage.setItem("fav", JSON.stringify(favorites));
+
+  updateStar();
+  renderFavorites();
+}
+
+function updateStar(){
+  if(!current) return;
+
+  document.getElementById("star").innerText =
+    favorites.includes(current.ref) ? "★" : "☆";
+}
+
+function toggleFavorites(){
+  document.getElementById("favoritesBox").classList.toggle("hidden");
+  renderFavorites();
+}
+
+function renderFavorites(){
+  document.getElementById("favoritesList").innerHTML =
+    favorites.length ? favorites.join("<br>") : "No favorites yet.";
 }
 
 /* ================= SEARCH ================= */
 
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+}
+
 function runSearch(){
-  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+  const q = document.getElementById("searchInput").value.toLowerCase();
+  const box = document.getElementById("searchResults");
 
-  if(!q){
-    document.getElementById("searchResults").innerHTML =
-      "<div class='small'>Type a keyword like 'love' or 'faith'</div>";
-    return;
-  }
+  box.innerHTML = "";
 
-  searchResults = bibleIndex.filter(v =>
+  const results = bibleIndex.filter(v =>
     v.text.toLowerCase().includes(q)
   );
 
-  currentPage = 0;
-
-  renderPage();
-
   document.getElementById("searchMeta").innerText =
-    `Found ${searchResults.length} results`;
-}
+    `Found ${results.length} results`;
 
-/* ================= PAGINATION ================= */
-
-function renderPage(){
-  const box = document.getElementById("searchResults");
-  box.innerHTML = "";
-
-  const start = currentPage * pageSize;
-  const pageItems = searchResults.slice(start, start + pageSize);
-
-  if(pageItems.length === 0){
-    box.innerHTML = "<div class='small'>No results</div>";
-    return;
-  }
-
-  pageItems.forEach(v=>{
-    const div = document.createElement("div");
-    div.className = "result";
-    div.innerHTML = `<strong>${v.ref}</strong><br><span class="small">${v.text}</span>`;
-
-    div.onclick = () => showVerse(v);
-
-    box.appendChild(div);
+  results.slice(0,50).forEach(v=>{
+    const d = document.createElement("div");
+    d.className = "result";
+    d.innerHTML = `<strong>${v.ref}</strong><br>${v.text}`;
+    d.onclick = ()=>setVerse(v);
+    box.appendChild(d);
   });
 }
-
-function nextPage(){
-  if((currentPage+1)*pageSize < searchResults.length){
-    currentPage++;
-    renderPage();
-  }
-}
-
-function prevPage(){
-  if(currentPage > 0){
-    currentPage--;
-    renderPage();
-  }
-}
-
-/* ================= CLEAR ================= */
 
 function clearSearch(){
   document.getElementById("searchInput").value = "";
   document.getElementById("searchResults").innerHTML = "";
   document.getElementById("searchMeta").innerText = "";
-  searchResults = [];
-  currentPage = 0;
 }
 
-/* ================= VERSE DISPLAY ================= */
+/* ================= THEME ================= */
 
-function showVerse(v){
-  document.getElementById("verse").innerText = v.text;
-  document.getElementById("ref").innerText = v.ref;
+function setTheme(mode){
+  if(mode === "system"){
+    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.setAttribute("data-theme", dark ? "dark":"light");
+  } else {
+    document.documentElement.setAttribute("data-theme", mode);
+  }
+}
+
+/* ================= PRAYER / REFLECTION ================= */
+
+function updateDevotion(v){
+  const t = v.text.toLowerCase();
+
+  if(t.includes("fear")){
+    document.getElementById("prayer").innerText = "Give me peace today.";
+    document.getElementById("reflection").innerText = "What am I afraid of?";
+  } else {
+    document.getElementById("prayer").innerText = "Guide my steps today.";
+    document.getElementById("reflection").innerText = "How can I grow today?";
+  }
 }
 
 /* ================= INIT ================= */
 
-window.onload = async () => {
-  await loadBible();
-};
+window.onload = loadBible;
 
 </script>
 
