@@ -61,6 +61,7 @@ body{
   font-size:20px;
   line-height:1.6;
   margin:14px 0;
+  min-height:60px;
 }
 
 .ref{
@@ -83,7 +84,7 @@ button:hover{
   color:#fff;
 }
 
-.history,.favorites{
+.favorites{
   display:none;
   margin-top:10px;
   padding-top:10px;
@@ -136,8 +137,25 @@ button:hover{
   <button onclick="encouragement()">Encourage Me</button>
 
   <button onclick="toggleFavorites()">Favorites</button>
-
   <button onclick="addFavorite()">⭐ Save Favorite</button>
+</div>
+
+<!-- PRAYER -->
+<div class="card">
+  <strong>Prayer</strong>
+  <div id="prayer"></div>
+</div>
+
+<!-- REFLECTION -->
+<div class="card">
+  <strong>Reflection</strong>
+  <div id="reflection"></div>
+</div>
+
+<!-- MISSION -->
+<div class="card">
+  <strong>Parker Family Mission Statement</strong>
+  <div id="missionText" style="margin-top:8px"></div>
 </div>
 
 <!-- FAVORITES -->
@@ -153,13 +171,17 @@ button:hover{
 
 <script>
 
+/* =========================
+   STATE
+========================= */
+
 let favorites = JSON.parse(localStorage.getItem('unshaken_favs') || '[]');
 
 let currentRef = "";
 let currentText = "";
 
 /* =========================
-   DAILY VERSE
+   DAILY VERSE SYNC
 ========================= */
 
 function getDayKey(){
@@ -182,10 +204,10 @@ async function fetchDaily(){
   let r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
   let d = await r.json();
 
-  const ref = d.verse.details.reference;
+  const ref = d?.verse?.details?.reference || "John 14:27";
 
   localStorage.setItem(storageKey, JSON.stringify({
-    ref: ref,
+    ref,
     date: key
   }));
 
@@ -193,20 +215,80 @@ async function fetchDaily(){
 }
 
 /* =========================
-   VERSE LOADER
+   SAFE VERSE LOADER
 ========================= */
 
 async function loadVerse(ref){
-  let tr = document.getElementById('translation').value;
+  try{
+    let tr = document.getElementById('translation').value;
 
-  let r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
-  let d = await r.json();
+    let r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
+    let d = await r.json();
 
-  document.getElementById('verse').innerText = d.text;
-  document.getElementById('ref').innerText = ref;
+    let text = d?.text?.trim();
 
-  currentRef = ref;
-  currentText = d.text;
+    if(!text) throw new Error("Empty verse");
+
+    document.getElementById('verse').innerText = text;
+    document.getElementById('ref').innerText = ref;
+
+    currentRef = ref;
+    currentText = text;
+
+  } catch(e){
+    document.getElementById('verse').innerText =
+      "Verse unavailable right now. Please try again.";
+
+    document.getElementById('ref').innerText = ref || "";
+  }
+}
+
+/* =========================
+   PRAYER + REFLECTION
+========================= */
+
+function getMode(){
+  let h = new Date().getHours();
+  return h < 12 ? 'morning' : h < 18 ? 'day' : 'night';
+}
+
+const prayers = {
+  morning:["Guide me","Strength","Order my steps","Faithfulness","Lead me"],
+  day:["Focus","Wisdom","Patience","Anchored","Strength"],
+  night:["Thank You","Peace","Forgiveness","Gratitude","Rest"]
+};
+
+const reflections = {
+  morning:["Am I ready?","Am I trusting?","Am I steady?","Am I focused?","Am I faithful?"],
+  day:["Am I distracted?","Am I patient?","Am I honoring God?","Am I kind?","Am I steady?"],
+  night:["Did I grow?","Was I grateful?","Did I trust?","Where did I struggle?","What did I learn?"]
+};
+
+function idx(key,max){
+  let i = parseInt(localStorage.getItem(key) || 0);
+  i = (i + 1) % max;
+  localStorage.setItem(key, i);
+  return i;
+}
+
+function setExtras(){
+  let m = getMode();
+
+  document.getElementById('prayer').innerText =
+    prayers[m][idx(m+"_p",5)];
+
+  document.getElementById('reflection').innerText =
+    reflections[m][idx(m+"_r",5)];
+}
+
+/* =========================
+   MISSION
+========================= */
+
+function loadMission(){
+  document.getElementById('missionText').innerText =
+  localStorage.getItem('unshaken_mission') ||
+  "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
 }
 
 /* =========================
@@ -217,11 +299,7 @@ function addFavorite(){
   if(!currentRef) return;
 
   if(!favorites.some(f => f.ref === currentRef)){
-    favorites.push({
-      ref: currentRef,
-      text: currentText
-    });
-
+    favorites.push({ ref: currentRef, text: currentText });
     localStorage.setItem('unshaken_favs', JSON.stringify(favorites));
     renderFavorites();
   }
@@ -235,11 +313,8 @@ function renderFavorites(){
     let div = document.createElement('div');
     div.style.cursor = "pointer";
     div.style.margin = "6px 0";
-
     div.innerText = f.ref;
-
     div.onclick = () => loadVerse(f.ref);
-
     el.appendChild(div);
   });
 }
@@ -279,10 +354,6 @@ function randomVerse(){
   });
 }
 
-/* =========================
-   THEME
-========================= */
-
 function toggleDark(){
   let t = document.documentElement.getAttribute('data-theme');
   document.documentElement.setAttribute('data-theme', t === 'dark' ? 'light' : 'dark');
@@ -299,8 +370,10 @@ window.onload = () => {
     localStorage.getItem('theme') || 'light'
   );
 
+  loadMission();
   renderFavorites();
   fetchDaily();
+  setExtras();
 };
 
 </script>
