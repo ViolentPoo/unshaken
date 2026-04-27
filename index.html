@@ -90,20 +90,37 @@
     <div id="verse" class="verse">Loading verse...</div>
     <div id="ref" class="ref"></div>
 
+    <div id="extras" style="margin-top:15px;padding:12px;border-radius:12px;background:rgba(255,255,255,.06)">
+      <div id="prayer" style="margin-bottom:10px;font-size:14px;"></div>
+      <div id="reflection" style="font-size:14px;font-style:italic;"></div>
+    </div>
+
     <div class="controls">
       <select id="translation">
         <option value="kjv">KJV</option>
         <option value="web">WEB</option>
         <option value="esv">ESV</option>
       </select>
+      <select id="topicSelect">
+        <option value="">Topic Verse</option>
+        <option value="peace">Peace</option>
+        <option value="strength">Strength</option>
+        <option value="hope">Hope</option>
+        <option value="anxiety">Anxiety</option>
+      </select>
 
       <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+      <button onclick="randomVerse()">Random Verse</button>
+      <button onclick="shareAsImage()">Verse Image</button>
+      <button onclick="encouragementMode()">Encouragement</button>
       <button onclick="shareVerse()">Share</button>
     </div>
   </div>
 
 <script>
 let currentRef = null;
+const prayers=["Lord, guide my heart today.","Father, give me strength and peace.","Jesus, help me trust You today."];
+const reflections=["How can this verse shape your choices today?","What is God reminding you through this verse?","Who could be encouraged by this message today?"];
 let currentVerse = null;
 
 function setThemeByTime() {
@@ -148,7 +165,17 @@ function toggleDarkMode() {
   document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
 }
 
-async function shareVerse() {
+async function setExtras(){document.getElementById('prayer').textContent='Prayer: '+prayers[Math.floor(Math.random()*prayers.length)];document.getElementById('reflection').textContent=reflections[Math.floor(Math.random()*reflections.length)];}
+
+async function randomVerse(){fetch('https://labs.bible.org/api/?passage=random&type=json').then(r=>r.json()).then(d=>{const v=d[0];currentRef=v.bookname+' '+v.chapter+':'+v.verse;currentVerse=v.text;document.getElementById('ref').textContent=currentRef;document.getElementById('verse').textContent=currentVerse;setExtras();});}
+
+function topicSearch(){const t=document.getElementById('topicSelect').value;if(!t)return;const map={peace:'John 14:27',strength:'Philippians 4:13',hope:'Jeremiah 29:11',anxiety:'Philippians 4:6'};currentRef=map[t];document.getElementById('ref').textContent=currentRef;loadTranslation(currentRef);setExtras();}
+
+function encouragementMode(){currentRef='Isaiah 41:10';document.getElementById('ref').textContent=currentRef;loadTranslation(currentRef);setExtras();}
+
+function shareAsImage(){alert('Next upgrade: generate styled share image for this verse.');}
+
+function shareVerse() {
   const text = `${currentRef}\n\n${currentVerse}`;
 
   if (navigator.share) {
@@ -164,7 +191,10 @@ document.getElementById('translation').addEventListener('change', () => {
 });
 
 setThemeByTime();
+setExtras();
 fetchDailyVerse();
+
+document.getElementById('topicSelect').addEventListener('change',topicSearch);
 </script>
   <div style="position:fixed;bottom:8px;right:10px;font-size:10px;opacity:.65;letter-spacing:.3px;z-index:1000;">The Parker Family</div>
 </body>
