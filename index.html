@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Unshaken v1.7.7</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unshaken v1.7.8</title>
 
 <style>
 :root{
@@ -22,12 +22,14 @@
   --muted:#94a3b8;
 }
 
+*{box-sizing:border-box;}
+
 body{
   margin:0;
-  font-family:system-ui;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   background:var(--bg);
   color:var(--text);
-  padding:70px 0 50px;
+  padding:72px 0 60px;
   display:flex;
   justify-content:center;
 }
@@ -36,54 +38,82 @@ body{
   position:fixed;
   top:0;left:0;right:0;
   background:var(--accent);
-  color:white;
+  color:#fff;
   text-align:center;
   padding:12px;
   font-weight:700;
+  z-index:10;
 }
 
-.container{ width:min(900px,92%); }
+.container{
+  width:min(920px,92%);
+}
 
 .card{
   background:var(--card);
   padding:14px;
-  border-radius:12px;
+  border-radius:14px;
   margin-top:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
 }
 
 .section-title{
-  font-family:Georgia;
+  font-family:Georgia,serif;
   font-weight:700;
   text-transform:uppercase;
   color:var(--accent);
+  font-size:14px;
   margin-bottom:10px;
+  letter-spacing:.5px;
 }
 
-input, button, select{
-  padding:8px;
+button,input,select{
+  padding:8px 10px;
   border-radius:8px;
   border:1px solid #ccc;
   margin:3px;
+  background:var(--card);
+  color:var(--text);
+}
+
+button{
+  cursor:pointer;
 }
 
 button:hover{
   background:var(--accent);
-  color:white;
-  cursor:pointer;
+  color:#fff;
 }
 
-.hidden{ display:none; }
+.hidden{display:none;}
 
-.result{
-  padding:8px;
-  border-bottom:1px solid #ddd;
-  cursor:pointer;
+.verse-ref{
+  font-weight:700;
+  font-size:18px;
+  margin-bottom:8px;
+  color:var(--accent);
+}
+
+.verse-text{
+  font-size:18px;
+  line-height:1.65;
 }
 
 .star{
-  font-size:22px;
+  font-size:24px;
   cursor:pointer;
   user-select:none;
+  margin-top:10px;
+}
+
+.result{
+  padding:10px 0;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  cursor:pointer;
+}
+
+.result:hover{
+  opacity:.85;
 }
 
 .small{
@@ -95,7 +125,7 @@ button:hover{
   position:fixed;
   right:10px;
   bottom:10px;
-  font-size:10px;
+  font-size:11px;
   color:var(--muted);
 }
 </style>
@@ -103,17 +133,15 @@ button:hover{
 
 <body>
 
-<div class="topbar">Unshaken v1.7.7 — Devotional Insight Engine</div>
+<div class="topbar">Unshaken v1.7.8 — Smart Parser Edition</div>
 
 <div class="container">
 
 <!-- VERSE -->
 <div class="card">
   <div class="section-title">Verse</div>
-
   <div id="verse"></div>
-
-  <div class="star" onclick="toggleFavorite()" id="star">☆</div>
+  <div class="star" id="star" onclick="toggleFavorite()">☆</div>
 </div>
 
 <!-- CONTROLS -->
@@ -134,11 +162,11 @@ button:hover{
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search Bible</div>
 
-  <input id="searchInput" placeholder="Search (love, faith, hope)"/>
+  <input id="searchInput" placeholder="Search love, peace, hope...">
   <button onclick="runSearch()">Search</button>
   <button onclick="clearSearch()">Clear</button>
 
-  <div id="searchMeta" class="small"></div>
+  <div class="small" id="searchMeta"></div>
   <div id="searchResults"></div>
 </div>
 
@@ -165,14 +193,13 @@ button:hover{
 <div class="footer">est. 2013 — The Parker Family</div>
 
 <script>
-
 /* ================= STATE ================= */
 
 let bibleIndex = [];
 let current = null;
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* ================= SAFE PARSER ================= */
+/* ================= SMART PARSER ================= */
 
 async function loadBible(){
   const res = await fetch("web.txt");
@@ -180,14 +207,21 @@ async function loadBible(){
 
   bibleIndex = text
     .split("\n")
+    .map(v => v.trim())
     .filter(Boolean)
     .map(line => {
-      const parts = line.trim().split(/\s+/);
+      const parts = line.split(/\s+/);
+
+      const refIndex = parts.findIndex(p => p.includes(":"));
+
+      const book = parts.slice(0, refIndex).join(" ");
+      const ref = parts[refIndex];
+      const verseText = parts.slice(refIndex + 1).join(" ");
 
       return {
-        book: parts[0],
-        ref: parts[1],
-        text: parts.slice(2).join(" ")
+        book,
+        ref,
+        text: verseText
       };
     });
 
@@ -198,7 +232,7 @@ async function loadBible(){
 
 function hashSeed(input){
   let hash = 81213;
-  const str = input.toString();
+  const str = String(input);
 
   for(let i=0;i<str.length;i++){
     hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
@@ -210,6 +244,8 @@ function hashSeed(input){
 /* ================= DAILY ================= */
 
 function loadDaily(){
+  if(!bibleIndex.length) return;
+
   const date = new Date().toISOString().split("T")[0];
   const seed = hashSeed(date);
 
@@ -219,23 +255,20 @@ function loadDaily(){
 /* ================= RANDOM ================= */
 
 function loadRandom(){
-  const seed = hashSeed(Date.now().toString());
+  if(!bibleIndex.length) return;
 
+  const seed = hashSeed(Date.now());
   setVerse(bibleIndex[seed % bibleIndex.length]);
 }
 
-/* ================= VERSE DISPLAY ================= */
+/* ================= DISPLAY ================= */
 
 function setVerse(v){
   current = v;
 
   document.getElementById("verse").innerHTML = `
-    <div style="font-weight:700;font-size:18px;margin-bottom:6px;">
-      ${v.book} ${v.ref}
-    </div>
-    <div style="line-height:1.6;font-size:17px;">
-      ${v.text}
-    </div>
+    <div class="verse-ref">${v.book} ${v.ref}</div>
+    <div class="verse-text">${v.text}</div>
   `;
 
   updateStar();
@@ -252,56 +285,59 @@ function getTimeOfDay(){
   return "night";
 }
 
-/* ================= DEVOTIONAL ENGINE (v1.7.7 CORE) ================= */
+/* ================= DEVOTIONAL ENGINE ================= */
 
 function getVerseSegments(text){
-  const sentences = text.split(/(?<=[.!?])\s+/);
-  return sentences.slice(0, 3);
+  const parts = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  return parts.slice(0,3);
 }
 
 function getDevotion(v){
   const t = getTimeOfDay();
-  const segments = getVerseSegments(v.text.toLowerCase());
-  const focus = segments.join(" ");
-
-  let prayer = "";
-  let reflection = "";
+  const segments = getVerseSegments(v.text);
+  const focus = segments.join(" ").toLowerCase();
 
   const base = {
-    morning: {
-      prayer: "Guide my steps and focus my heart today.",
-      reflection: "How should I begin this day with intention?"
+    morning:{
+      prayer:"Guide my steps and focus my heart today.",
+      reflection:"How can I begin this day with intention?"
     },
-    day: {
-      prayer: "Give me wisdom, strength, and patience.",
-      reflection: "Am I responding with grace in this moment?"
+    day:{
+      prayer:"Give me wisdom, strength, and patience today.",
+      reflection:"Am I responding with grace in this moment?"
     },
-    night: {
-      prayer: "Thank You for today and bring me rest.",
-      reflection: "Where did I see God working today?"
+    night:{
+      prayer:"Thank You for today and grant me rest.",
+      reflection:"Where did I notice God working today?"
     }
   };
 
-  prayer = base[t].prayer;
-  reflection = base[t].reflection;
+  let prayer = base[t].prayer;
+  let reflection = base[t].reflection;
 
   if(focus.includes("fear")){
-    prayer += " Remove fear from my heart.";
-    reflection += " What fear is influencing me?";
+    prayer += " Remove fear from what I’m facing.";
+    reflection += " What fear is influencing my thinking?";
   }
 
   if(focus.includes("love")){
     prayer += " Help me love others well.";
-    reflection += " How am I showing love?";
+    reflection += " Who needs love from me today?";
   }
 
   if(focus.includes("peace")){
     prayer += " Fill me with peace.";
-    reflection += " Where do I need to release control?";
+    reflection += " What is disturbing my peace?";
   }
 
-  prayer += ` (based on: "${segments[0].slice(0,50)}...")`;
-  reflection += ` (reflecting: "${segments[0].slice(0,50)}...")`;
+  if(focus.includes("hope")){
+    prayer += " Anchor my hope in You.";
+    reflection += " What am I placing hope in?";
+  }
+
+  if(segments.length){
+    reflection += ` (Verse focus: "${segments[0].slice(0,70)}...")`;
+  }
 
   return { prayer, reflection };
 }
@@ -318,8 +354,7 @@ function updateDevotion(v){
 function toggleFavorite(){
   if(!current) return;
 
-  const key = current.book + " " + current.ref;
-
+  const key = `${current.book} ${current.ref}`;
   const i = favorites.indexOf(key);
 
   if(i > -1) favorites.splice(i,1);
@@ -334,8 +369,7 @@ function toggleFavorite(){
 function updateStar(){
   if(!current) return;
 
-  const key = current.book + " " + current.ref;
-
+  const key = `${current.book} ${current.ref}`;
   document.getElementById("star").innerText =
     favorites.includes(key) ? "★" : "☆";
 }
@@ -346,8 +380,11 @@ function toggleFavorites(){
 }
 
 function renderFavorites(){
-  document.getElementById("favoritesList").innerHTML =
-    favorites.length ? favorites.join("<br>") : "No favorites yet.";
+  const box = document.getElementById("favoritesList");
+
+  box.innerHTML = favorites.length
+    ? favorites.join("<br>")
+    : "No favorites yet.";
 }
 
 /* ================= SEARCH ================= */
@@ -357,7 +394,15 @@ function toggleSearch(){
 }
 
 function runSearch(){
-  const q = document.getElementById("searchInput").value.toLowerCase();
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+  const box = document.getElementById("searchResults");
+
+  box.innerHTML = "";
+
+  if(!q){
+    document.getElementById("searchMeta").innerText = "";
+    return;
+  }
 
   const results = bibleIndex.filter(v =>
     v.text.toLowerCase().includes(q)
@@ -366,22 +411,22 @@ function runSearch(){
   document.getElementById("searchMeta").innerText =
     `Found ${results.length} results`;
 
-  const box = document.getElementById("searchResults");
-  box.innerHTML = "";
-
   results.slice(0,50).forEach(v=>{
-    const d = document.createElement("div");
-    d.className="result";
-    d.innerHTML = `<strong>${v.book} ${v.ref}</strong><br>${v.text}`;
-    d.onclick = ()=>setVerse(v);
-    box.appendChild(d);
+    const el = document.createElement("div");
+    el.className = "result";
+    el.innerHTML = `
+      <strong>${v.book} ${v.ref}</strong><br>
+      ${v.text}
+    `;
+    el.onclick = () => setVerse(v);
+    box.appendChild(el);
   });
 }
 
 function clearSearch(){
-  document.getElementById("searchInput").value="";
-  document.getElementById("searchResults").innerHTML="";
-  document.getElementById("searchMeta").innerText="";
+  document.getElementById("searchInput").value = "";
+  document.getElementById("searchMeta").innerText = "";
+  document.getElementById("searchResults").innerHTML = "";
 }
 
 /* ================= THEME ================= */
@@ -389,16 +434,18 @@ function clearSearch(){
 function setTheme(mode){
   if(mode === "system"){
     const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    document.documentElement.setAttribute("data-theme", dark?"dark":"light");
-  } else {
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  }else{
     document.documentElement.setAttribute("data-theme", mode);
   }
 }
 
 /* ================= INIT ================= */
 
-window.onload = loadBible;
-
+window.onload = () => {
+  setTheme("system");
+  loadBible();
+};
 </script>
 
 </body>
