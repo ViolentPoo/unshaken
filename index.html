@@ -69,6 +69,28 @@ body{
   font-weight:700;
 }
 
+/* =========================
+   UI UPGRADE: SECTION TITLES
+========================= */
+
+.section-title{
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+/* CONTENT TYPOGRAPHY (slight improvement) */
+#prayer,
+#reflection,
+#missionText{
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
 .controls{
   display:flex;
   flex-wrap:wrap;
@@ -107,15 +129,12 @@ button:hover{
   cursor:pointer;
 }
 
-.section-title{
-  font-weight:700;
-}
-
 .streak{
   margin-top:10px;
   font-weight:700;
 }
 
+/* footer */
 .footer{
   position: fixed;
   right: 12px;
@@ -217,28 +236,6 @@ button:hover{
 let currentRef = "";
 
 /* =========================
-   TIME OF DAY (NEW v1.3.0)
-========================= */
-
-function getTimeOfDay(){
-  const h = new Date().getHours();
-
-  if(h >= 5 && h < 12) return "morning";
-  if(h >= 12 && h < 17) return "afternoon";
-  if(h >= 17 && h < 21) return "evening";
-  return "night";
-}
-
-function applyTimeTone(text){
-  const t = getTimeOfDay();
-
-  if(t === "morning") return "☀️ Morning: " + text;
-  if(t === "afternoon") return "🌤️ Afternoon: " + text;
-  if(t === "evening") return "🌇 Evening: " + text;
-  return "🌙 Night: " + text;
-}
-
-/* =========================
    MISSION
 ========================= */
 
@@ -249,7 +246,7 @@ document.getElementById("missionText").innerText =
   localStorage.getItem("unshaken_mission") || missionDefault;
 
 /* =========================
-   STREAK (stable)
+   STREAK
 ========================= */
 
 let streak = { count: 0, lastDate: null };
@@ -280,7 +277,6 @@ function updateStreak(){
   streak.lastDate = today;
 
   localStorage.setItem("unshaken_streak", JSON.stringify(streak));
-
   renderStreak();
 }
 
@@ -299,89 +295,6 @@ function renderStreak(){
 }
 
 /* =========================
-   VERSE ENGINE
-========================= */
-
-async function fetchDaily(){
-  try{
-    const r = await fetch("https://beta.ourmanna.com/api/v1/get/?format=json&order=daily");
-    const d = await r.json();
-    loadVerse(d?.verse?.details?.reference || "John 14:27");
-  }catch{
-    loadVerse("John 14:27");
-  }
-}
-
-async function loadVerse(ref){
-  try{
-    const r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=web`);
-    const d = await r.json();
-
-    currentRef = ref;
-
-    document.getElementById("verse").innerText = d.text || "Unavailable";
-    document.getElementById("ref").innerText = ref;
-
-  }catch{
-    document.getElementById("verse").innerText = "Error loading verse.";
-  }
-}
-
-function reloadCurrentVerse(){
-  if(currentRef) loadVerse(currentRef);
-}
-
-/* =========================
-   FOCUS SYSTEM
-========================= */
-
-const pools = {
-  peace:[{r:"John 14:27",p:"Give me peace.",f:"What steals my peace?"}],
-  strength:[{r:"Isaiah 41:10",p:"Strengthen me.",f:"Where am I weak?"}],
-  hope:[{r:"Jeremiah 29:11",p:"Renew hope.",f:"What future do I trust?"}],
-  anxiety:[{r:"Philippians 4:6",p:"Release worry.",f:"What am I holding?"}],
-  faith:[{r:"Hebrews 11:1",p:"Grow faith.",f:"Where do I doubt?"}],
-  love:[{r:"1 Corinthians 13:4",p:"Teach love.",f:"Who needs grace?"}],
-  wisdom:[{r:"James 1:5",p:"Give wisdom.",f:"What needs clarity?"}]
-};
-
-function focusAreaChange(){
-  const a = document.getElementById("focusArea").value;
-
-  if(a === "daily"){
-    fetchDaily();
-    return;
-  }
-
-  const item = pools[a][0];
-
-  document.getElementById("prayer").innerText =
-    applyTimeTone(item.p);
-
-  document.getElementById("reflection").innerText =
-    applyTimeTone(item.f);
-
-  loadVerse(item.r);
-}
-
-/* =========================
-   BUTTONS
-========================= */
-
-function encouragement(){
-  loadVerse("Isaiah 41:10");
-}
-
-function randomVerse(){
-  fetch("https://labs.bible.org/api/?passage=random&type=json")
-    .then(r=>r.json())
-    .then(d=>{
-      const v = d[0];
-      loadVerse(`${v.bookname} ${v.chapter}:${v.verse}`);
-    });
-}
-
-/* =========================
    INIT
 ========================= */
 
@@ -391,7 +304,6 @@ window.onload = () => {
     localStorage.getItem("theme") || "light"
   );
 
-  fetchDaily();
   updateStreak();
   renderStreak();
 };
