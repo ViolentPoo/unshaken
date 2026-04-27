@@ -64,7 +64,6 @@
       -webkit-appearance:none;
       appearance:none;
     }
-    }
 
     button:hover{background:var(--accent);color:white;}
 
@@ -74,6 +73,29 @@
       position:fixed;
       bottom:8px;
       right:10px;
+    }
+
+    .history{
+      margin-top:15px;
+      max-height:180px;
+      overflow-y:auto;
+      border-top:1px solid rgba(0,0,0,.1);
+      padding-top:10px;
+    }
+
+    .history-item{
+      font-size:13px;
+      padding:6px;
+      cursor:pointer;
+      border-radius:6px;
+    }
+
+    .history-item:hover{
+      background:rgba(0,0,0,.05);
+    }
+
+    [data-theme="dark"] .history-item:hover{
+      background:rgba(255,255,255,.08);
     }
   </style>
 </head>
@@ -105,13 +127,17 @@
     <button onclick="toggleDark()">Dark Mode</button>
     <button onclick="randomVerse()">Random</button>
     <button onclick="encouragement()">Encourage Me</button>
-    
     <button onclick="shareVerse()">Share</button>
   </div>
 
   <div style="margin-top:15px">
     <div id="prayer" style="font-size:13px"></div>
     <div id="reflection" style="font-size:13px;font-style:italic"></div>
+  </div>
+
+  <div class="history">
+    <strong>Verse History</strong>
+    <div id="historyList"></div>
   </div>
 </div>
 
@@ -120,22 +146,52 @@
 <script>
 let currentRef="";
 let currentVerse="";
+let history=[];
 
 const prayers=[
-"Lord, guide me today.",
-"Jesus, give me peace.",
-"Father, strengthen my heart."
+"Lord, guide me today and keep my heart steady.",
+"Jesus, give me peace when I feel anxious.",
+"Father, strengthen my faith in difficult moments.",
+"God, help me walk in wisdom and humility.",
+"Lord, protect my family and lead us in truth.",
+"Jesus, teach me to trust You more each day."
 ];
 
 const reflections=[
-"How can I live this today?",
-"What is God teaching me?",
-"Who can I encourage?"
+"How can I apply this verse in a practical way today?",
+"What is God trying to teach me through this moment?",
+"Who around me needs encouragement from this truth?",
+"What habits in my life need to change because of this verse?",
+"How can I trust God more fully in this situation?",
+"Where have I already seen God working in my life?"
 ];
 
 function setExtras(){
   document.getElementById('prayer').innerText="Prayer: "+prayers[Math.floor(Math.random()*prayers.length)];
   document.getElementById('reflection').innerText=reflections[Math.floor(Math.random()*reflections.length)];
+}
+
+function addToHistory(ref,text){
+  history.unshift({ref,text});
+  if(history.length>20) history.pop();
+  renderHistory();
+}
+
+function renderHistory(){
+  const el=document.getElementById('historyList');
+  el.innerHTML="";
+  history.forEach((h,i)=>{
+    const div=document.createElement('div');
+    div.className='history-item';
+    div.innerText=h.ref;
+    div.onclick=()=>{
+      currentRef=h.ref;
+      currentVerse=h.text;
+      document.getElementById('verse').innerText=h.text;
+      document.getElementById('ref').innerText=h.ref;
+    };
+    el.appendChild(div);
+  });
 }
 
 function applyTheme(theme){
@@ -166,8 +222,12 @@ async function loadVerse(ref){
   const res=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
   const data=await res.json();
   currentVerse=data.text;
+  currentRef=ref;
+
   document.getElementById('verse').innerText=data.text;
   document.getElementById('ref').innerText=ref;
+
+  addToHistory(ref,data.text);
   setExtras();
 }
 
@@ -180,6 +240,7 @@ function randomVerse(){
     currentVerse=v.text;
     document.getElementById('verse').innerText=currentVerse;
     document.getElementById('ref').innerText=currentRef;
+    addToHistory(currentRef,currentVerse);
     setExtras();
   });
 }
@@ -191,34 +252,13 @@ function encouragement(){
 
 function toggleDark(){
   const cur=document.documentElement.getAttribute('data-theme');
-  const next=cur==='dark'?'light':'dark';
-  applyTheme(next);
+  applyTheme(cur==='dark'?'light':'dark');
 }
 
 function shareVerse(){
   const text=currentRef+"\n\n"+currentVerse;
   if(navigator.share){navigator.share({title:"Unshaken",text});}
   else{navigator.clipboard.writeText(text);alert("Copied");}
-}
-
-
-
-function wrapText(ctx,text,x,y,maxWidth,lineHeight){
-  const words=text.split(' ');
-  let line='';
-
-  for(let n=0;n<words.length;n++){
-    const test=line+words[n]+' ';
-    const metrics=ctx.measureText(test);
-    if(metrics.width>maxWidth&&n>0){
-      ctx.fillText(line,x,y);
-      line=words[n]+' ';
-      y+=lineHeight;
-    }else{
-      line=test;
-    }
-  }
-  ctx.fillText(line,x,y);
 }
 
 function topicChange(){
