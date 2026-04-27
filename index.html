@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Unshaken</title>
+<title>Unshaken v1.7.1</title>
 
 <style>
 :root{
@@ -27,10 +27,9 @@ body{
   font-family:system-ui;
   background:var(--bg);
   color:var(--text);
-  padding:70px 0 40px;
+  padding:70px 0 50px;
   display:flex;
   justify-content:center;
-  transition:0.3s;
 }
 
 .topbar{
@@ -43,7 +42,7 @@ body{
   font-weight:700;
 }
 
-.container{ width:min(850px,92%); }
+.container{ width:min(900px,92%); }
 
 .card{
   background:var(--card);
@@ -57,21 +56,10 @@ body{
   font-weight:700;
   text-transform:uppercase;
   color:var(--accent);
-  margin-bottom:8px;
+  margin-bottom:10px;
 }
 
-.verse-line{
-  font-size:1.1rem;
-  line-height:1.6;
-}
-
-.ref{
-  margin-top:8px;
-  color:var(--accent);
-  font-weight:700;
-}
-
-button, input, select{
+input, button{
   padding:8px;
   border-radius:8px;
   border:1px solid #ccc;
@@ -84,19 +72,27 @@ button:hover{
   cursor:pointer;
 }
 
-.controls{
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  align-items:center;
-}
-
 .hidden{ display:none; }
 
-.star{
-  font-size:20px;
+.result{
+  padding:8px;
+  border-bottom:1px solid #ddd;
   cursor:pointer;
-  user-select:none;
+}
+
+.result:hover{
+  background:rgba(0,0,0,0.05);
+}
+
+.small{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.pagination{
+  display:flex;
+  justify-content:space-between;
+  margin-top:10px;
 }
 
 .footer{
@@ -111,69 +107,34 @@ button:hover{
 
 <body>
 
-<div class="topbar">Unshaken</div>
+<div class="topbar">Unshaken Bible Engine v1.7.1</div>
 
 <div class="container">
 
-<!-- VERSE -->
+<!-- SEARCH -->
 <div class="card">
-  <div class="section-title">Daily Verse</div>
+  <div class="section-title">Bible Search</div>
 
-  <div id="verse"></div>
-  <div id="ref" class="ref"></div>
+  <input id="searchInput" placeholder="Search (e.g. love, faith, hope)" />
 
-  <div class="star" onclick="toggleFavorite()" id="star">☆</div>
+  <button onclick="runSearch()">Search</button>
+  <button onclick="clearSearch()">Clear</button>
 
-  <div id="status" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
-</div>
+  <div id="searchMeta" class="small"></div>
 
-<!-- CONTROLS -->
-<div class="card">
-<div class="controls">
+  <div id="searchResults"></div>
 
-<button onclick="loadDaily()">Daily</button>
-<button onclick="loadRandom()">Random</button>
-<button onclick="toggleSearch()">Search</button>
-<button onclick="toggleFavorites()">Favorites</button>
-
-</div>
-</div>
-
-<!-- SEARCH (FIXED) -->
-<div class="card hidden" id="searchBox">
-  <div class="section-title">Search Verses</div>
-
-  <input id="searchInput" placeholder="Search keyword..." />
-
-  <div class="controls">
-    <button onclick="runSearch()">Search</button>
-    <button onclick="clearSearch()">Clear</button>
+  <div class="pagination">
+    <button onclick="prevPage()">Prev</button>
+    <button onclick="nextPage()">Next</button>
   </div>
-
-  <div id="searchResults" style="margin-top:10px;"></div>
 </div>
 
-<!-- FAVORITES -->
-<div class="card hidden" id="favoritesBox">
-  <div class="section-title">Favorites</div>
-  <div id="favoritesList"></div>
-</div>
-
-<!-- PRAYER -->
+<!-- VERSE VIEW -->
 <div class="card">
-  <div class="section-title">Prayer</div>
-  <div id="prayer"></div>
-</div>
-
-<!-- REFLECTION -->
-<div class="card">
-  <div class="section-title">Reflection</div>
-  <div id="reflection"></div>
-</div>
-
-<!-- TIME -->
-<div class="card">
-  <div id="timeMessage"></div>
+  <div class="section-title">Current Verse</div>
+  <div id="verse"></div>
+  <div id="ref" style="color:var(--accent);font-weight:700;margin-top:6px;"></div>
 </div>
 
 </div>
@@ -182,203 +143,116 @@ button:hover{
 
 <script>
 
-/* ================= DATA ================= */
+/* ================= BIBLE INDEX ================= */
 
-const API_BASE = "https://your-api.com/daily-verse";
+let bibleIndex = [];
+let searchResults = [];
+let currentPage = 0;
+const pageSize = 25;
 
-const verses = [
-{
-  id:"isaiah41_10",
-  ref:"Isaiah 41:10",
-  text:[
-    "Do not fear, for I am with you",
-    "Do not be dismayed, for I am your God",
-    "I will strengthen you and help you"
-  ]
-},
-{
-  id:"phil4_13",
-  ref:"Philippians 4:13",
-  text:[
-    "I can do all things",
-    "through Christ who strengthens me"
-  ]
-}
-];
+/* ================= LOAD BIBLE FILE ================= */
 
-/* ================= STATE ================= */
+async function loadBible(){
+  const res = await fetch("web.txt");
+  const text = await res.text();
 
-let current=null;
-let favorites=JSON.parse(localStorage.getItem("fav")||"[]");
+  bibleIndex = text
+    .split("\n")
+    .filter(Boolean)
+    .map(line => {
+      const firstSpace = line.indexOf(" ");
+      return {
+        ref: line.slice(0, firstSpace),
+        text: line.slice(firstSpace + 1)
+      };
+    });
 
-/* ================= VERSE RENDER ================= */
-
-function setVerse(v){
-  current=v;
-
-  const box=document.getElementById("verse");
-  box.innerHTML="";
-
-  v.text.forEach(t=>{
-    const d=document.createElement("div");
-    d.className="verse-line";
-    d.innerText=t;
-    box.appendChild(d);
-  });
-
-  document.getElementById("ref").innerText=v.ref;
-
-  updateStar();
-  updateDevotion(v);
+  console.log("Bible loaded:", bibleIndex.length, "verses");
 }
 
-/* ================= SEARCH FIX ================= */
-
-function toggleSearch(){
-  document.getElementById("searchBox").classList.toggle("hidden");
-}
+/* ================= SEARCH ================= */
 
 function runSearch(){
-  const q=document.getElementById("searchInput").value.trim().toLowerCase();
-  const box=document.getElementById("searchResults");
-
-  box.innerHTML="";
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
 
   if(!q){
-    box.innerHTML="<div style='color:gray'>Enter a search term</div>";
+    document.getElementById("searchResults").innerHTML =
+      "<div class='small'>Type a keyword like 'love' or 'faith'</div>";
     return;
   }
 
-  const results = verses.filter(v =>
-    v.text.join(" ").toLowerCase().includes(q) ||
-    v.ref.toLowerCase().includes(q)
+  searchResults = bibleIndex.filter(v =>
+    v.text.toLowerCase().includes(q)
   );
 
-  if(results.length === 0){
-    box.innerHTML="<div style='color:gray'>No results found</div>";
+  currentPage = 0;
+
+  renderPage();
+
+  document.getElementById("searchMeta").innerText =
+    `Found ${searchResults.length} results`;
+}
+
+/* ================= PAGINATION ================= */
+
+function renderPage(){
+  const box = document.getElementById("searchResults");
+  box.innerHTML = "";
+
+  const start = currentPage * pageSize;
+  const pageItems = searchResults.slice(start, start + pageSize);
+
+  if(pageItems.length === 0){
+    box.innerHTML = "<div class='small'>No results</div>";
     return;
   }
 
-  results.forEach(v=>{
-    const d=document.createElement("div");
-    d.style.padding="6px";
-    d.style.cursor="pointer";
-    d.innerText=v.ref;
-    d.onclick=()=>setVerse(v);
-    box.appendChild(d);
+  pageItems.forEach(v=>{
+    const div = document.createElement("div");
+    div.className = "result";
+    div.innerHTML = `<strong>${v.ref}</strong><br><span class="small">${v.text}</span>`;
+
+    div.onclick = () => showVerse(v);
+
+    box.appendChild(div);
   });
 }
+
+function nextPage(){
+  if((currentPage+1)*pageSize < searchResults.length){
+    currentPage++;
+    renderPage();
+  }
+}
+
+function prevPage(){
+  if(currentPage > 0){
+    currentPage--;
+    renderPage();
+  }
+}
+
+/* ================= CLEAR ================= */
 
 function clearSearch(){
-  document.getElementById("searchInput").value="";
-  document.getElementById("searchResults").innerHTML="";
+  document.getElementById("searchInput").value = "";
+  document.getElementById("searchResults").innerHTML = "";
+  document.getElementById("searchMeta").innerText = "";
+  searchResults = [];
+  currentPage = 0;
 }
 
-/* ================= FAVORITES ================= */
+/* ================= VERSE DISPLAY ================= */
 
-function toggleFavorite(){
-  if(!current) return;
-
-  const i=favorites.indexOf(current.id);
-
-  if(i>-1){
-    favorites.splice(i,1);
-  } else {
-    favorites.push(current.id);
-  }
-
-  localStorage.setItem("fav",JSON.stringify(favorites));
-  updateStar();
-}
-
-function updateStar(){
-  if(!current) return;
-  document.getElementById("star").innerText =
-    favorites.includes(current.id) ? "★" : "☆";
-}
-
-function toggleFavorites(){
-  document.getElementById("favoritesBox").classList.toggle("hidden");
-}
-
-/* ================= RANDOM ================= */
-
-function loadRandom(){
-  fetch("https://www.ourmanna.com/api/v1/get/?format=json&order=random")
-  .then(r=>r.json())
-  .then(d=>{
-    setVerse({
-      id:d.verse.details.reference,
-      ref:d.verse.details.reference,
-      text:[d.verse.details.text]
-    });
-  });
-}
-
-/* ================= DAILY ================= */
-
-function getSeed(){
-  const d=new Date().toISOString().split("T")[0];
-  let h=0;
-  for(let i=0;i<d.length;i++){
-    h=(h*31+d.charCodeAt(i))>>>0;
-  }
-  return h+812;
-}
-
-async function loadDaily(){
-  try{
-    const res=await fetch(`${API_BASE}?seed=${getSeed()}`);
-    const data=await res.json();
-    setVerse(data.verse);
-  }catch(e){
-    setVerse(verses[0]);
-  }
-}
-
-/* ================= PRAYER ================= */
-
-function detectTheme(text){
-  const t=text.join(" ").toLowerCase();
-  if(t.includes("fear")) return "peace";
-  if(t.includes("strength")) return "strength";
-  return "peace";
-}
-
-const prayerMap={
-  peace:"Bring peace to my heart.",
-  strength:"Give me strength."
-};
-
-const reflectionMap={
-  peace:"What is troubling me?",
-  strength:"Where do I need strength?"
-};
-
-function updateDevotion(v){
-  const t=detectTheme(v.text);
-  document.getElementById("prayer").innerText=prayerMap[t];
-  document.getElementById("reflection").innerText=reflectionMap[t];
-}
-
-/* ================= TIME ================= */
-
-function timeMessage(){
-  const h=new Date().getHours();
-  let msg="";
-
-  if(h<12) msg="Start your day strong.";
-  else if(h<18) msg="Stay faithful today.";
-  else msg="Rest in Him tonight.";
-
-  document.getElementById("timeMessage").innerText=msg;
+function showVerse(v){
+  document.getElementById("verse").innerText = v.text;
+  document.getElementById("ref").innerText = v.ref;
 }
 
 /* ================= INIT ================= */
 
-window.onload=()=>{
-  loadDaily();
-  timeMessage();
+window.onload = async () => {
+  await loadBible();
 };
 
 </script>
