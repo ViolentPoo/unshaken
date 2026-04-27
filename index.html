@@ -50,6 +50,12 @@
       box-shadow:0 10px 25px rgba(0,0,0,.1);
     }
 
+    .greeting{
+      font-size:14px;
+      margin-bottom:10px;
+      opacity:.8;
+    }
+
     .verse{font-size:20px;line-height:1.6;margin:15px 0;}
     .ref{color:var(--accent);font-weight:bold;}
 
@@ -107,24 +113,8 @@
       align-items:center;
     }
 
-    .history-item:hover,.fav-item:hover{
-      background:rgba(0,0,0,.05);
-    }
-
-    [data-theme="dark"] .history-item:hover,
-    [data-theme="dark"] .fav-item:hover{
-      background:rgba(255,255,255,.08);
-    }
-
-    .star{
-      cursor:pointer;
-      margin-left:10px;
-      opacity:.7;
-    }
-
-    .star.fav{
-      opacity:1;
-    }
+    .star{cursor:pointer;opacity:.6;margin-left:10px;}
+    .star.fav{opacity:1;}
 
     .streak{font-size:13px;margin-top:5px;}
   </style>
@@ -134,6 +124,8 @@
 <div class="topbar">Unshaken Bible Verse of the Day</div>
 
 <div class="container">
+
+  <div id="greeting" class="greeting"></div>
 
   <h2>Verse</h2>
   <div id="verse" class="verse">Loading...</div>
@@ -165,12 +157,12 @@
   <div class="streak" id="streakDisplay"></div>
 
   <div class="card">
-    <strong>Prayer</strong>
+    <strong id="prayerTitle">Morning Prayer</strong>
     <div id="prayer" style="font-size:13px;margin-top:5px"></div>
   </div>
 
   <div class="card">
-    <strong>Reflection</strong>
+    <strong id="reflectionTitle">Morning Reflection</strong>
     <div id="reflection" style="font-size:13px;font-style:italic;margin-top:5px"></div>
   </div>
 
@@ -196,27 +188,87 @@ let currentVerse="";
 let history=JSON.parse(localStorage.getItem('unshaken_history')||'[]');
 let favorites=JSON.parse(localStorage.getItem('unshaken_favs')||'[]');
 
-const prayers=[
-"Lord, guide me today and keep my heart steady.",
-"Jesus, give me peace when I feel anxious.",
-"Father, strengthen my faith in difficult moments.",
-"God, help me walk in wisdom and humility.",
-"Lord, protect my family and lead us in truth.",
-"Jesus, teach me to trust You more each day."
-];
+function getMode(){
+  const h=new Date().getHours();
+  if(h>=5 && h<12) return "morning";
+  if(h>=12 && h<18) return "day";
+  return "night";
+}
 
-const reflections=[
-"How can I apply this verse in a practical way today?",
-"What is God trying to teach me through this moment?",
-"Who around me needs encouragement from this truth?",
-"What habits in my life need to change because of this verse?",
-"How can I trust God more fully in this situation?",
-"Where have I already seen God working in my life?"
-];
+function setModeUI(){
+  const mode=getMode();
+  const g=document.getElementById('greeting');
+
+  if(mode==="morning"){
+    g.innerText="Good Morning ☀️ — Start your day with truth";
+    document.getElementById('prayerTitle').innerText="Morning Prayer";
+    document.getElementById('reflectionTitle').innerText="Morning Reflection";
+  } else if(mode==="day"){
+    g.innerText="Good Afternoon 🌤️ — Stay anchored in truth";
+    document.getElementById('prayerTitle').innerText="Midday Prayer";
+    document.getElementById('reflectionTitle').innerText="Midday Reflection";
+  } else {
+    g.innerText="Good Evening 🌙 — Rest in His Word";
+    document.getElementById('prayerTitle').innerText="Night Prayer";
+    document.getElementById('reflectionTitle').innerText="Night Reflection";
+  }
+}
+
+const prayers={
+  morning:[
+    "Lord, guide me today and keep my heart steady.",
+    "Jesus, give me strength for what lies ahead.",
+    "Father, order my steps and thoughts today.",
+    "God, help me stay disciplined and faithful today.",
+    "Holy Spirit, lead my decisions and words."
+  ],
+  day:[
+    "God, help me stay focused and faithful today.",
+    "Lord, give me wisdom in every decision.",
+    "Jesus, keep me patient with people around me.",
+    "Father, help me not lose sight of You in busyness.",
+    "Lord, strengthen me when I feel distracted."
+  ],
+  night:[
+    "Lord, thank You for today. Help me rest in You.",
+    "Jesus, calm my heart and renew my spirit.",
+    "Father, forgive my shortcomings from today.",
+    "God, thank You for every blessing I saw today.",
+    "Lord, give me peaceful rest and deep sleep."
+  ]
+};
+
+const reflections={
+  morning:[
+    "What is my focus for today?",
+    "How can I walk with God intentionally today?",
+    "What challenge might God be preparing me for?",
+    "Where do I need to trust God more today?",
+    "What kind of person do I want to be today?"
+  ],
+  day:[
+    "How am I living out my faith right now?",
+    "Where do I need patience today?",
+    "Am I honoring God in my current decisions?",
+    "What distraction is pulling me away from God?",
+    "Who can I encourage today?"
+  ],
+  night:[
+    "Where did I see God today?",
+    "What am I grateful for from today?",
+    "Where did I fall short and need grace?",
+    "How did I grow spiritually today?",
+    "What do I want to do better tomorrow?"
+  ]
+};
 
 function setExtras(){
-  document.getElementById('prayer').innerText=prayers[Math.floor(Math.random()*prayers.length)];
-  document.getElementById('reflection').innerText=reflections[Math.floor(Math.random()*reflections.length)];
+  const mode=getMode();
+  document.getElementById('prayer').innerText=
+    prayers[mode][Math.floor(Math.random()*prayers[mode].length)];
+
+  document.getElementById('reflection').innerText=
+    reflections[mode][Math.floor(Math.random()*reflections[mode].length)];
 }
 
 function toggleHistory(){
@@ -232,7 +284,7 @@ function toggleFavorites(){
 
 function addToHistory(ref,text){
   if(history.length && history[0].ref===ref) return;
-  history = history.filter(h=>!(h.ref===ref && h.text===text));
+  history=history.filter(h=>!(h.ref===ref && h.text===text));
   history.unshift({ref,text});
   if(history.length>20) history.pop();
   localStorage.setItem('unshaken_history',JSON.stringify(history));
@@ -241,11 +293,8 @@ function addToHistory(ref,text){
 
 function toggleFav(ref,text){
   const exists=favorites.find(f=>f.ref===ref);
-  if(exists){
-    favorites=favorites.filter(f=>f.ref!==ref);
-  }else{
-    favorites.unshift({ref,text});
-  }
+  if(exists){favorites=favorites.filter(f=>f.ref!==ref);} 
+  else {favorites.unshift({ref,text});}
   localStorage.setItem('unshaken_favs',JSON.stringify(favorites));
   renderFavorites();
   renderHistory();
@@ -295,18 +344,6 @@ function renderFavorites(){
   });
 }
 
-function applyTheme(t){
-  document.documentElement.setAttribute('data-theme',t);
-  localStorage.setItem('theme',t);
-}
-
-function themeByTime(){
-  const saved=localStorage.getItem('theme');
-  if(saved){document.documentElement.setAttribute('data-theme',saved);return;}
-  const h=new Date().getHours();
-  document.documentElement.setAttribute('data-theme',h<6||h>18?'dark':'light');
-}
-
 function updateStreak(){
   const today=new Date().toDateString();
   const last=localStorage.getItem('unshaken_last');
@@ -322,6 +359,18 @@ function updateStreak(){
   localStorage.setItem('unshaken_last',today);
 
   document.getElementById('streakDisplay').innerText=`🔥 ${streak} day streak`;
+}
+
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem('theme',t);
+}
+
+function themeByTime(){
+  const saved=localStorage.getItem('theme');
+  if(saved){document.documentElement.setAttribute('data-theme',saved);return;}
+  const h=new Date().getHours();
+  document.documentElement.setAttribute('data-theme',h<6||h>18?'dark':'light');
 }
 
 async function fetchDaily(){
@@ -376,6 +425,19 @@ function shareVerse(){
   else{navigator.clipboard.writeText(text);alert("Copied");}
 }
 
+window.onload=()=>{
+  themeByTime();
+  setModeUI();
+  fetchDaily();
+  setExtras();
+  updateStreak();
+
+  document.getElementById('translation').onchange=()=>loadVerse(currentRef);
+  document.getElementById('topic').onchange=topicChange;
+  renderHistory();
+  renderFavorites();
+};
+
 function topicChange(){
   const v=document.getElementById('topic').value;
   if(v==='daily') return fetchDaily();
@@ -390,18 +452,6 @@ function topicChange(){
   currentRef=map[v];
   loadVerse(currentRef);
 }
-
-window.onload=()=>{
-  themeByTime();
-  fetchDaily();
-  setExtras();
-  updateStreak();
-
-  document.getElementById('translation').onchange=()=>loadVerse(currentRef);
-  document.getElementById('topic').onchange=topicChange;
-  renderHistory();
-  renderFavorites();
-};
 </script>
 
 </body>
