@@ -190,6 +190,13 @@
 
 </div>
 
+<div class="card" id="missionCard">
+  <strong>Parker Family Mission Statement</strong>
+  <div id="missionText" style="font-size:13px;margin-top:8px;line-height:1.5"></div>
+  <textarea id="missionInput" placeholder="Write or edit your family mission statement..."></textarea>
+  <button onclick="saveMission()">Save Mission</button>
+</div>
+
 <div class="small footer1">est 2013</div>
 <div class="small footer2">The Parker Family</div>
 
@@ -436,6 +443,18 @@ function shareVerse(){
   const text=currentRef+"\n\n"+currentVerse;
   if(navigator.share){navigator.share({title:"Unshaken",text});}
   else{navigator.clipboard.writeText(text);alert("Copied");}
+}
+
+function loadMission(){
+  const m = localStorage.getItem('unshaken_mission') || "To walk in faith, love God, and live unshaken in truth as a family.";
+  document.getElementById('missionText').innerText = m;
+  document.getElementById('missionInput').value = m;
+}
+
+function saveMission(){
+  const val=document.getElementById('missionInput').value;
+  localStorage.setItem('unshaken_mission',val);
+  document.getElementById('missionText').innerText=val;
 }
 
 window.onload=()=>{
