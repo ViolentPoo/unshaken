@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unshaken v1.7.9</title>
+<title>Unshaken v1.7.10</title>
 
 <style>
 :root{
@@ -26,7 +26,7 @@
 
 body{
   margin:0;
-  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-family:system-ui;
   background:var(--bg);
   color:var(--text);
   padding:72px 0 60px;
@@ -58,13 +58,12 @@ body{
 }
 
 .section-title{
-  font-family:Georgia,serif;
+  font-family:Georgia;
   font-weight:700;
   text-transform:uppercase;
   color:var(--accent);
   font-size:14px;
   margin-bottom:10px;
-  letter-spacing:.5px;
 }
 
 button,input,select{
@@ -76,14 +75,8 @@ button,input,select{
   color:var(--text);
 }
 
-button{
-  cursor:pointer;
-}
-
-button:hover{
-  background:var(--accent);
-  color:#fff;
-}
+button{cursor:pointer;}
+button:hover{background:var(--accent);color:#fff;}
 
 .hidden{display:none;}
 
@@ -112,16 +105,12 @@ button:hover{
   cursor:pointer;
 }
 
-.result:hover{
-  opacity:.85;
-}
-
 .small{
   font-size:12px;
   color:var(--muted);
 }
 
-/* VERSION FOOTER (BOTTOM LEFT) */
+/* FOOTERS */
 .footer-left{
   position:fixed;
   left:10px;
@@ -129,15 +118,35 @@ button:hover{
   font-size:10px;
   color:var(--muted);
   opacity:0.7;
-  user-select:none;
 }
 
-.footer{
+.footer-right{
   position:fixed;
   right:10px;
   bottom:10px;
   font-size:11px;
   color:var(--muted);
+  cursor:pointer;
+}
+
+/* MODAL */
+.mission-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+}
+
+.mission-card{
+  width:min(520px,90%);
+  background:var(--card);
+  color:var(--text);
+  padding:18px;
+  border-radius:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
 </style>
 </head>
@@ -172,8 +181,7 @@ button:hover{
 <!-- SEARCH -->
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search Bible</div>
-
-  <input id="searchInput" placeholder="Search love, peace, hope...">
+  <input id="searchInput" placeholder="Search...">
   <button onclick="runSearch()">Search</button>
   <button onclick="clearSearch()">Clear</button>
 
@@ -201,22 +209,36 @@ button:hover{
 
 </div>
 
-<!-- VERSION LABEL -->
-<div class="footer-left">v1.7.9</div>
+<!-- FOOTERS -->
+<div class="footer-left">v1.7.10</div>
 
-<div class="footer">est. 2013 — The Parker Family</div>
+<div class="footer-right" onclick="toggleMission()">
+  est. 2013 — The Parker Family
+</div>
+
+<!-- MISSION MODAL -->
+<div id="missionModal" class="mission-modal hidden">
+  <div class="mission-card">
+    <div class="section-title">Family Mission</div>
+    <div id="missionText"></div>
+    <button onclick="toggleMission()">Close</button>
+  </div>
+</div>
 
 <script>
+
 /* ================= STATE ================= */
 
 let bibleIndex = [];
 let current = null;
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* ================= SMART PARSER ================= */
+const BIBLE_PATH = "translations/web.txt";
+
+/* ================= LOAD BIBLE ================= */
 
 async function loadBible(){
-  const res = await fetch("web.txt");
+  const res = await fetch(BIBLE_PATH);
   const text = await res.text();
 
   bibleIndex = text
@@ -225,7 +247,6 @@ async function loadBible(){
     .filter(Boolean)
     .map(line => {
       const parts = line.split(/\s+/);
-
       const refIndex = parts.findIndex(p => p.includes(":"));
 
       const book = parts.slice(0, refIndex).join(" ");
@@ -242,31 +263,21 @@ async function loadBible(){
 
 function hashSeed(input){
   let hash = 81213;
-  const str = String(input);
-
-  for(let i=0;i<str.length;i++){
-    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  for(let i=0;i<String(input).length;i++){
+    hash = (hash * 31 + String(input).charCodeAt(i)) >>> 0;
   }
-
   return hash;
 }
 
-/* ================= DAILY ================= */
+/* ================= DAILY / RANDOM ================= */
 
 function loadDaily(){
-  if(!bibleIndex.length) return;
-
   const date = new Date().toISOString().split("T")[0];
   const seed = hashSeed(date);
-
   setVerse(bibleIndex[seed % bibleIndex.length]);
 }
 
-/* ================= RANDOM ================= */
-
 function loadRandom(){
-  if(!bibleIndex.length) return;
-
   const seed = hashSeed(Date.now());
   setVerse(bibleIndex[seed % bibleIndex.length]);
 }
@@ -285,7 +296,7 @@ function setVerse(v){
   updateDevotion(v);
 }
 
-/* ================= TIME ================= */
+/* ================= DEVOTION ================= */
 
 function getTimeOfDay(){
   const h = new Date().getHours();
@@ -294,59 +305,22 @@ function getTimeOfDay(){
   return "night";
 }
 
-/* ================= DEVOTIONAL ENGINE ================= */
-
-function getVerseSegments(text){
-  const parts = text.split(/(?<=[.!?])\s+/).filter(Boolean);
-  return parts.slice(0,3);
-}
-
 function getDevotion(v){
   const t = getTimeOfDay();
-  const segments = getVerseSegments(v.text);
-  const focus = segments.join(" ").toLowerCase();
 
   const base = {
-    morning:{
-      prayer:"Guide my steps and focus my heart today.",
-      reflection:"How can I begin this day with intention?"
-    },
-    day:{
-      prayer:"Give me wisdom, strength, and patience today.",
-      reflection:"Am I responding with grace in this moment?"
-    },
-    night:{
-      prayer:"Thank You for today and grant me rest.",
-      reflection:"Where did I notice God working today?"
-    }
+    morning:{ prayer:"Guide my steps.", reflection:"How will I begin today?" },
+    day:{ prayer:"Give me strength.", reflection:"How am I responding right now?" },
+    night:{ prayer:"Thank You for today.", reflection:"Where did I see God today?" }
   };
 
   let prayer = base[t].prayer;
   let reflection = base[t].reflection;
 
-  if(focus.includes("fear")){
-    prayer += " Remove fear from my heart.";
-    reflection += " What fear is influencing me?";
-  }
+  const txt = v.text.toLowerCase();
 
-  if(focus.includes("love")){
-    prayer += " Help me love others well.";
-    reflection += " Who needs love from me?";
-  }
-
-  if(focus.includes("peace")){
-    prayer += " Fill me with peace.";
-    reflection += " Where do I need to release control?";
-  }
-
-  if(focus.includes("hope")){
-    prayer += " Anchor my hope in You.";
-    reflection += " What am I placing hope in?";
-  }
-
-  if(segments.length){
-    reflection += ` (Verse focus: "${segments[0].slice(0,70)}...")`;
-  }
+  if(txt.includes("fear")) prayer += " Remove fear.";
+  if(txt.includes("love")) reflection += " Who can I love better?";
 
   return { prayer, reflection };
 }
@@ -369,14 +343,12 @@ function toggleFavorite(){
   else favorites.push(key);
 
   localStorage.setItem("fav", JSON.stringify(favorites));
-
   updateStar();
   renderFavorites();
 }
 
 function updateStar(){
   if(!current) return;
-
   const key = `${current.book} ${current.ref}`;
   document.getElementById("star").innerText =
     favorites.includes(key) ? "★" : "☆";
@@ -400,6 +372,7 @@ function toggleSearch(){
 
 function runSearch(){
   const q = document.getElementById("searchInput").value.toLowerCase();
+
   const results = bibleIndex.filter(v =>
     v.text.toLowerCase().includes(q)
   );
@@ -436,12 +409,41 @@ function setTheme(mode){
   }
 }
 
+/* ================= MISSION MODAL ================= */
+
+function getMissionStatement(){
+  const theme = document.documentElement.getAttribute("data-theme");
+
+  const base =
+  "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
+
+  if(theme === "dark"){
+    return base + " We trust Him even in the night seasons.";
+  }
+  if(theme === "light"){
+    return base + " We walk in gratitude and purpose each day.";
+  }
+  return base + " We trust God in every season.";
+}
+
+function toggleMission(){
+  const modal = document.getElementById("missionModal");
+
+  if(modal.classList.contains("hidden")){
+    document.getElementById("missionText").innerText = getMissionStatement();
+    modal.classList.remove("hidden");
+  } else {
+    modal.classList.add("hidden");
+  }
+}
+
 /* ================= INIT ================= */
 
 window.onload = () => {
   setTheme("system");
   loadBible();
 };
+
 </script>
 
 </body>
