@@ -102,7 +102,7 @@
         <option value="esv">ESV</option>
       </select>
       <select id="topicSelect">
-        <option value="">Topic Verse</option>
+        <option value="daily" selected>Verse of the Day</option>
         <option value="peace">Peace</option>
         <option value="strength">Strength</option>
         <option value="hope">Hope</option>
@@ -169,7 +169,33 @@ async function setExtras(){document.getElementById('prayer').textContent='Prayer
 
 async function randomVerse(){fetch('https://labs.bible.org/api/?passage=random&type=json').then(r=>r.json()).then(d=>{const v=d[0];currentRef=v.bookname+' '+v.chapter+':'+v.verse;currentVerse=v.text;document.getElementById('ref').textContent=currentRef;document.getElementById('verse').textContent=currentVerse;setExtras();});}
 
-function topicSearch(){const t=document.getElementById('topicSelect').value;if(!t)return;const map={peace:'John 14:27',strength:'Philippians 4:13',hope:'Jeremiah 29:11',anxiety:'Philippians 4:6'};currentRef=map[t];document.getElementById('ref').textContent=currentRef;loadTranslation(currentRef);setExtras();}
+function topicSearch(){
+  const t=document.getElementById('topicSelect').value;
+  if(!t) return;
+
+  if(t==='daily'){
+    fetchDailyVerse();
+
+// set default dropdown to daily verse
+setTimeout(()=>{
+  const sel=document.getElementById('topicSelect');
+  if(sel) sel.value='daily';
+},0);
+    return;
+  }
+
+  const map={
+    peace:'John 14:27',
+    strength:'Philippians 4:13',
+    hope:'Jeremiah 29:11',
+    anxiety:'Philippians 4:6'
+  };
+
+  currentRef=map[t];
+  document.getElementById('ref').textContent=currentRef;
+  loadTranslation(currentRef);
+  setExtras();
+};currentRef=map[t];document.getElementById('ref').textContent=currentRef;loadTranslation(currentRef);setExtras();}
 
 function encouragementMode(){currentRef='Isaiah 41:10';document.getElementById('ref').textContent=currentRef;loadTranslation(currentRef);setExtras();}
 
