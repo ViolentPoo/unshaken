@@ -135,9 +135,6 @@ button:hover{
   <button onclick="toggleDark()">Dark Mode</button>
   <button onclick="randomVerse()">Random</button>
   <button onclick="encouragement()">Encourage Me</button>
-
-  <button onclick="toggleFavorites()">Favorites</button>
-  <button onclick="addFavorite()">⭐ Save Favorite</button>
 </div>
 
 <!-- PRAYER -->
@@ -150,12 +147,6 @@ button:hover{
 <div class="card">
   <strong>Reflection</strong>
   <div id="reflection"></div>
-</div>
-
-<!-- MISSION -->
-<div class="card">
-  <strong>Parker Family Mission Statement</strong>
-  <div id="missionText" style="margin-top:8px"></div>
 </div>
 
 <!-- FAVORITES -->
@@ -175,10 +166,9 @@ button:hover{
    STATE
 ========================= */
 
-let favorites = JSON.parse(localStorage.getItem('unshaken_favs') || '[]');
-
 let currentRef = "";
 let currentText = "";
+let favorites = JSON.parse(localStorage.getItem('unshaken_favs') || '[]');
 
 /* =========================
    DAILY VERSE SYNC
@@ -206,16 +196,13 @@ async function fetchDaily(){
 
   const ref = d?.verse?.details?.reference || "John 14:27";
 
-  localStorage.setItem(storageKey, JSON.stringify({
-    ref,
-    date: key
-  }));
+  localStorage.setItem(storageKey, JSON.stringify({ ref, date:key }));
 
   loadVerse(ref);
 }
 
 /* =========================
-   SAFE VERSE LOADER
+   VERSE LOADER
 ========================= */
 
 async function loadVerse(ref){
@@ -226,14 +213,15 @@ async function loadVerse(ref){
     let d = await r.json();
 
     let text = d?.text?.trim();
-
-    if(!text) throw new Error("Empty verse");
+    if(!text) throw new Error("No verse text");
 
     document.getElementById('verse').innerText = text;
     document.getElementById('ref').innerText = ref;
 
     currentRef = ref;
     currentText = text;
+
+    setExtras();
 
   } catch(e){
     document.getElementById('verse').innerText =
@@ -244,84 +232,61 @@ async function loadVerse(ref){
 }
 
 /* =========================
-   PRAYER + REFLECTION
+   ALIGNMENT SYSTEM
 ========================= */
 
 function getMode(){
   let h = new Date().getHours();
-  return h < 12 ? 'morning' : h < 18 ? 'day' : 'night';
+  return h < 12 ? "morning" : h < 18 ? "day" : "night";
 }
 
-const prayers = {
-  morning:["Guide me","Strength","Order my steps","Faithfulness","Lead me"],
-  day:["Focus","Wisdom","Patience","Anchored","Strength"],
-  night:["Thank You","Peace","Forgiveness","Gratitude","Rest"]
-};
-
-const reflections = {
-  morning:["Am I ready?","Am I trusting?","Am I steady?","Am I focused?","Am I faithful?"],
-  day:["Am I distracted?","Am I patient?","Am I honoring God?","Am I kind?","Am I steady?"],
-  night:["Did I grow?","Was I grateful?","Did I trust?","Where did I struggle?","What did I learn?"]
-};
-
-function idx(key,max){
-  let i = parseInt(localStorage.getItem(key) || 0);
-  i = (i + 1) % max;
-  localStorage.setItem(key, i);
-  return i;
+function hash(str){
+  let h = 0;
+  for(let i=0;i<str.length;i++){
+    h = ((h<<5)-h)+str.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
 }
+
+/* =========================
+   THEMATIC PAIRINGS
+========================= */
+
+const devotional = {
+  peace: {
+    prayer:"Lord, calm my heart and steady my thoughts.",
+    reflection:"Where am I resisting God's peace?"
+  },
+  strength: {
+    prayer:"God, strengthen me for what lies ahead.",
+    reflection:"Where do I need courage today?"
+  },
+  hope: {
+    prayer:"Father, remind me that You are working.",
+    reflection:"What am I hoping for in faith?"
+  },
+  anxiety: {
+    prayer:"Jesus, I surrender what I cannot control.",
+    reflection:"What worry do I need to release?"
+  },
+  daily: {
+    prayer:"Lord, guide me in today’s verse.",
+    reflection:"How does this speak into my life today?"
+  }
+};
+
+/* =========================
+   ALIGN PRAYER + REFLECTION
+========================= */
 
 function setExtras(){
-  let m = getMode();
+  let topic = document.getElementById('topic').value;
 
-  document.getElementById('prayer').innerText =
-    prayers[m][idx(m+"_p",5)];
+  let base = devotional[topic] || devotional.daily;
 
-  document.getElementById('reflection').innerText =
-    reflections[m][idx(m+"_r",5)];
-}
-
-/* =========================
-   MISSION
-========================= */
-
-function loadMission(){
-  document.getElementById('missionText').innerText =
-  localStorage.getItem('unshaken_mission') ||
-  "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
-}
-
-/* =========================
-   FAVORITES
-========================= */
-
-function addFavorite(){
-  if(!currentRef) return;
-
-  if(!favorites.some(f => f.ref === currentRef)){
-    favorites.push({ ref: currentRef, text: currentText });
-    localStorage.setItem('unshaken_favs', JSON.stringify(favorites));
-    renderFavorites();
-  }
-}
-
-function renderFavorites(){
-  let el = document.getElementById('favList');
-  el.innerHTML = '';
-
-  favorites.forEach(f => {
-    let div = document.createElement('div');
-    div.style.cursor = "pointer";
-    div.style.margin = "6px 0";
-    div.innerText = f.ref;
-    div.onclick = () => loadVerse(f.ref);
-    el.appendChild(div);
-  });
-}
-
-function toggleFavorites(){
-  let b = document.getElementById('favBox');
-  b.style.display = (b.style.display === 'block' ? 'none' : 'block');
+  document.getElementById('prayer').innerText = base.prayer;
+  document.getElementById('reflection').innerText = base.reflection;
 }
 
 /* =========================
@@ -335,7 +300,8 @@ function topicChange(){
     peace:"John 14:27",
     strength:"Philippians 4:13",
     hope:"Jeremiah 29:11",
-    anxiety:"Philippians 4:6"
+    anxiety:"Philippians 4:6",
+    daily:"daily"
   };
 
   if(v === "daily") return fetchDaily();
@@ -348,16 +314,20 @@ function encouragement(){
 
 function randomVerse(){
   fetch("https://labs.bible.org/api/?passage=random&type=json")
-  .then(r => r.json())
-  .then(d => {
-    loadVerse(d[0].bookname + " " + d[0].chapter + ":" + d[0].verse);
+  .then(r=>r.json())
+  .then(d=>{
+    loadVerse(d[0].bookname+" "+d[0].chapter+":"+d[0].verse);
   });
 }
 
+/* =========================
+   THEME
+========================= */
+
 function toggleDark(){
   let t = document.documentElement.getAttribute('data-theme');
-  document.documentElement.setAttribute('data-theme', t === 'dark' ? 'light' : 'dark');
-  localStorage.setItem('theme', t === 'dark' ? 'light' : 'dark');
+  document.documentElement.setAttribute('data-theme', t==='dark'?'light':'dark');
+  localStorage.setItem('theme', t==='dark'?'light':'dark');
 }
 
 /* =========================
@@ -370,10 +340,7 @@ window.onload = () => {
     localStorage.getItem('theme') || 'light'
   );
 
-  loadMission();
-  renderFavorites();
   fetchDaily();
-  setExtras();
 };
 
 </script>
