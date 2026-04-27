@@ -160,11 +160,12 @@ textarea{width:100%;min-height:70px;margin-top:8px;}
 
 <!-- JOURNAL -->
 <div class="card">
-  <strong onclick="toggleJournal()" style="cursor:pointer">Journal</strong>
-  <div id="journalBody">
+  <button onclick="toggleJournal()">Journal</button>
+  <div id="journalBody" style="display:none">
     <textarea id="journal"></textarea>
     <button onclick="saveJournal()">Save</button>
   </div>
+</div>
 </div>
 
 <!-- HISTORY / FAVORITES -->
@@ -176,7 +177,7 @@ textarea{width:100%;min-height:70px;margin-top:8px;}
   <div class="missionTitle" onclick="toggleMission()">Parker Family Mission Statement</div>
   <div id="missionBody">
     <div id="missionText"></div>
-    <div id="missionPrompt" style="font-size:12px;font-style:italic;margin-top:8px"></div>
+    
   </div>
 </div>
 
@@ -210,12 +211,6 @@ function setExtras(){let m=getMode();document.getElementById('prayer').innerText
 function loadMission(){
   document.getElementById('missionText').innerText=
   localStorage.getItem('unshaken_mission')||"As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace. We aim to live each day anchored in truth, gratitude, and purpose.";
-}
-
-function updateMissionPrompt(){
-  const p=["Aligned?","Lived values?","Missed?","Improve?","Loved well?"];
-  let i=parseInt(localStorage.getItem('mp')||0);i=(i+1)%5;localStorage.setItem('mp',i);
-  document.getElementById('missionPrompt').innerText=p[i];
 }
 
 function toggleMission(){
@@ -266,7 +261,7 @@ window.onload=()=>{
   fetchDaily();
   setExtras();
   loadMission();
-  updateMissionPrompt();
+  
   renderHistory();
   renderFavorites();
 };
