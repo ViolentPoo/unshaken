@@ -56,7 +56,7 @@
     .verse{font-size:20px;line-height:1.6;margin:15px 0;}
     .ref{color:var(--accent);font-weight:bold;}
 
-    select,button,textarea{
+    select,button{
       padding:8px;
       border-radius:8px;
       border:1px solid #ccc;
@@ -64,18 +64,10 @@
       color:var(--text);
       cursor:pointer;
       margin:4px;
-      -webkit-appearance:none;
       appearance:none;
     }
 
-    textarea{
-      width:100%;
-      min-height:60px;
-      resize:vertical;
-      cursor:text;
-    }
-
-    button:hover{background:var(--accent);color:white;}
+    button:hover{background:var(--accent);color:#fff;}
 
     .small{
       font-size:12px;
@@ -94,33 +86,29 @@
       margin-top:10px;
     }
 
-    [data-theme="dark"] .card{
-      background:rgba(255,255,255,.06);
-    }
+    [data-theme="dark"] .card{background:rgba(255,255,255,.06);}
 
     .history,.favorites{
       margin-top:15px;
       max-height:180px;
       overflow-y:auto;
+      display:none;
       border-top:1px solid rgba(0,0,0,.1);
       padding-top:10px;
-      display:none;
     }
 
     .history-item,.fav-item{
       font-size:13px;
       padding:6px;
-      cursor:pointer;
-      border-radius:6px;
       display:flex;
       justify-content:space-between;
-      align-items:center;
+      cursor:pointer;
     }
 
-    .star{cursor:pointer;opacity:.6;margin-left:10px;}
+    .star{opacity:.5;cursor:pointer;}
     .star.fav{opacity:1;}
 
-    .streak{font-size:13px;margin-top:5px;}
+    textarea{width:100%;min-height:60px;margin-top:8px;}
   </style>
 </head>
 <body>
@@ -132,9 +120,8 @@
   <div id="greeting" class="greeting"></div>
   <div id="themeSummary" class="themeSummary"></div>
 
-  <h2>Verse</h2>
-  <div id="verse" class="verse">Loading...</div>
-  <div id="ref" class="ref"></div>
+  <div class="verse" id="verse">Loading...</div>
+  <div class="ref" id="ref"></div>
 
   <div>
     <select id="translation">
@@ -160,385 +147,95 @@
     <button onclick="toggleFavorites()">Favorites</button>
   </div>
 
-  <div class="streak" id="streakDisplay"></div>
-
   <div class="card">
     <strong id="prayerTitle">Prayer</strong>
-    <div id="prayer" style="font-size:13px;margin-top:5px"></div>
+    <div id="prayer"></div>
   </div>
 
   <div class="card">
     <strong id="reflectionTitle">Reflection</strong>
-    <div id="reflection" style="font-size:13px;font-style:italic;margin-top:5px"></div>
+    <div id="reflection"></div>
   </div>
 
   <div class="card">
-  <strong onclick="toggleJournal()" style="cursor:pointer">Journal (click to expand/collapse)</strong>
-  <div id="journalBody">
-    <textarea id="journal" placeholder="Write your thoughts here..."></textarea>
-    <button onclick="saveJournal()">Save Journal</button>
-  </div>
-</div>
-
-  <div class="history" id="historyBox">
-    <strong>Verse History</strong>
-    <div id="historyList"></div>
-  </div>
-
-  <div class="favorites" id="favBox">
-    <strong>Favorite Verses</strong>
-    <div id="favList"></div>
-  </div>
-
-</div>
-
-<div class="card" id="missionCard">
-  <strong onclick="toggleMission()" style="cursor:pointer">Parker Family Mission Statement (click to expand/collapse)</strong>
-
-  <div id="missionBody">
-    <div id="missionText" style="font-size:13px;margin-top:8px;line-height:1.5"></div>
-
-    <div style="margin-top:10px;font-size:12px;opacity:.8">
-      <strong>Family Values:</strong>
-      <ul style="margin:6px 0 0 18px">
-        <li>Faith in God</li>
-        <li>Love in action</li>
-        <li>Discipline & consistency</li>
-        <li>Gratitude in all things</li>
-      </ul>
+    <strong>Journal</strong>
+    <div id="journalBody">
+      <textarea id="journal"></textarea>
+      <button onclick="saveJournal()">Save Journal</button>
     </div>
-
-    <div id="missionPrompt" style="margin-top:10px;font-size:12px;font-style:italic"></div>
   </div>
-</div>
 
-    <div style="margin-top:10px;font-size:12px;opacity:.8">
-      <strong>Family Values:</strong>
-      <ul style="margin:6px 0 0 18px">
-        <li>Faith in God</li>
-        <li>Love in action</li>
-        <li>Discipline & consistency</li>
-        <li>Gratitude in all things</li>
-      </ul>
+  <div class="card" id="missionCard">
+    <strong onclick="toggleMission()" style="cursor:pointer">Parker Family Mission Statement</strong>
+    <div id="missionBody">
+      <div id="missionText"></div>
+      <div style="margin-top:8px;font-size:12px;opacity:.8">
+        <strong>Family Values:</strong>
+        <ul>
+          <li>Faith in God</li>
+          <li>Love in action</li>
+          <li>Discipline & consistency</li>
+          <li>Gratitude in all things</li>
+        </ul>
+      </div>
+      <div id="missionPrompt" style="font-size:12px;font-style:italic;margin-top:8px"></div>
     </div>
-
-    <div id="missionPrompt" style="margin-top:10px;font-size:12px;font-style:italic"></div>
-
-    <textarea id="missionInput" placeholder="Write or edit your family mission statement..."></textarea>
-    <button onclick="saveMission()">Save Mission</button>
   </div>
-</div>
-  <textarea id="missionInput" placeholder="Write or edit your family mission statement..."></textarea>
-  <button onclick="saveMission()">Save Mission</button>
+
+  <div class="history" id="historyBox"><strong>History</strong><div id="historyList"></div></div>
+  <div class="favorites" id="favBox"><strong>Favorites</strong><div id="favList"></div></div>
+
 </div>
 
 <div class="small footer1">est 2013</div>
 <div class="small footer2">The Parker Family</div>
 
 <script>
-let currentRef="";
-let currentVerse="";
-
+let currentRef="",currentVerse="";
 let history=JSON.parse(localStorage.getItem('unshaken_history')||'[]');
 let favorites=JSON.parse(localStorage.getItem('unshaken_favs')||'[]');
 
-function getMode(){
-  const h=new Date().getHours();
-  if(h>=5 && h<12) return "morning";
-  if(h>=12 && h<18) return "day";
-  return "night";
-}
+function getMode(){let h=new Date().getHours();return h<12?'morning':h<18?'day':'night';}
+function themeSummary(m){return m==='morning'?'Focus: Discipline & Direction':m==='day'?'Focus: Faith in Action':'Focus: Gratitude & Rest';}
+function setModeUI(){let m=getMode();document.getElementById('greeting').innerText=m==='morning'?'Good Morning ☀️':m==='day'?'Good Afternoon 🌤️':'Good Evening 🌙';document.getElementById('themeSummary').innerText=themeSummary(m);}
 
-function themeSummary(mode){
-  if(mode=="morning") return "Focus: Discipline & Direction";
-  if(mode=="day") return "Focus: Faith in Action";
-  return "Focus: Gratitude & Rest";
-}
+const prayers={morning:["Guide me Lord","Strength today","Order my steps","Stay faithful","Lead me"],day:["Focus me","Give wisdom","Patience Lord","Stay anchored","Strengthen me"],night:["Thank You","Calm me","Forgive me","Grateful heart","Rest well"]};
+const reflections={morning:["Focus today?","Walk with God?","Challenges?","Trust God?","Who be?"],day:["Faith now?","Patience?","Honor God?","Distractions?","Encourage who?"],night:["God seen?","Grateful?","Shortcomings?","Growth?","Tomorrow?"]};
 
-function setModeUI(){
-  const mode=getMode();
-  document.getElementById('greeting').innerText=
-    mode=="morning"?"Good Morning ☀️":mode=="day"?"Good Afternoon 🌤️":"Good Evening 🌙";
+function idx(k,l){let i=parseInt(localStorage.getItem(k)||0);i=(i+1)%l;localStorage.setItem(k,i);return i;}
+function setExtras(){let m=getMode();document.getElementById('prayer').innerText=prayers[m][idx(m+'_p',5)];document.getElementById('reflection').innerText=reflections[m][idx(m+'_r',5)];}
 
-  document.getElementById('themeSummary').innerText=themeSummary(mode);
-}
+function loadMission(){let m=localStorage.getItem('unshaken_mission')||"As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace. We aim to live each day anchored in truth, gratitude, and purpose.";document.getElementById('missionText').innerText=m;}
+function updateMissionPrompt(){let p=["Aligned today?","Lived values?","Missed moments?","Improve tomorrow?","Loved well?"];let i=parseInt(localStorage.getItem('mp')||0);i=(i+1)%5;localStorage.setItem('mp',i);document.getElementById('missionPrompt').innerText=p[i];}
 
-const prayers={
-  morning:[
-    "Lord, guide me today and keep my heart steady.",
-    "Jesus, give me strength for what lies ahead.",
-    "Father, order my steps today.",
-    "God, help me stay disciplined and faithful.",
-    "Holy Spirit, lead my decisions."
-  ],
-  day:[
-    "God, help me stay focused today.",
-    "Lord, give me wisdom.",
-    "Jesus, help me stay patient.",
-    "Father, keep me anchored in You.",
-    "Lord, strengthen me in distractions."
-  ],
-  night:[
-    "Lord, thank You for today.",
-    "Jesus, calm my heart.",
-    "Father, forgive my shortcomings.",
-    "God, thank You for blessings.",
-    "Lord, give me restful sleep."
-  ]
-};
+function toggleMission(){let b=document.getElementById('missionBody');b.style.display=b.style.display==='none'?'block':'none';}
+function toggleJournal(){let j=document.getElementById('journalBody');j.style.display=j.style.display==='none'?'block':'none';}
+function saveJournal(){localStorage.setItem('journal_'+new Date().toDateString(),document.getElementById('journal').value);alert('Saved');}
 
-const reflections={
-  morning:[
-    "What is my focus today?",
-    "How can I walk with God today?",
-    "What challenge might come today?",
-    "Where do I need trust today?",
-    "What kind of person will I be today?"
-  ],
-  day:[
-    "How am I living out my faith?",
-    "Where do I need patience?",
-    "Am I honoring God now?",
-    "What distracts me?",
-    "Who can I encourage?"
-  ],
-  night:[
-    "Where did I see God today?",
-    "What am I grateful for?",
-    "Where did I fall short?",
-    "How did I grow?",
-    "What will I do better tomorrow?"
-  ]
-};
+function toggleHistory(){let b=document.getElementById('historyBox');let c=document.getElementById('clearHistoryBtn');let o=b.style.display==='block';b.style.display=o?'none':'block';if(c)c.style.display=o?'none':'inline-block';}
+function clearHistory(){if(!confirm('Clear history?'))return;history=[];localStorage.removeItem('unshaken_history');renderHistory();}
 
-function getIndex(key, len){
-  let i=parseInt(localStorage.getItem(key)||"0");
-  i=(i+1)%len;
-  localStorage.setItem(key,i);
-  return i;
-}
+function toggleFavorites(){let b=document.getElementById('favBox');b.style.display=b.style.display==='block'?'none':'block';renderFavorites();}
 
-function setExtras(){
-  const mode=getMode();
+function addToHistory(r,t){if(history[0]?.ref===r)return;history.unshift({ref:r,text:t});if(history.length>20)history.pop();localStorage.setItem('unshaken_history',JSON.stringify(history));renderHistory();}
 
-  const pIndex=getIndex(mode+"_p",prayers[mode].length);
-  const rIndex=getIndex(mode+"_r",reflections[mode].length);
+function renderHistory(){let el=document.getElementById('historyList');el.innerHTML='';history.forEach(h=>{let d=document.createElement('div');d.className='history-item';d.innerHTML='<span>'+h.ref+'</span><span class="star">★</span>';d.onclick=()=>{currentRef=h.ref;currentVerse=h.text;document.getElementById('verse').innerText=h.text;document.getElementById('ref').innerText=h.ref;};el.appendChild(d);});}
+function renderFavorites(){let el=document.getElementById('favList');el.innerHTML='';favorites.forEach(f=>{let d=document.createElement('div');d.className='fav-item';d.innerText=f.ref;el.appendChild(d);});}
 
-  document.getElementById('prayer').innerText=prayers[mode][pIndex];
-  document.getElementById('reflection').innerText=reflections[mode][rIndex];
-}
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('theme',t);}
+function themeByTime(){let s=localStorage.getItem('theme');if(s)return applyTheme(s);let h=new Date().getHours();applyTheme(h<6||h>18?'dark':'light');}
 
-function updateMissionPrompt(){
-  const prompts=[
-    "Are my actions aligned with our mission today?",
-    "Where did I live out our values well today?",
-    "Where did I fall short of our mission today?",
-    "How can I better reflect our family faith tomorrow?",
-    "Did I love and lead well today?"
-  ];
-  const i=parseInt(localStorage.getItem('mission_prompt_i')||"0");
-  const next=(i+1)%prompts.length;
-  localStorage.setItem('mission_prompt_i',next);
-  const el=document.getElementById('missionPrompt');
-  if(el) el.innerText=prompts[next];
-}
+async function fetchDaily(){let r=await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');let d=await r.json();loadVerse(d.verse.details.reference);}
+async function loadVerse(ref){let tr=document.getElementById('translation').value;let r=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);let d=await r.json();currentRef=ref;currentVerse=d.text;document.getElementById('verse').innerText=d.text;document.getElementById('ref').innerText=ref;addToHistory(ref,d.text);setExtras();}
 
-function loadMission(){
-  const m = localStorage.getItem('unshaken_mission') || "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace. We aim to live each day anchored in truth, gratitude, and purpose.";
-  document.getElementById('missionText').innerText=m;
-}
+function randomVerse(){fetch('https://labs.bible.org/api/?passage=random&type=json').then(r=>r.json()).then(d=>loadVerse(d[0].bookname+' '+d[0].chapter+':'+d[0].verse));}
+function encouragement(){loadVerse('Isaiah 41:10');}
+function toggleDark(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
+function shareVerse(){let t=currentRef+'\n\n'+currentVerse;navigator.share?navigator.share({title:'Unshaken',text:t}):navigator.clipboard.writeText(t);}
 
+window.onload=()=>{themeByTime();setModeUI();fetchDaily();setExtras();loadMission();updateMissionPrompt();renderHistory();renderFavorites();};
 
-
-function toggleMission(){
-  const body=document.getElementById('missionBody');
-  if(!body) return;
-  body.style.display = body.style.display==='none'?'block':'none';
-}
-
-function toggleJournal(){
-  const j=document.getElementById('journalBody');
-  if(!j) return;
-  j.style.display = j.style.display==='none'?'block':'none';
-}
-
-function saveJournal(){
-  const key="journal_"+new Date().toDateString();
-  localStorage.setItem(key,document.getElementById('journal').value);
-  alert("Saved");
-}
-
-function toggleHistory(){
-  const box=document.getElementById('historyBox');
-  const btn=document.getElementById('clearHistoryBtn');
-  const isOpen=box.style.display==='block';
-  box.style.display=isOpen?'none':'block';
-  if(btn) btn.style.display=isOpen?'none':'inline-block';
-}
-
-function toggleFavorites(){
-  const box=document.getElementById('favBox');
-  box.style.display=box.style.display==='block'?'none':'block';
-  renderFavorites();
-}
-
-function addToHistory(ref,text){
-  if(history.length && history[0].ref===ref) return;
-  history=history.filter(h=>!(h.ref===ref && h.text===text));
-  history.unshift({ref,text});
-  if(history.length>20) history.pop();
-  localStorage.setItem('unshaken_history',JSON.stringify(history));
-  renderHistory();
-}
-
-function toggleFav(ref,text){
-  const exists=favorites.find(f=>f.ref===ref);
-  if(exists){favorites=favorites.filter(f=>f.ref!==ref);}
-  else favorites.unshift({ref,text});
-  localStorage.setItem('unshaken_favs',JSON.stringify(favorites));
-  renderFavorites();
-  renderHistory();
-}
-
-function renderHistory(){
-  const el=document.getElementById('historyList');
-  el.innerHTML="";
-  history.forEach(h=>{
-    const div=document.createElement('div');
-    div.className='history-item';
-
-    const left=document.createElement('span');
-    left.innerText=h.ref;
-    left.onclick=()=>{
-      currentRef=h.ref;
-      currentVerse=h.text;
-      document.getElementById('verse').innerText=h.text;
-      document.getElementById('ref').innerText=h.ref;
-    };
-
-    const star=document.createElement('span');
-    star.className='star '+(favorites.find(f=>f.ref===h.ref)?'fav':'');
-    star.innerText='★';
-    star.onclick=()=>toggleFav(h.ref,h.text);
-
-    div.appendChild(left);
-    div.appendChild(star);
-    el.appendChild(div);
-  });
-}
-
-function renderFavorites(){
-  const el=document.getElementById('favList');
-  el.innerHTML="";
-  favorites.forEach(f=>{
-    const div=document.createElement('div');
-    div.className='fav-item';
-    div.innerText=f.ref;
-    div.onclick=()=>{
-      currentRef=f.ref;
-      currentVerse=f.text;
-      document.getElementById('verse').innerText=f.text;
-      document.getElementById('ref').innerText=f.ref;
-    };
-    el.appendChild(div);
-  });
-}
-
-function applyTheme(t){
-  document.documentElement.setAttribute('data-theme',t);
-  localStorage.setItem('theme',t);
-}
-
-function themeByTime(){
-  const saved=localStorage.getItem('theme');
-  if(saved){document.documentElement.setAttribute('data-theme',saved);return;}
-  const h=new Date().getHours();
-  document.documentElement.setAttribute('data-theme',h<6||h>18?'dark':'light');
-}
-
-async function fetchDaily(){
-  const res=await fetch("https://beta.ourmanna.com/api/v1/get/?format=json&order=daily");
-  const data=await res.json();
-  currentRef=data.verse.details.reference;
-  loadVerse(currentRef);
-}
-
-async function loadVerse(ref){
-  const tr=document.getElementById('translation').value;
-  const res=await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
-  const data=await res.json();
-
-  currentVerse=data.text;
-  currentRef=ref;
-
-  document.getElementById('verse').innerText=data.text;
-  document.getElementById('ref').innerText=ref;
-
-  addToHistory(ref,data.text);
-  setExtras();
-}
-
-function randomVerse(){
-  fetch("https://labs.bible.org/api/?passage=random&type=json")
-  .then(r=>r.json())
-  .then(d=>{
-    const v=d[0];
-    currentRef=v.bookname+" "+v.chapter+":"+v.verse;
-    currentVerse=v.text;
-    document.getElementById('verse').innerText=currentVerse;
-    document.getElementById('ref').innerText=currentRef;
-    addToHistory(currentRef,currentVerse);
-    setExtras();
-  });
-}
-
-function encouragement(){
-  currentRef="Isaiah 41:10";
-  loadVerse(currentRef);
-}
-
-function toggleDark(){
-  const cur=document.documentElement.getAttribute('data-theme');
-  applyTheme(cur==='dark'?'light':'dark');
-}
-
-function shareVerse(){
-  const text=currentRef+"
-
-"+currentVerse;
-  if(navigator.share){navigator.share({title:"Unshaken",text});}
-  else navigator.clipboard.writeText(text);
-}
-
-window.onload=()=>{
-  themeByTime();
-  setModeUI();
-  fetchDaily();
-  setExtras();
-  updateMissionPrompt();
-  loadMission();
-  updateStreak();
-  renderHistory();
-  renderFavorites();
-
-  document.getElementById('translation').onchange=()=>loadVerse(currentRef);
-  document.getElementById('topic').onchange=topicChange;
-};
-
-function topicChange(){
-  const v=document.getElementById('topic').value;
-  if(v==='daily') return fetchDaily();
-
-  const map={
-    peace:"John 14:27",
-    strength:"Philippians 4:13",
-    hope:"Jeremiah 29:11",
-    anxiety:"Philippians 4:6"
-  };
-
-  currentRef=map[v];
-  loadVerse(currentRef);
-}
+function topicChange(){let v=document.getElementById('topic').value;if(v==='daily')return fetchDaily();let map={peace:'John 14:27',strength:'Philippians 4:13',hope:'Jeremiah 29:11',anxiety:'Philippians 4:6'};loadVerse(map[v]);}
 </script>
 
 </body>
