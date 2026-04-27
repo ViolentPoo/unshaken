@@ -11,6 +11,7 @@
   --text:#111;
   --card:#ffffff;
   --accent:#2b6cb0;
+  --muted:#666;
 }
 
 [data-theme="dark"]{
@@ -18,49 +19,51 @@
   --text:#e2e8f0;
   --card:#1e293b;
   --accent:#60a5fa;
+  --muted:#94a3b8;
 }
+
+*{box-sizing:border-box;}
 
 body{
   margin:0;
-  font-family:system-ui;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   background:var(--bg);
   color:var(--text);
-  padding:70px 0 50px;
+  padding:72px 0 40px;
   display:flex;
-  flex-direction:column;
-  align-items:center;
+  justify-content:center;
 }
 
 .topbar{
   position:fixed;
-  top:0;left:0;right:0;
+  top:0;
+  left:0;
+  right:0;
   background:var(--accent);
   color:#fff;
   text-align:center;
-  padding:12px;
+  padding:14px;
   font-weight:700;
   z-index:1000;
 }
 
 .container{
-  width:min(800px,92%);
-  display:flex;
-  flex-direction:column;
+  width:min(850px,92%);
 }
 
 .card{
   background:var(--card);
-  padding:14px;
-  border-radius:12px;
-  margin-top:12px;
-  box-shadow:0 4px 12px rgba(0,0,0,.06);
+  padding:16px;
+  border-radius:14px;
+  margin-top:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,.08);
 }
 
 .verse{
-  font-size:20px;
-  line-height:1.6;
-  min-height:60px;
+  font-size:1.25rem;
+  line-height:1.7;
   margin:14px 0;
+  min-height:80px;
 }
 
 .ref{
@@ -68,14 +71,20 @@ body{
   font-weight:700;
 }
 
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
 button,select{
-  padding:8px;
-  margin:4px;
-  border-radius:8px;
-  border:1px solid #ccc;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid #cbd5e1;
   background:var(--card);
   color:var(--text);
   cursor:pointer;
+  font-size:.95rem;
 }
 
 button:hover{
@@ -85,15 +94,58 @@ button:hover{
 
 .panel{
   display:none;
-  margin-top:10px;
-  padding-top:10px;
-  border-top:1px solid rgba(0,0,0,.1);
-  max-height:220px;
+  max-height:260px;
   overflow:auto;
+}
+
+.list-item{
+  padding:8px 0;
+  border-bottom:1px solid rgba(0,0,0,.08);
+  cursor:pointer;
+}
+
+.list-item:last-child{
+  border-bottom:none;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+
+.small{
+  font-size:.9rem;
+  color:var(--muted);
+}
+
+.star-btn{
+  border:none;
+  background:transparent;
+  font-size:1.4rem;
+  cursor:pointer;
+  padding:0;
+}
+
+.section-title{
+  font-weight:700;
+  margin-bottom:8px;
+}
+
+.streak{
+  margin-top:10px;
+  font-weight:700;
+}
+
+.footer{
+  margin-top:16px;
+  text-align:center;
+  font-size:.8rem;
+  color:var(--muted);
 }
 </style>
 </head>
-
 <body>
 
 <div class="topbar">Unshaken Bible Verse of the Day</div>
@@ -102,139 +154,144 @@ button:hover{
 
 <!-- VERSE -->
 <div class="card">
-  <button id="mainStar"
-    onclick="toggleFavorite(currentRef)"
-    style="float:right; font-size:22px; border:none; background:transparent; cursor:pointer;">
-    ☆
-  </button>
+  <div class="row">
+    <div class="section-title">Today’s Verse</div>
+    <button id="mainStar" class="star-btn" onclick="toggleFavorite(currentRef)">☆</button>
+  </div>
 
-  <div class="verse" id="verse">Loading...</div>
-  <div class="ref" id="ref"></div>
+  <div id="verse" class="verse">Loading...</div>
+  <div id="ref" class="ref"></div>
 </div>
 
 <!-- CONTROLS -->
 <div class="card">
+  <div class="controls">
 
-  <select id="translation">
-    <option value="kjv">KJV</option>
-    <option value="web" selected>WEB</option>
-    <option value="esv">ESV</option>
-  </select>
+    <select id="translation" onchange="reloadCurrentVerse()">
+      <option value="kjv">KJV</option>
+      <option value="web" selected>WEB</option>
+      <option value="esv">ESV</option>
+    </select>
 
-  <select id="topic" onchange="topicChange()">
-    <option value="daily">Verse of the Day</option>
-    <option value="peace">Peace</option>
-    <option value="strength">Strength</option>
-    <option value="hope">Hope</option>
-    <option value="anxiety">Anxiety</option>
-  </select>
+    <select id="focusArea" onchange="focusAreaChange()">
+      <option value="daily">Daily Verse</option>
+      <option value="peace">Peace</option>
+      <option value="strength">Strength</option>
+      <option value="hope">Hope</option>
+      <option value="anxiety">Anxiety</option>
+      <option value="faith">Faith</option>
+      <option value="love">Love</option>
+      <option value="wisdom">Wisdom</option>
+    </select>
 
-  <button onclick="toggleDark()">Dark Mode</button>
-  <button onclick="randomVerse()">Random</button>
-  <button onclick="encouragement()">Encourage Me</button>
+    <button onclick="randomVerse()">Random</button>
+    <button onclick="encouragement()">Encourage Me</button>
+    <button onclick="toggleDark()">Dark Mode</button>
+    <button onclick="toggleFavorites()">Favorites</button>
+    <button onclick="toggleHistory()">History</button>
 
-  <button onclick="toggleFavorites()">Favorites</button>
-  <button onclick="toggleHistory()">History</button>
+  </div>
 
-  <!-- STREAK -->
-  <div style="margin-top:10px; font-weight:600;">
+  <div class="streak">
     🔥 Streak: <span id="streakCount">0</span> days
   </div>
-  <div id="streakMessage" style="font-size:14px; opacity:.85;"></div>
-
+  <div id="streakMessage" class="small"></div>
 </div>
 
 <!-- PRAYER -->
 <div class="card">
-  <strong>Prayer</strong>
+  <div class="section-title">Prayer</div>
   <div id="prayer"></div>
 </div>
 
 <!-- REFLECTION -->
 <div class="card">
-  <strong>Reflection</strong>
+  <div class="section-title">Reflection</div>
   <div id="reflection"></div>
 </div>
 
 <!-- FAVORITES -->
 <div class="card panel" id="favBox">
-  <strong>Favorites</strong>
+  <div class="section-title">Favorites</div>
   <div id="favList"></div>
 </div>
 
 <!-- HISTORY -->
 <div class="card panel" id="historyBox">
-  <strong>History</strong>
+  <div class="row">
+    <div class="section-title">History</div>
+    <button onclick="clearHistory()">Clear</button>
+  </div>
   <div id="historyList"></div>
-  <button onclick="clearHistory()">Clear History</button>
 </div>
 
 <!-- MISSION -->
 <div class="card">
-  <strong>Family Mission Statement</strong>
-  <div id="missionText" style="margin-top:8px;"></div>
+  <div class="section-title">Family Mission Statement</div>
+  <div id="missionText"></div>
 </div>
+
+<div class="footer">The Parker Family</div>
 
 </div>
 
 <script>
-
 /* =========================
-   INTERNAL VERSION (HIDDEN)
+   INTERNAL VERSION
 ========================= */
-const APP_VERSION = "1.0.1";
+const APP_VERSION = "1.1.0";
 
 /* =========================
    STATE
 ========================= */
-
 let currentRef = "";
 let currentText = "";
 
-let favorites = JSON.parse(localStorage.getItem('unshaken_favs') || '[]');
-let history = JSON.parse(localStorage.getItem('unshaken_history') || '[]');
+let favorites = JSON.parse(localStorage.getItem("unshaken_favs") || "[]");
+let history = JSON.parse(localStorage.getItem("unshaken_history") || "[]");
 
 let streak;
-try {
-  const raw = JSON.parse(localStorage.getItem('unshaken_streak'));
+try{
+  const raw = JSON.parse(localStorage.getItem("unshaken_streak"));
   streak = {
-    count: Number(raw?.count) || 0,
-    lastDate: raw?.lastDate || null
+    count:Number(raw?.count) || 0,
+    lastDate:raw?.lastDate || null
   };
-} catch {
-  streak = { count: 0, lastDate: null };
+}catch{
+  streak = {count:0,lastDate:null};
 }
 
 /* =========================
    INIT
 ========================= */
-
 window.onload = () => {
   document.documentElement.setAttribute(
-    'data-theme',
-    localStorage.getItem('theme') || 'light'
+    "data-theme",
+    localStorage.getItem("theme") || "light"
   );
 
-  document.getElementById('missionText').innerText =
-    localStorage.getItem('unshaken_mission') ||
-    "We seek to follow Jesus faithfully and live with purpose daily.";
+  document.getElementById("missionText").innerText =
+    localStorage.getItem("unshaken_mission") ||
+    "We seek to follow Jesus faithfully, love one another well, and live each day with purpose.";
 
-  fetchDaily();
   renderFavorites();
   renderHistory();
   updateStreak();
   renderStreak();
+  fetchDaily();
 };
 
 /* =========================
-   STREAK
+   DATE KEY
 ========================= */
-
 function getDayKey(){
   const d = new Date();
   return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
 }
 
+/* =========================
+   STREAK
+========================= */
 function updateStreak(){
   const today = getDayKey();
 
@@ -245,130 +302,207 @@ function updateStreak(){
   const yKey = `${y.getFullYear()}-${y.getMonth()+1}-${y.getDate()}`;
 
   if(streak.lastDate === yKey){
-    streak.count = (Number(streak.count)||0) + 1;
-  } else {
+    streak.count++;
+  }else{
     streak.count = 1;
   }
 
   streak.lastDate = today;
 
-  localStorage.setItem('unshaken_streak', JSON.stringify(streak));
-
+  localStorage.setItem("unshaken_streak", JSON.stringify(streak));
   renderStreak();
 }
 
 function renderStreak(){
-  document.getElementById('streakCount').innerText = Number(streak.count)||0;
+  const count = Number(streak.count) || 0;
 
-  const msg = document.getElementById('streakMessage');
-  const c = Number(streak.count)||0;
+  document.getElementById("streakCount").innerText = count;
 
-  if(c === 0) msg.innerText = "Start today.";
-  else if(c < 5) msg.innerText = "Keep going.";
-  else if(c < 10) msg.innerText = "Momentum building.";
-  else if(c < 30) msg.innerText = "Strong rhythm.";
-  else msg.innerText = "Deep consistency.";
+  let msg = "Start today.";
+  if(count >= 3) msg = "Keep going.";
+  if(count >= 7) msg = "Momentum building.";
+  if(count >= 14) msg = "Strong discipline.";
+  if(count >= 30) msg = "Deep consistency.";
+
+  document.getElementById("streakMessage").innerText = msg;
 }
 
 /* =========================
-   VERSE
+   VERSES
 ========================= */
-
 async function fetchDaily(){
   try{
-    const r = await fetch('https://beta.ourmanna.com/api/v1/get/?format=json&order=daily');
+    const r = await fetch("https://beta.ourmanna.com/api/v1/get/?format=json&order=daily");
     const d = await r.json();
+
     loadVerse(d?.verse?.details?.reference || "John 14:27");
-  } catch {
+  }catch{
     loadVerse("John 14:27");
   }
 }
 
 async function loadVerse(ref){
   try{
-    let tr = document.getElementById('translation').value;
+    const tr = document.getElementById("translation").value;
 
-    let r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
-    let d = await r.json();
+    const r = await fetch(`https://bible-api.com/${encodeURIComponent(ref)}?translation=${tr}`);
+    const d = await r.json();
 
     currentRef = ref;
-    currentText = d.text.trim();
+    currentText = (d.text || "").trim();
 
-    document.getElementById('verse').innerText = currentText;
-    document.getElementById('ref').innerText = ref;
+    document.getElementById("verse").innerText = currentText || "Verse unavailable.";
+    document.getElementById("ref").innerText = ref;
 
-    setExtras();
     addToHistory(ref);
     updateMainStar();
-    updateStreak();
+    applyVerseDevotional(ref,currentText);
 
-  } catch {
-    document.getElementById('verse').innerText = "Unavailable";
+  }catch{
+    document.getElementById("verse").innerText = "Verse unavailable.";
+    document.getElementById("ref").innerText = ref;
+    applyVerseDevotional(ref,"");
   }
 }
 
+function reloadCurrentVerse(){
+  if(currentRef) loadVerse(currentRef);
+}
+
 /* =========================
-   DEVOTIONAL
+   FOCUS AREA
 ========================= */
+function focusAreaChange(){
+  const v = document.getElementById("focusArea").value;
 
-const devotional = {
-  peace:{prayer:"Peace Lord",reflection:"Where do I need peace?"},
-  strength:{prayer:"Strength Lord",reflection:"Where do I need strength?"},
-  hope:{prayer:"Hope Lord",reflection:"What am I trusting?"},
-  anxiety:{prayer:"Calm me Lord",reflection:"What fear do I release?"},
-  daily:{prayer:"Guide me",reflection:"What is God saying?"}
-};
+  const map = {
+    peace:"John 14:27",
+    strength:"Isaiah 41:10",
+    hope:"Jeremiah 29:11",
+    anxiety:"Philippians 4:6",
+    faith:"Hebrews 11:1",
+    love:"1 Corinthians 13:4",
+    wisdom:"James 1:5",
+    daily:"daily"
+  };
 
-function setExtras(){
-  let t = document.getElementById('topic').value;
-  let d = devotional[t] || devotional.daily;
+  if(v === "daily"){
+    fetchDaily();
+    return;
+  }
 
-  document.getElementById('prayer').innerText = d.prayer;
-  document.getElementById('reflection').innerText = d.reflection;
+  loadVerse(map[v]);
+}
+
+/* =========================
+   VERSE-AWARE DEVOTIONAL
+========================= */
+function applyVerseDevotional(ref,text){
+
+  const category = detectCategory(ref,text);
+
+  const devotional = {
+    peace:{
+      prayer:"Jesus, quiet my heart and steady my mind with Your peace today.",
+      reflection:"What is stealing my peace that I need to surrender?"
+    },
+    strength:{
+      prayer:"Father, strengthen me for what is in front of me today.",
+      reflection:"Where do I need courage instead of fear?"
+    },
+    hope:{
+      prayer:"Lord, renew my hope and help me trust Your plan.",
+      reflection:"Where do I need to believe God is still working?"
+    },
+    anxiety:{
+      prayer:"God, help me release every worry into Your hands.",
+      reflection:"What burden am I carrying that I should give to God?"
+    },
+    faith:{
+      prayer:"Lord, help me trust You even when I cannot see clearly.",
+      reflection:"Where is faith being invited in my life right now?"
+    },
+    love:{
+      prayer:"Teach me to love with patience, kindness, and grace.",
+      reflection:"Who needs compassion from me today?"
+    },
+    wisdom:{
+      prayer:"Father, give me wisdom for the choices before me.",
+      reflection:"What decision needs prayerful wisdom today?"
+    },
+    daily:{
+      prayer:"Lord, speak to me through Your Word today.",
+      reflection:"What is God inviting me to notice today?"
+    }
+  };
+
+  const data = devotional[category] || devotional.daily;
+
+  document.getElementById("prayer").innerText = data.prayer;
+  document.getElementById("reflection").innerText = data.reflection;
+}
+
+function detectCategory(ref,text){
+  const content = (ref + " " + text).toLowerCase();
+
+  if(content.includes("peace")) return "peace";
+  if(content.includes("fear") || content.includes("strong") || content.includes("strength")) return "strength";
+  if(content.includes("hope") || content.includes("future")) return "hope";
+  if(content.includes("anxious") || content.includes("worry")) return "anxiety";
+  if(content.includes("faith")) return "faith";
+  if(content.includes("love")) return "love";
+  if(content.includes("wisdom")) return "wisdom";
+
+  if(ref.includes("John 14:27")) return "peace";
+  if(ref.includes("Isaiah 41:10")) return "strength";
+  if(ref.includes("Jeremiah 29:11")) return "hope";
+  if(ref.includes("Philippians 4:6")) return "anxiety";
+
+  return "daily";
 }
 
 /* =========================
    FAVORITES
 ========================= */
-
 function isFavorite(ref){
-  return favorites.some(f=>f.ref===ref);
+  return favorites.some(f => f.ref === ref);
 }
 
 function toggleFavorite(ref){
   if(!ref) return;
 
   if(isFavorite(ref)){
-    favorites = favorites.filter(f=>f.ref!==ref);
-  } else {
+    favorites = favorites.filter(f => f.ref !== ref);
+  }else{
     favorites.push({ref,text:currentText});
   }
 
-  localStorage.setItem('unshaken_favs', JSON.stringify(favorites));
-
+  localStorage.setItem("unshaken_favs", JSON.stringify(favorites));
   renderFavorites();
   updateMainStar();
 }
 
 function renderFavorites(){
-  let el=document.getElementById('favList');
-  el.innerHTML='';
+  const el = document.getElementById("favList");
+  el.innerHTML = "";
+
+  if(favorites.length === 0){
+    el.innerHTML = `<div class="small">No favorites yet.</div>`;
+    return;
+  }
 
   favorites.forEach(f=>{
-    let row=document.createElement('div');
-    row.style.display="flex";
-    row.style.justifyContent="space-between";
+    const row = document.createElement("div");
+    row.className = "row list-item";
 
-    let t=document.createElement('div');
-    t.innerText=f.ref;
-    t.onclick=()=>loadVerse(f.ref);
-    t.style.cursor="pointer";
+    const t = document.createElement("div");
+    t.innerText = f.ref;
+    t.onclick = ()=>loadVerse(f.ref);
 
-    let s=document.createElement('button');
-    s.innerText="⭐";
-    s.style.background="transparent";
-    s.style.border="none";
-    s.onclick=()=>toggleFavorite(f.ref);
+    const s = document.createElement("button");
+    s.className = "star-btn";
+    s.innerText = "⭐";
+    s.onclick = ()=>toggleFavorite(f.ref);
 
     row.appendChild(t);
     row.appendChild(s);
@@ -377,56 +511,67 @@ function renderFavorites(){
 }
 
 function updateMainStar(){
-  document.getElementById('mainStar').innerText =
+  document.getElementById("mainStar").innerText =
     isFavorite(currentRef) ? "⭐" : "☆";
 }
 
-/* =========================
-   HISTORY (NO DUPLICATES)
-========================= */
+function toggleFavorites(){
+  const box = document.getElementById("favBox");
+  box.style.display = box.style.display === "block" ? "none" : "block";
+}
 
+/* =========================
+   HISTORY
+========================= */
 function addToHistory(ref){
-  history = history.filter(h=>h.ref!==ref);
+  history = history.filter(h => h.ref !== ref);
   history.unshift({ref});
   history = history.slice(0,50);
 
-  localStorage.setItem('unshaken_history', JSON.stringify(history));
+  localStorage.setItem("unshaken_history", JSON.stringify(history));
   renderHistory();
 }
 
 function renderHistory(){
-  let el=document.getElementById('historyList');
-  el.innerHTML='';
+  const el = document.getElementById("historyList");
+  el.innerHTML = "";
+
+  if(history.length === 0){
+    el.innerHTML = `<div class="small">No history yet.</div>`;
+    return;
+  }
 
   history.forEach(h=>{
-    let d=document.createElement('div');
-    d.innerText=h.ref;
-    d.style.cursor="pointer";
-    d.onclick=()=>loadVerse(h.ref);
-    el.appendChild(d);
+    const div = document.createElement("div");
+    div.className = "list-item";
+    div.innerText = h.ref;
+    div.onclick = ()=>loadVerse(h.ref);
+    el.appendChild(div);
   });
 }
 
 function toggleHistory(){
-  let b=document.getElementById('historyBox');
-  b.style.display=b.style.display==='block'?'none':'block';
+  const box = document.getElementById("historyBox");
+  box.style.display = box.style.display === "block" ? "none" : "block";
 }
 
 function clearHistory(){
   if(!confirm("Clear history?")) return;
-  history=[];
-  localStorage.removeItem('unshaken_history');
+
+  history = [];
+  localStorage.removeItem("unshaken_history");
   renderHistory();
 }
 
 /* =========================
-   CONTROLS
+   OTHER CONTROLS
 ========================= */
-
 function toggleDark(){
-  let t=document.documentElement.getAttribute('data-theme');
-  document.documentElement.setAttribute('data-theme',t==='dark'?'light':'dark');
-  localStorage.setItem('theme',t==='dark'?'light':'dark');
+  const t = document.documentElement.getAttribute("data-theme");
+  const next = t === "dark" ? "light" : "dark";
+
+  document.documentElement.setAttribute("data-theme",next);
+  localStorage.setItem("theme",next);
 }
 
 function encouragement(){
@@ -435,32 +580,13 @@ function encouragement(){
 
 function randomVerse(){
   fetch("https://labs.bible.org/api/?passage=random&type=json")
-  .then(r=>r.json())
-  .then(d=>{
-    loadVerse(d[0].bookname+" "+d[0].chapter+":"+d[0].verse);
-  });
+    .then(r=>r.json())
+    .then(d=>{
+      const v = d[0];
+      loadVerse(`${v.bookname} ${v.chapter}:${v.verse}`);
+    })
+    .catch(()=>loadVerse("Romans 8:28"));
 }
-
-function topicChange(){
-  let v=document.getElementById('topic').value;
-
-  const map={
-    peace:"John 14:27",
-    strength:"Philippians 4:13",
-    hope:"Jeremiah 29:11",
-    anxiety:"Philippians 4:6",
-    daily:"daily"
-  };
-
-  if(v==="daily") return fetchDaily();
-  loadVerse(map[v]);
-}
-
-function toggleFavorites(){
-  let b=document.getElementById('favBox');
-  b.style.display=b.style.display==='block'?'none':'block';
-}
-
 </script>
 
 </body>
