@@ -14,6 +14,7 @@
   --muted:#666;
 }
 
+/* DARK THEME */
 [data-theme="dark"]{
   --bg:#0f172a;
   --text:#e2e8f0;
@@ -32,6 +33,7 @@ body{
   padding:72px 0 40px;
   display:flex;
   justify-content:center;
+  transition:background 0.3s,color 0.3s;
 }
 
 .topbar{
@@ -63,23 +65,13 @@ body{
   margin-bottom:8px;
 }
 
-.verse{
-  font-size:1.25rem;
-  line-height:1.7;
-}
-
-.ref{
-  color:var(--accent);
-  font-weight:700;
-}
-
 .controls{
   display:flex;
   flex-wrap:wrap;
   gap:8px;
 }
 
-button,input{
+button,select,input{
   padding:10px;
   border-radius:10px;
   border:1px solid #ccc;
@@ -100,9 +92,7 @@ button:hover{
   cursor:pointer;
 }
 
-.hidden{
-  display:none;
-}
+.hidden{ display:none; }
 
 .footer{
   position:fixed;
@@ -123,9 +113,8 @@ button:hover{
 <!-- VERSE -->
 <div class="card">
   <div class="section-title">Verse</div>
-
-  <div id="verse" class="verse">Loading...</div>
-  <div id="ref" class="ref"></div>
+  <div id="verse" style="font-size:1.25rem;"></div>
+  <div id="ref" style="color:var(--accent);font-weight:700;"></div>
 </div>
 
 <!-- CONTROLS -->
@@ -141,21 +130,25 @@ button:hover{
   <button onclick="togglePanel('favPanel')">Favorites</button>
   <button onclick="togglePanel('histPanel')">History</button>
 
-</div>
+  <!-- 🌗 THEME DROPDOWN -->
+  <select onchange="setTheme(this.value)">
+    <option value="system">System</option>
+    <option value="light">Day</option>
+    <option value="dark">Night</option>
+  </select>
 
 </div>
 
-<!-- SEARCH PANEL -->
+</div>
+
+<!-- SEARCH -->
 <div class="card hidden" id="searchPanel">
-  <div class="section-title">Search Scripture</div>
+  <div class="section-title">Search</div>
 
-  <input id="searchBox" placeholder="Search (love, peace...)" />
+  <input id="searchBox" placeholder="Search scripture..." />
   <button onclick="search()">Search</button>
-  <button onclick="hideSearch()">Clear Results</button>
 
-  <div id="resultsBox" style="margin-top:10px;">
-    <div id="results"></div>
-  </div>
+  <div id="results"></div>
 </div>
 
 <!-- FAVORITES -->
@@ -167,20 +160,8 @@ button:hover{
 <!-- HISTORY -->
 <div class="card hidden" id="histPanel">
   <div class="section-title">History</div>
-  <button onclick="clearHistory()">Clear History</button>
+  <button onclick="clearHistory()">Clear</button>
   <div id="historyList"></div>
-</div>
-
-<!-- PRAYER -->
-<div class="card">
-  <div class="section-title">Prayer</div>
-  <div id="prayer"></div>
-</div>
-
-<!-- REFLECTION -->
-<div class="card">
-  <div class="section-title">Reflection</div>
-  <div id="reflection"></div>
 </div>
 
 </div>
@@ -191,11 +172,42 @@ button:hover{
 
 <script>
 
+/* ================= THEME SYSTEM ================= */
+
+function applyTheme(mode){
+  localStorage.setItem("themeMode", mode);
+
+  if(mode === "system"){
+    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    return;
+  }
+
+  document.documentElement.setAttribute("data-theme", mode);
+}
+
+function setTheme(mode){
+  applyTheme(mode);
+}
+
+/* auto init theme */
+(function(){
+  const saved = localStorage.getItem("themeMode") || "system";
+  applyTheme(saved);
+})();
+
+/* react to system changes */
+window.matchMedia("(prefers-color-scheme: dark)")
+  .addEventListener("change", () => {
+    if(localStorage.getItem("themeMode")==="system"){
+      applyTheme("system");
+    }
+  });
+
 /* ================= DATA ================= */
 
 const verses = [
   {ref:"John 3:16", text:"For God so loved the world..."},
-  {ref:"1 Corinthians 13:4", text:"Love is patient, love is kind..."},
   {ref:"Psalm 23:1", text:"The Lord is my shepherd..."},
   {ref:"Isaiah 41:10", text:"Do not fear, for I am with you..."},
   {ref:"Philippians 4:13", text:"I can do all things through Christ..."},
@@ -217,12 +229,6 @@ function setVerse(v){
   document.getElementById("verse").innerText=v.text;
   document.getElementById("ref").innerText=v.ref;
 
-  document.getElementById("prayer").innerText=
-    "Lord, guide me through " + v.ref;
-
-  document.getElementById("reflection").innerText=
-    "What is God showing me through this verse?";
-
   addHistory(v);
   renderFav();
   renderHistory();
@@ -231,10 +237,10 @@ function setVerse(v){
 /* ================= DAILY ================= */
 
 function loadDaily(){
-  const seed=new Date().toISOString().split("T")[0];
+  const d=new Date().toISOString().split("T")[0];
   let h=0;
-  for(let i=0;i<seed.length;i++){
-    h+=seed.charCodeAt(i)*(i+1);
+  for(let i=0;i<d.length;i++){
+    h+=d.charCodeAt(i)*(i+1);
   }
   setVerse(verses[h%verses.length]);
 }
@@ -251,7 +257,7 @@ function encourageMe(){
   setVerse(verses[Math.floor(Math.random()*verses.length)]);
 }
 
-/* ================= TOGGLES ================= */
+/* ================= PANELS ================= */
 
 function togglePanel(id){
   document.getElementById(id).classList.toggle("hidden");
@@ -273,11 +279,6 @@ function search(){
         <b>${v.ref}</b><br>${v.text}
       </div>`
     ).join("");
-}
-
-function hideSearch(){
-  document.getElementById("results").innerHTML="";
-  document.getElementById("searchBox").value="";
 }
 
 /* ================= FAVORITES ================= */
