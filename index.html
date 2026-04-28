@@ -13,6 +13,7 @@
   --accent:#2b6cb0;
   --muted:#666;
   --border:#d9d9d9;
+  --hover:#eef4ff;
 }
 
 [data-theme="dark"]{
@@ -22,6 +23,7 @@
   --accent:#60a5fa;
   --muted:#94a3b8;
   --border:#334155;
+  --hover:#1b2a44;
 }
 
 *{box-sizing:border-box;}
@@ -48,6 +50,7 @@ body{
 
 .container{width:min(940px,92%);}
 
+/* CARD SYSTEM */
 .card{
   background:var(--card);
   padding:14px;
@@ -63,6 +66,15 @@ body{
   margin-bottom:10px;
 }
 
+/* VERSE TITLE MATCH */
+.verse-section-title{
+  font-size:14px;
+  font-weight:700;
+  color:var(--accent);
+  margin-bottom:10px;
+}
+
+/* INPUTS */
 button,input,select{
   padding:8px 10px;
   border-radius:8px;
@@ -78,12 +90,14 @@ button:hover{background:var(--accent);color:#fff;}
 
 .hidden{display:none !important;}
 
+/* STAR */
 .star{
   font-size:26px;
   cursor:pointer;
   user-select:none;
 }
 
+/* FOOTER */
 .footer-left{
   position:fixed;
   left:10px;
@@ -101,6 +115,7 @@ button:hover{background:var(--accent);color:#fff;}
   cursor:pointer;
 }
 
+/* MODAL */
 .modal-backdrop{
   position:fixed;
   inset:0;
@@ -118,30 +133,49 @@ button:hover{background:var(--accent);color:#fff;}
   width:min(520px,90%);
 }
 
-/* FAVORITES */
-.fav-item{
-  border-bottom:1px solid var(--border);
-  padding:8px 0;
+/* =========================
+   UI ENHANCED LIST ITEMS
+========================= */
+
+.list-item{
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-bottom:8px;
   cursor:pointer;
+  transition:0.2s ease;
   position:relative;
 }
 
-.fav-ref{
+.list-item:hover{
+  background:var(--hover);
+  transform:translateY(-1px);
+}
+
+.ref{
   font-weight:700;
 }
 
-.fav-preview{
+.preview{
   font-size:12px;
   color:var(--muted);
-  margin-top:3px;
+  margin-top:4px;
+  line-height:1.4;
 }
 
+/* REMOVE STAR */
 .remove-star{
   position:absolute;
-  right:6px;
+  right:10px;
   top:10px;
   font-size:18px;
   cursor:pointer;
+  opacity:0.8;
+}
+
+.remove-star:hover{
+  opacity:1;
+  transform:scale(1.1);
 }
 </style>
 </head>
@@ -154,7 +188,7 @@ button:hover{background:var(--accent);color:#fff;}
 
 <!-- VERSE -->
 <div class="card">
-  <div class="section-title" id="verse-title">Verse</div>
+  <div class="verse-section-title" id="verse-title">Verse</div>
   <div id="verse">Loading...</div>
   <div class="star" id="star" onclick="toggleFav()">☆</div>
 </div>
@@ -203,23 +237,26 @@ button:hover{background:var(--accent);color:#fff;}
 
 </div>
 
+<!-- FOOTERS -->
 <div class="footer-left">Unshaken</div>
+<div class="footer-right" onclick="openMission()">est. 2013 — The Parker Family</div>
 
-<div class="footer-right" onclick="openMission()">
-est. 2013 — The Parker Family
-</div>
-
+<!-- MODAL -->
 <div class="modal-backdrop" id="missionModal" onclick="closeMission(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <h3>Parker Family Mission Statement</h3>
-    <p>As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.</p>
+    <p>
+      As a family, we seek to follow Jesus faithfully,
+      honor God in all we do, and love one another
+      with patience and grace.
+    </p>
     <button onclick="closeMission()">Close</button>
   </div>
 </div>
 
 <script>
 
-const TRANSLATIONS = {
+const TRANSLATIONS={
   web:"World English Bible (WEB)",
   kjv:"King James Version (KJV)",
   asv:"American Standard Version (ASV)",
@@ -227,34 +264,32 @@ const TRANSLATIONS = {
   cpdv:"Catholic Public Domain Version (CPDV)"
 };
 
-const DAILY_SEED = 81213;
+const DAILY_SEED=81213;
 
-let canon = {};
-let keys = [];
-let currentKey = null;
-let currentTranslation = "web";
-let favs = JSON.parse(localStorage.getItem("fav") || "[]");
+let canon={},keys=[],currentKey=null;
+let currentTranslation="web";
+let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 
-/* ================= HASH ================= */
+/* HASH */
 function hash(str){
-  let h = 0;
+  let h=0;
   for(let i=0;i<str.length;i++){
-    h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    h=(h*31+str.charCodeAt(i))>>>0;
   }
   return h;
 }
 
 function getDaily(){
-  const today = new Date().toDateString();
-  const h = hash(today + DAILY_SEED);
-  return keys.length ? keys[h % keys.length] : null;
+  const today=new Date().toDateString();
+  const h=hash(today+DAILY_SEED);
+  return keys.length?keys[h%keys.length]:null;
 }
 
-/* ================= LOAD ================= */
+/* LOAD */
 async function loadAll(){
   for(const t in TRANSLATIONS){
     try{
-      const txt = await (await fetch(`translations/${t}.txt`)).text();
+      const txt=await (await fetch(`translations/${t}.txt`)).text();
 
       txt.split("\n").forEach(line=>{
         line=line.trim();
@@ -264,81 +299,78 @@ async function loadAll(){
         const i=parts.findIndex(x=>x.includes(":"));
         if(i<0) return;
 
-        const key = parts.slice(0,i).join(" ") + " " + parts[i];
-        const verse = parts.slice(i+1).join(" ");
+        const key=parts.slice(0,i).join(" ")+" "+parts[i];
+        const verse=parts.slice(i+1).join(" ");
 
         if(!canon[key]) canon[key]={};
         canon[key][t]=verse;
       });
 
-    } catch(e){}
+    }catch(e){}
   }
 
-  keys = Object.keys(canon);
+  keys=Object.keys(canon);
 
   buildDropdown();
   show(getDaily());
 }
 
-/* ================= SHOW ================= */
+/* SHOW */
 function show(k){
   if(!canon[k]) return;
 
-  currentKey = k;
+  currentKey=k;
 
-  document.getElementById("verse-title").innerText = k;
-  document.getElementById("verse").innerText =
-    canon[k][currentTranslation] || "";
+  document.getElementById("verse-title").innerText=k;
+  document.getElementById("verse").innerText=
+    canon[k][currentTranslation]||"";
 
   updateStar();
   renderFav();
 }
 
-/* ================= DAILY ================= */
+/* DAILY */
 function daily(){
   show(getDaily());
 }
 
-/* ================= RANDOM ================= */
+/* RANDOM */
 function randomVerse(){
   show(keys[Math.floor(Math.random()*keys.length)]);
 }
 
-/* ================= TRANSLATION ================= */
+/* TRANSLATION */
 function buildDropdown(){
-  const sel = document.getElementById("translation");
-
-  sel.innerHTML = Object.keys(TRANSLATIONS).map(k =>
-    `<option value="${k}" ${k===currentTranslation?"selected":""}>
-      ${TRANSLATIONS[k]}
-    </option>`
-  ).join("");
+  document.getElementById("translation").innerHTML=
+    Object.keys(TRANSLATIONS).map(k=>
+      `<option value="${k}" ${k===currentTranslation?"selected":""}>
+        ${TRANSLATIONS[k]}
+      </option>`
+    ).join("");
 }
 
 function setTranslation(t){
-  currentTranslation = t;
+  currentTranslation=t;
   if(currentKey) show(currentKey);
 }
 
-/* ================= SEARCH ================= */
+/* SEARCH */
 function toggleSearch(){
   document.getElementById("searchBox").classList.toggle("hidden");
 }
 
 function instantSearch(){
-  const q = document.getElementById("q").value.toLowerCase();
+  const q=document.getElementById("q").value.toLowerCase();
 
-  const res = keys.filter(k =>
+  const res=keys.filter(k=>
     (canon[k][currentTranslation]||"").toLowerCase().includes(q)
   ).slice(0,30);
 
-  document.getElementById("results").innerHTML =
+  document.getElementById("results").innerHTML=
     res.map(k=>`
-      <div class="fav-item" onclick="show('${k}')">
-        <div class="fav-ref">${k}</div>
-        <div class="fav-preview">
-          ${(canon[k][currentTranslation]||"").slice(0,80)}...
-        </div>
+      <div class="list-item" onclick="show('${k}')">
+        <div class="ref">${k}</div>
+        <div class="preview">${(canon[k][currentTranslation]||"").slice(0,90)}...</div>
       </div>
     `).join("");
 }
@@ -348,16 +380,15 @@ function clearSearch(){
   document.getElementById("results").innerHTML="";
 }
 
-/* ================= FAVORITES ================= */
+/* FAVORITES */
 function toggleFav(){
   if(!currentKey) return;
 
-  const i = favs.indexOf(currentKey);
+  const i=favs.indexOf(currentKey);
   if(i>-1) favs.splice(i,1);
   else favs.push(currentKey);
 
   localStorage.setItem("fav",JSON.stringify(favs));
-
   updateStar();
   renderFav();
 }
@@ -368,42 +399,44 @@ function toggleFavorites(){
 }
 
 function renderFav(){
-  document.getElementById("favList").innerHTML =
+  document.getElementById("favList").innerHTML=
     favs.map(k=>`
-      <div class="fav-item">
-        <div onclick="show('${k}')" class="fav-ref">${k}</div>
-        <div class="fav-preview">
-          ${(canon[k]?.[currentTranslation]||"").slice(0,90)}...
+      <div class="list-item">
+        <div class="ref" onclick="show('${k}')">${k}</div>
+        <div class="preview">
+          ${(canon[k]?.[currentTranslation]||"").slice(0,100)}...
         </div>
-
         <div class="remove-star" onclick="removeFav('${k}')">★</div>
       </div>
     `).join("");
 }
 
 function removeFav(k){
-  favs = favs.filter(f=>f!==k);
+  favs=favs.filter(f=>f!==k);
   localStorage.setItem("fav",JSON.stringify(favs));
   updateStar();
   renderFav();
 }
 
-/* ================= STAR ================= */
+/* STAR */
 function updateStar(){
-  document.getElementById("star").innerText =
-    favs.includes(currentKey) ? "★" : "☆";
+  document.getElementById("star").innerText=
+    favs.includes(currentKey)?"★":"☆";
 }
 
-/* ================= THEME ================= */
+/* THEME */
 function setTheme(mode){
-  const dark =
-    mode==="dark" ||
-    (mode==="system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  const dark=
+    mode==="dark"||
+    (mode==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);
 
-  document.documentElement.setAttribute("data-theme",dark?"dark":"light");
+  document.documentElement.setAttribute(
+    "data-theme",
+    dark?"dark":"light"
+  );
 }
 
-/* ================= MODAL ================= */
+/* MODAL */
 function openMission(){
   document.getElementById("missionModal").style.display="flex";
 }
@@ -412,8 +445,8 @@ function closeMission(){
   document.getElementById("missionModal").style.display="none";
 }
 
-/* ================= INIT ================= */
-window.onload = loadAll;
+/* INIT */
+window.onload=loadAll;
 
 </script>
 
