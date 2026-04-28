@@ -118,20 +118,17 @@ button:hover{background:var(--accent);color:#fff;}
   width:min(520px,90%);
 }
 
-/* ===== VERSE UI FIX ONLY ===== */
-
+/* VERSE UI */
 .verse-ref{
   font-size:12px;
   color:var(--muted);
   margin-bottom:6px;
-  letter-spacing:.3px;
 }
 
 .verse-text{
   font-size:18px;
   line-height:1.6;
 }
-
 </style>
 </head>
 
@@ -141,13 +138,11 @@ button:hover{background:var(--accent);color:#fff;}
 
 <div class="container">
 
-<!-- VERSE -->
 <div class="card">
   <div id="verse">Loading...</div>
   <div class="star" id="star" onclick="toggleFav()">☆</div>
 </div>
 
-<!-- CONTROLS -->
 <div class="card">
   <button onclick="daily()">Daily</button>
   <button onclick="randomVerse()">Random</button>
@@ -163,27 +158,23 @@ button:hover{background:var(--accent);color:#fff;}
   </select>
 </div>
 
-<!-- SEARCH -->
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
-  <input id="q" oninput="instantSearch()" placeholder="Search verses...">
+  <input id="q" oninput="instantSearch()">
   <button onclick="clearSearch()">Clear</button>
   <div id="results"></div>
 </div>
 
-<!-- FAVORITES -->
 <div class="card hidden" id="favBox">
   <div class="section-title">Favorites</div>
   <div id="favList"></div>
 </div>
 
-<!-- PRAYER -->
 <div class="card">
   <div class="section-title">Prayer</div>
   <div id="prayer">Walk faithfully today.</div>
 </div>
 
-<!-- REFLECTION -->
 <div class="card">
   <div class="section-title">Reflection</div>
   <div id="reflection">What is God showing you?</div>
@@ -200,24 +191,16 @@ est. 2013 — The Parker Family
 <div class="modal-backdrop" id="missionModal" onclick="closeMission(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <h3>Parker Family Mission Statement</h3>
-    <p>
-      As a family, we seek to follow Jesus faithfully, honor God in all we do,
-      and love one another with patience and grace.
-    </p>
+    <p>As a family, we seek to follow Jesus faithfully...</p>
     <button onclick="closeMission()">Close</button>
   </div>
 </div>
 
 <script>
 
-/* ================= STATE ================= */
-
 const TRANSLATIONS = {
   web:"World English Bible (WEB)",
-  kjv:"King James Version (KJV)",
-  asv:"American Standard Version (ASV)",
-  akjv:"American King James Version (AKJV)",
-  cpdv:"Catholic Public Domain Version (CPDV)"
+  kjv:"King James Version (KJV)"
 };
 
 const DAILY_SEED = 81213;
@@ -227,8 +210,6 @@ let canon={};
 let keys=[];
 let currentKey=null;
 let favs=JSON.parse(localStorage.getItem("fav")||"[]");
-
-/* ================= HASH ================= */
 
 function simpleHash(str){
   let h=0;
@@ -241,12 +222,8 @@ function simpleHash(str){
 function getDailyKey(){
   const today=new Date().toDateString();
   const hash=simpleHash(today + DAILY_SEED);
-
-  if(!keys.length) return null;
-  return keys[hash % keys.length];
+  return keys.length ? keys[hash % keys.length] : null;
 }
-
-/* ================= THEME ================= */
 
 function setTheme(mode){
   const dark =
@@ -255,8 +232,6 @@ function setTheme(mode){
 
   document.documentElement.setAttribute("data-theme",dark?"dark":"light");
 }
-
-/* ================= LOAD ================= */
 
 async function loadAll(){
   canon={};
@@ -279,57 +254,40 @@ async function loadAll(){
         if(!canon[key]) canon[key]={};
         canon[key][t]=verse;
       });
-
     } catch(e){}
   }
 
-  keys = Object.keys(canon).filter(k=>Object.keys(canon[k]).length);
+  keys=Object.keys(canon);
 
   buildDropdown();
   show(getDailyKey());
 }
-
-/* ================= SHOW ================= */
 
 function show(key){
   if(!canon[key]) return;
 
   currentKey=key;
 
-  const txt =
-    canon[key][currentTranslation] ||
-    canon[key].web ||
-    "Verse unavailable";
-
   document.getElementById("verse").innerHTML=`
     <div class="verse-ref">${key}</div>
-    <div class="verse-text">${txt}</div>
+    <div class="verse-text">${canon[key][currentTranslation]||""}</div>
   `;
 
   updateStar();
 }
 
-/* ================= DAILY ================= */
-
 function daily(){
   show(getDailyKey());
 }
 
-/* ================= RANDOM ================= */
-
 function randomVerse(){
-  const r=keys[Math.floor(Math.random()*keys.length)];
-  show(r);
+  show(keys[Math.floor(Math.random()*keys.length)]);
 }
-
-/* ================= TRANSLATION ================= */
 
 function setTranslation(t){
   currentTranslation=t;
   if(currentKey) show(currentKey);
 }
-
-/* ================= DROPDOWN ================= */
 
 function buildDropdown(){
   document.getElementById("translation").innerHTML=
@@ -337,8 +295,6 @@ function buildDropdown(){
       `<option value="${k}">${TRANSLATIONS[k]}</option>`
     ).join("");
 }
-
-/* ================= SEARCH ================= */
 
 function toggleSearch(){
   document.getElementById("searchBox").classList.toggle("hidden");
@@ -360,8 +316,6 @@ function clearSearch(){
   document.getElementById("results").innerHTML="";
 }
 
-/* ================= FAVORITES ================= */
-
 function toggleFav(){
   if(!currentKey) return;
 
@@ -370,7 +324,9 @@ function toggleFav(){
   else favs.push(currentKey);
 
   localStorage.setItem("fav",JSON.stringify(favs));
+
   updateStar();
+  renderFavs(); // ✅ FIX: live refresh
 }
 
 function updateStar(){
@@ -388,8 +344,6 @@ function renderFavs(){
     favs.map(k=>`<div onclick="show('${k}')">${k}</div>`).join("");
 }
 
-/* ================= MODAL ================= */
-
 function openMission(){
   document.getElementById("missionModal").style.display="flex";
 }
@@ -397,8 +351,6 @@ function openMission(){
 function closeMission(){
   document.getElementById("missionModal").style.display="none";
 }
-
-/* ================= INIT ================= */
 
 window.onload=loadAll;
 
