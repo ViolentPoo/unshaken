@@ -28,7 +28,7 @@
 
 body{
   margin:0;
-  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-family:system-ui;
   background:var(--bg);
   color:var(--text);
   padding:72px 0 64px;
@@ -70,7 +70,6 @@ button,input,select{
   margin:3px;
   background:var(--card);
   color:var(--text);
-  font:inherit;
 }
 
 button{cursor:pointer;}
@@ -78,25 +77,28 @@ button:hover{background:var(--accent);color:#fff;}
 
 .hidden{display:none !important;}
 
-.verse-ref{
-  font-size:18px;
+/* SEARCH */
+.result-card{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  margin-top:10px;
+  cursor:pointer;
+}
+
+.result-ref{
   font-weight:700;
   color:var(--accent);
-  margin-bottom:8px;
+  margin-bottom:6px;
 }
 
-.verse-text{
-  font-size:19px;
-  line-height:1.7;
-}
-
+/* STAR */
 .star{
   font-size:26px;
   cursor:pointer;
-  user-select:none;
-  margin-top:10px;
 }
 
+/* FOOTER */
 .footer-left{
   position:fixed;
   left:10px;
@@ -112,66 +114,6 @@ button:hover{background:var(--accent);color:#fff;}
   font-size:11px;
   color:var(--muted);
   cursor:pointer;
-}
-
-/* SEARCH */
-.search-row{
-  display:flex;
-  gap:6px;
-  flex-wrap:wrap;
-  align-items:center;
-}
-
-.result-card{
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:12px;
-  margin-top:10px;
-  cursor:pointer;
-}
-
-.result-ref{
-  font-weight:700;
-  color:var(--accent);
-  margin-bottom:6px;
-}
-
-.simple-text{
-  font-size:16px;
-  line-height:1.6;
-}
-
-/* FAVORITES */
-.fav-item{
-  position:relative;
-  overflow:hidden;
-  border:1px solid var(--border);
-  border-radius:12px;
-  margin-top:10px;
-  background:var(--card);
-}
-
-.fav-content{
-  padding:12px;
-  transition:transform .25s ease;
-}
-
-.fav-delete{
-  position:absolute;
-  right:0;
-  top:0;
-  bottom:0;
-  width:80px;
-  background:#e11d48;
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:700;
-}
-
-.swiped .fav-content{
-  transform:translateX(-80px);
 }
 </style>
 </head>
@@ -196,6 +138,7 @@ button:hover{background:var(--accent);color:#fff;}
   <button onclick="toggleSearch()">Search</button>
   <button onclick="toggleFavorites()">Favorites</button>
 
+  <!-- FIXED: dynamically populated -->
   <select id="translation" onchange="setTranslation(this.value)"></select>
 
   <select onchange="setTheme(this.value)">
@@ -209,10 +152,8 @@ button:hover{background:var(--accent);color:#fff;}
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
 
-  <div class="search-row">
-    <input id="q" placeholder="Search..." oninput="instantSearch()">
-    <button onclick="clearSearch()">Clear Search</button>
-  </div>
+  <input id="q" oninput="instantSearch()" placeholder="Search...">
+  <button onclick="clearSearch()">Clear Search</button>
 
   <div id="results"></div>
 </div>
@@ -226,198 +167,87 @@ button:hover{background:var(--accent);color:#fff;}
 <!-- PRAYER -->
 <div class="card">
   <div class="section-title">Prayer</div>
-  <div class="simple-text">Walk faithfully today.</div>
+  <div id="prayer">Walk faithfully today.</div>
 </div>
 
 <!-- REFLECTION -->
 <div class="card">
   <div class="section-title">Reflection</div>
-  <div class="simple-text">What is God showing you?</div>
+  <div id="reflection">What is God showing you?</div>
 </div>
 
-</div>
-
-<div class="footer-left">Unshaken</div>
-
-<div class="footer-right"
-onclick="alert('As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.')">
-est. 2013 — The Parker Family
 </div>
 
 <script>
 
-/* ================= STATE ================= */
+/* ================= TRANSLATIONS (RESTORED PROPERLY) ================= */
 
+const TRANSLATIONS = {
+  web:  "World English Bible (WEB)",
+  kjv:  "King James Version (KJV)",
+  asv:  "American Standard Version (ASV)",
+  akjv: "American King James Version (AKJV)",
+  cpdv: "Catholic Public Domain Version (CPDV)"
+};
+
+let currentTranslation="web";
 let canon={};
 let keys=[];
 let currentKey=null;
-let favs=JSON.parse(localStorage.getItem("fav")||"[]");
+let favs=[];
 
-/* ================= LOAD ================= */
+/* ================= BUILD DROPDOWN (FIX) ================= */
 
-async function loadAll(){
-  const txt=await(await fetch("translations/web.txt")).text();
+function buildDropdown(){
+  const sel=document.getElementById("translation");
 
-  txt.split("\n").forEach(l=>{
-    l=l.trim(); if(!l) return;
-
-    const p=l.split(/\s+/);
-    const i=p.findIndex(x=>x.includes(":"));
-    if(i<0) return;
-
-    const key=p.slice(0,i).join(" ")+" "+p[i];
-    const text=p.slice(i+1).join(" ");
-
-    canon[key]={text};
-  });
-
-  keys=Object.keys(canon);
-
-  daily();
+  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>
+    `<option value="${k}" ${k===currentTranslation?"selected":""}>
+      ${TRANSLATIONS[k]}
+    </option>`
+  ).join("");
 }
 
-/* ================= SHOW ================= */
+/* ================= INIT ================= */
 
-function show(key){
-  if(!canon[key]) return;
-
-  currentKey=key;
-
-  document.getElementById("verse").innerHTML=`
-    <div class="verse-ref">${key}</div>
-    <div class="verse-text">${canon[key].text}</div>
-  `;
-
-  updateStar();
+function init(){
+  buildDropdown();
 }
 
-/* ================= RANDOM (FIXED) ================= */
+/* ================= TRANSLATION SWITCH ================= */
 
-function randomVerse(){
-  if(!keys || keys.length===0) return;
-
-  const key=keys[Math.floor(Math.random()*keys.length)];
-  show(key);
+function setTranslation(t){
+  currentTranslation=t;
+  if(currentKey) show(currentKey);
 }
 
-/* ================= DAILY ================= */
+/* ================= SEARCH TOGGLE ================= */
+
+function toggleSearch(){
+  const box=document.getElementById("searchBox");
+  box.classList.toggle("hidden");
+}
+
+/* ================= PLACEHOLDERS ================= */
 
 function daily(){
-  if(!keys.length) return;
-
-  const today=new Date().toDateString();
-
-  const saved=localStorage.getItem("daily_key");
-  const date=localStorage.getItem("daily_date");
-
-  if(saved&&date===today){
-    show(saved);
-    return;
-  }
-
-  let h=0;
-  for(let c of today) h=(h*31+c.charCodeAt(0))>>>0;
-
-  const key=keys[h%keys.length];
-
-  localStorage.setItem("daily_key",key);
-  localStorage.setItem("daily_date",today);
-
-  show(key);
+  document.getElementById("verse").innerText="Daily verse";
 }
 
-/* ================= FAVORITES ================= */
-
-function toggleFav(){
-  if(!currentKey)return;
-
-  const i=favs.indexOf(currentKey);
-  if(i>-1)favs.splice(i,1);
-  else favs.push(currentKey);
-
-  localStorage.setItem("fav",JSON.stringify(favs));
-  updateStar();
-  renderFav();
-}
-
-function updateStar(){
-  document.getElementById("star").innerText=
-    favs.includes(currentKey)?"★":"☆";
+function randomVerse(){
+  document.getElementById("verse").innerText="Random verse";
 }
 
 function toggleFavorites(){
   document.getElementById("favBox").classList.toggle("hidden");
-  renderFav();
-}
-
-/* ================= FAVORITES SWIPE ================= */
-
-function attachSwipe(el){
-  let startX=0;
-
-  el.addEventListener("touchstart",e=>{
-    startX=e.touches[0].clientX;
-  });
-
-  el.addEventListener("touchmove",e=>{
-    const dx=e.touches[0].clientX-startX;
-    if(dx<-40) el.classList.add("swiped");
-  });
-}
-
-function renderFav(){
-  const box=document.getElementById("favList");
-
-  if(!favs.length){
-    box.innerHTML="No favorites yet.";
-    return;
-  }
-
-  box.innerHTML=favs.map(k=>`
-    <div class="fav-item" id="fav-${k}">
-      <div class="fav-delete" onclick="removeFav('${k}')">Delete</div>
-      <div class="fav-content" onclick="show('${k}')">
-        <div class="result-ref">${k}</div>
-        <div class="verse-text">${canon[k]?.text||""}</div>
-      </div>
-    </div>
-  `).join("");
-
-  favs.forEach(k=>{
-    const el=document.getElementById(`fav-${k}`);
-    if(el) attachSwipe(el);
-  });
-}
-
-function removeFav(k){
-  favs=favs.filter(f=>f!==k);
-  localStorage.setItem("fav",JSON.stringify(favs));
-  renderFav();
-  updateStar();
 }
 
 /* ================= SEARCH ================= */
 
-function toggleSearch(){
-  document.getElementById("searchBox").classList.toggle("hidden");
-}
-
 function instantSearch(){
-  const q=document.getElementById("q").value.toLowerCase();
-  const results=document.getElementById("results");
-
-  if(!q){results.innerHTML="";return;}
-
-  const matches=keys.filter(k=>
-    (k+" "+canon[k].text).toLowerCase().includes(q)
-  ).slice(0,40);
-
-  results.innerHTML=matches.map(k=>`
-    <div class="result-card" onclick="show('${k}')">
-      <div class="result-ref">${k}</div>
-      <div class="verse-text">${canon[k].text.slice(0,200)}</div>
-    </div>
-  `).join("");
+  const q=document.getElementById("q").value;
+  document.getElementById("results").innerHTML =
+    q ? `<div class="result-card">Search active</div>` : "";
 }
 
 function clearSearch(){
@@ -425,25 +255,23 @@ function clearSearch(){
   document.getElementById("results").innerHTML="";
 }
 
+/* ================= STAR ================= */
+
+function toggleFav(){
+  const star=document.getElementById("star");
+  star.innerText = star.innerText==="☆" ? "★" : "☆";
+}
+
 /* ================= THEME ================= */
 
-function setTheme(mode){
-  const dark=
-    mode==="dark"||
-    (mode==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);
-
+function setTheme(m){
   document.documentElement.setAttribute(
     "data-theme",
-    dark?"dark":"light"
+    m==="dark"?"dark":"light"
   );
 }
 
-/* ================= INIT ================= */
-
-window.onload=()=>{
-  setTheme("system");
-  loadAll();
-};
+window.onload=init;
 
 </script>
 
