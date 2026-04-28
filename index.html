@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Unshaken</title>
 
 <style>
 :root{
   --bg:#f5f5f5;
   --text:#111;
-  --card:#fff;
+  --card:#ffffff;
   --accent:#2b6cb0;
   --muted:#666;
+  --border:#d9d9d9;
 }
 
 [data-theme="dark"]{
@@ -20,16 +21,17 @@
   --card:#1e293b;
   --accent:#60a5fa;
   --muted:#94a3b8;
+  --border:#334155;
 }
 
 *{box-sizing:border-box;}
 
 body{
   margin:0;
-  font-family:system-ui;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   background:var(--bg);
   color:var(--text);
-  padding:72px 0 60px;
+  padding:72px 0 64px;
   display:flex;
   justify-content:center;
 }
@@ -42,9 +44,12 @@ body{
   text-align:center;
   padding:12px;
   font-weight:700;
+  z-index:10;
 }
 
-.container{width:min(920px,92%);}
+.container{
+  width:min(940px,92%);
+}
 
 .card{
   background:var(--card);
@@ -55,43 +60,62 @@ body{
 }
 
 .section-title{
+  font-size:14px;
   font-weight:700;
   color:var(--accent);
-  font-size:14px;
   margin-bottom:10px;
 }
 
 button,input,select{
   padding:8px 10px;
   border-radius:8px;
-  border:1px solid #ccc;
+  border:1px solid var(--border);
   margin:3px;
+  background:var(--card);
+  color:var(--text);
+  font:inherit;
 }
 
-button{cursor:pointer;}
-button:hover{background:var(--accent);color:#fff;}
+button{
+  cursor:pointer;
+}
 
-.hidden{display:none !important;}
+button:hover{
+  background:var(--accent);
+  color:#fff;
+}
+
+input{
+  width:min(340px,100%);
+}
+
+.hidden{
+  display:none !important;
+}
 
 .verse-ref{
-  font-weight:700;
   font-size:18px;
+  font-weight:700;
   color:var(--accent);
   margin-bottom:8px;
 }
 
 .verse-text{
-  font-size:18px;
-  line-height:1.6;
+  font-size:19px;
+  line-height:1.7;
 }
 
 .star{
-  font-size:24px;
+  font-size:26px;
   cursor:pointer;
   user-select:none;
+  margin-top:10px;
 }
 
-.small{font-size:12px;color:var(--muted);}
+.small{
+  font-size:12px;
+  color:var(--muted);
+}
 
 .footer-left{
   position:fixed;
@@ -99,7 +123,6 @@ button:hover{background:var(--accent);color:#fff;}
   bottom:10px;
   font-size:10px;
   color:var(--muted);
-  opacity:.7;
 }
 
 .footer-right{
@@ -109,6 +132,36 @@ button:hover{background:var(--accent);color:#fff;}
   font-size:11px;
   color:var(--muted);
   cursor:pointer;
+}
+
+.result-card{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  margin-top:10px;
+  cursor:pointer;
+  transition:.15s ease;
+}
+
+.result-card:hover{
+  transform:translateY(-1px);
+  border-color:var(--accent);
+}
+
+.result-ref{
+  font-weight:700;
+  color:var(--accent);
+  margin-bottom:6px;
+}
+
+.result-text{
+  line-height:1.55;
+  color:var(--text);
+}
+
+.empty{
+  padding:8px 0;
+  color:var(--muted);
 }
 </style>
 </head>
@@ -122,13 +175,12 @@ button:hover{background:var(--accent);color:#fff;}
 <!-- VERSE -->
 <div class="card">
   <div class="section-title">Verse</div>
-  <div id="verse"></div>
+  <div id="verse">Loading...</div>
   <div class="star" id="star" onclick="toggleFav()">☆</div>
 </div>
 
 <!-- CONTROLS -->
 <div class="card">
-
   <button onclick="daily()">Daily</button>
   <button onclick="randomVerse()">Random</button>
   <button onclick="toggleSearch()">Search</button>
@@ -141,14 +193,13 @@ button:hover{background:var(--accent);color:#fff;}
     <option value="light">Day</option>
     <option value="dark">Night</option>
   </select>
-
 </div>
 
 <!-- SEARCH -->
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
 
-  <input id="q" placeholder="Search verse...">
+  <input id="q" placeholder="Type to search verses..." oninput="instantSearch()">
 
   <button onclick="search()">Search</button>
   <button onclick="clearSearch()">Clear Search</button>
@@ -165,13 +216,13 @@ button:hover{background:var(--accent);color:#fff;}
 <!-- PRAYER -->
 <div class="card">
   <div class="section-title">Prayer</div>
-  <div id="prayer"></div>
+  <div id="prayer">Walk faithfully today.</div>
 </div>
 
 <!-- REFLECTION -->
 <div class="card">
   <div class="section-title">Reflection</div>
-  <div id="reflection"></div>
+  <div id="reflection">What is God showing you?</div>
 </div>
 
 </div>
@@ -184,8 +235,9 @@ est. 2013 — The Parker Family
 </div>
 
 <script>
-
-/* ================= TRANSLATIONS ================= */
+/* ======================================================
+   TRANSLATIONS
+====================================================== */
 
 const TRANSLATIONS = {
   web:  { file:"translations/web.txt",  name:"World English Bible (WEB)" },
@@ -195,149 +247,168 @@ const TRANSLATIONS = {
   cpdv: { file:"translations/cpdv.txt", name:"Catholic Public Domain Version (CPDV)" }
 };
 
-let currentTranslation="web";
-let canon={}, keys=[], currentKey=null;
-let favs=JSON.parse(localStorage.getItem("fav")||"[]");
+let currentTranslation = "web";
+let canon = {};
+let keys = [];
+let currentKey = null;
+let favs = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* ================= THEME ================= */
+/* ======================================================
+   THEME
+====================================================== */
 
 function setTheme(mode){
   const dark =
-    mode==="dark" ||
-    (mode==="system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    mode === "dark" ||
+    (mode === "system" &&
+     window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-  document.documentElement.setAttribute("data-theme", dark?"dark":"light");
+  document.documentElement.setAttribute(
+    "data-theme",
+    dark ? "dark" : "light"
+  );
 }
 
-/* ================= LOAD ================= */
+/* ======================================================
+   LOAD + FAST INDEXING
+====================================================== */
 
 async function loadAll(){
-  canon={};
+  canon = {};
 
   for(const t in TRANSLATIONS){
-    const txt=await (await fetch(TRANSLATIONS[t].file)).text();
+    const txt = await (await fetch(TRANSLATIONS[t].file)).text();
 
     txt.split("\n").forEach(line=>{
-      line=line.trim();
+      line = line.trim();
       if(!line) return;
 
-      const p=line.split(/\s+/);
-      const i=p.findIndex(x=>x.includes(":"));
-      if(i<0) return;
+      const p = line.split(/\s+/);
+      const i = p.findIndex(x => x.includes(":"));
+      if(i < 0) return;
 
-      const key=p.slice(0,i).join(" ")+" "+p[i];
+      const key = p.slice(0,i).join(" ") + " " + p[i];
+      const verseText = p.slice(i+1).join(" ");
 
-      if(!canon[key]) canon[key]={};
-      canon[key][t]=p.slice(i+1).join(" ");
+      if(!canon[key]){
+        canon[key] = {
+          versions:{},
+          searchBlob:""
+        };
+      }
+
+      canon[key].versions[t] = verseText;
     });
   }
 
-  keys=Object.keys(canon);
+  keys = Object.keys(canon);
+
+  /* Build cached search blobs once */
+  keys.forEach(k=>{
+    canon[k].searchBlob = (
+      k + " " +
+      Object.values(canon[k].versions).join(" ")
+    ).toLowerCase();
+  });
+
   buildDropdown();
   daily();
 }
 
-/* ================= DROPDOWN ================= */
+/* ======================================================
+   DROPDOWN
+====================================================== */
 
 function buildDropdown(){
-  const sel=document.getElementById("translation");
+  const sel = document.getElementById("translation");
 
-  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>
-    `<option value="${k}">
+  sel.innerHTML = Object.keys(TRANSLATIONS).map(k =>
+    `<option value="${k}" ${k===currentTranslation?"selected":""}>
       ${TRANSLATIONS[k].name}
     </option>`
   ).join("");
 }
 
-/* ================= SHOW ================= */
+/* ======================================================
+   SHOW VERSE
+====================================================== */
 
 function show(key){
-  currentKey=key;
+  if(!canon[key]) return;
 
-  document.getElementById("verse").innerHTML=
-  `<div class="verse-ref">${key}</div>
-   <div class="verse-text">${canon[key][currentTranslation]||"[missing]"}</div>`;
+  currentKey = key;
+
+  const txt =
+    canon[key].versions[currentTranslation] ||
+    "[missing in this translation]";
+
+  document.getElementById("verse").innerHTML = `
+    <div class="verse-ref">${key}</div>
+    <div class="verse-text">${txt}</div>
+  `;
 
   updateFav();
-
-  document.getElementById("prayer").innerText="Walk faithfully today.";
-  document.getElementById("reflection").innerText="What is God showing you?";
 }
 
-/* ================= CORE ================= */
+/* ======================================================
+   DAILY / RANDOM
+====================================================== */
 
-function hash(i){
-  let h=7;
-  for(let c of String(i)) h=(h*31+c.charCodeAt(0))>>>0;
+function hash(str){
+  let h = 7;
+  for(const c of String(str)){
+    h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  }
   return h;
 }
 
 function daily(){
-  show(keys[hash(new Date().toDateString())%keys.length]);
+  if(!keys.length) return;
+  const key = keys[hash(new Date().toDateString()) % keys.length];
+  show(key);
 }
 
 function randomVerse(){
-  show(keys[hash(Date.now())%keys.length]);
+  if(!keys.length) return;
+  const key = keys[Math.floor(Math.random() * keys.length)];
+  show(key);
 }
 
-/* ================= TRANSLATION ================= */
+/* ======================================================
+   TRANSLATION SWITCH
+====================================================== */
 
 function setTranslation(t){
-  currentTranslation=t;
+  currentTranslation = t;
   if(currentKey) show(currentKey);
+
+  /* refresh search previews if search is open */
+  if(!document.getElementById("searchBox").classList.contains("hidden")){
+    instantSearch();
+  }
 }
 
-/* ================= SEARCH ================= */
-
-function toggleSearch(){
-  document.getElementById("searchBox").classList.toggle("hidden");
-}
-
-function search(){
-  const q=document.getElementById("q").value.toLowerCase();
-
-  const results=keys.filter(k=>{
-    const all=k+" "+Object.values(canon[k]).join(" ");
-    return all.toLowerCase().includes(q);
-  }).slice(0,50);
-
-  document.getElementById("results").innerHTML=
-    results.map(k=>
-      `<div style="padding:8px 0;cursor:pointer" onclick="show('${k}')">
-        <b>${k}</b><br>
-        <span class="small">${canon[k][currentTranslation]?.slice(0,120)||""}</span>
-      </div>`
-    ).join("");
-}
-
-/* ================= FIXED CLEAR SEARCH ================= */
-
-function clearSearch(){
-  const input=document.getElementById("q");
-  const results=document.getElementById("results");
-
-  if(input) input.value="";
-  if(results) results.innerHTML="";
-}
-
-/* ================= FAVORITES ================= */
+/* ======================================================
+   FAVORITES
+====================================================== */
 
 function toggleFav(){
   if(!currentKey) return;
 
-  const i=favs.indexOf(currentKey);
+  const i = favs.indexOf(currentKey);
 
-  if(i>-1) favs.splice(i,1);
-  else favs.push(currentKey);
+  if(i > -1){
+    favs.splice(i,1);
+  }else{
+    favs.push(currentKey);
+  }
 
-  localStorage.setItem("fav",JSON.stringify(favs));
-
+  localStorage.setItem("fav", JSON.stringify(favs));
   updateFav();
   renderFav();
 }
 
 function updateFav(){
-  if(!currentKey) return;
   document.getElementById("star").innerText =
     favs.includes(currentKey) ? "★" : "☆";
 }
@@ -348,22 +419,96 @@ function toggleFavorites(){
 }
 
 function renderFav(){
-  const box=document.getElementById("favList");
-  box.innerHTML="";
+  const box = document.getElementById("favList");
 
-  favs.forEach(f=>{
-    const d=document.createElement("div");
-    d.style.cursor="pointer";
-    d.innerText=f;
-    d.onclick=()=>show(f);
-    box.appendChild(d);
-  });
+  if(!favs.length){
+    box.innerHTML = `<div class="empty">No favorites yet.</div>`;
+    return;
+  }
+
+  box.innerHTML = favs.map(k=>`
+    <div class="result-card" onclick="show('${escapeQuotes(k)}')">
+      <div class="result-ref">${k}</div>
+      <div class="result-text">
+        ${(canon[k]?.versions[currentTranslation] || "").slice(0,160)}
+      </div>
+    </div>
+  `).join("");
 }
 
-/* ================= INIT ================= */
+/* ======================================================
+   SEARCH
+====================================================== */
 
-window.onload=loadAll;
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+  document.getElementById("q").focus();
+}
 
+function search(){
+  instantSearch();
+}
+
+function instantSearch(){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const results = document.getElementById("results");
+
+  if(!q){
+    results.innerHTML = "";
+    return;
+  }
+
+  const matches = [];
+
+  for(const k of keys){
+    if(canon[k].searchBlob.includes(q)){
+      matches.push(k);
+      if(matches.length >= 40) break;
+    }
+  }
+
+  if(!matches.length){
+    results.innerHTML = `<div class="empty">No results found.</div>`;
+    return;
+  }
+
+  results.innerHTML = matches.map(k=>{
+    const txt =
+      canon[k].versions[currentTranslation] ||
+      "[missing]";
+
+    return `
+      <div class="result-card" onclick="show('${escapeQuotes(k)}')">
+        <div class="result-ref">${k}</div>
+        <div class="result-text">
+          ${txt.slice(0,220)}${txt.length>220?"...":""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function clearSearch(){
+  document.getElementById("q").value = "";
+  document.getElementById("results").innerHTML = "";
+}
+
+/* ======================================================
+   HELPERS
+====================================================== */
+
+function escapeQuotes(str){
+  return str.replace(/'/g,"&#39;");
+}
+
+/* ======================================================
+   INIT
+====================================================== */
+
+window.onload = ()=>{
+  setTheme("system");
+  loadAll();
+};
 </script>
 
 </body>
