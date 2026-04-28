@@ -118,7 +118,7 @@ button:hover{background:var(--accent);color:#fff;}
   width:min(520px,90%);
 }
 
-/* ================= VERSE UI FIX (ONLY ADDITION) ================= */
+/* ===== VERSE UI FIX ONLY ===== */
 
 .verse-ref{
   font-size:12px;
@@ -167,7 +167,7 @@ button:hover{background:var(--accent);color:#fff;}
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
   <input id="q" oninput="instantSearch()" placeholder="Search verses...">
-  <button onclick="clearSearch()">Clear Search</button>
+  <button onclick="clearSearch()">Clear</button>
   <div id="results"></div>
 </div>
 
@@ -228,7 +228,7 @@ let keys=[];
 let currentKey=null;
 let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 
-/* ================= HASH DAILY ================= */
+/* ================= HASH ================= */
 
 function simpleHash(str){
   let h=0;
@@ -289,7 +289,7 @@ async function loadAll(){
   show(getDailyKey());
 }
 
-/* ================= SHOW (SAFE UI FIX ONLY) ================= */
+/* ================= SHOW ================= */
 
 function show(key){
   if(!canon[key]) return;
@@ -338,6 +338,28 @@ function buildDropdown(){
     ).join("");
 }
 
+/* ================= SEARCH ================= */
+
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+}
+
+function instantSearch(){
+  const q=document.getElementById("q").value.toLowerCase();
+
+  const res=keys.filter(k=>
+    (canon[k]?.[currentTranslation]||"").toLowerCase().includes(q)
+  ).slice(0,30);
+
+  document.getElementById("results").innerHTML=
+    res.map(k=>`<div onclick="show('${k}')">${k}</div>`).join("");
+}
+
+function clearSearch(){
+  document.getElementById("q").value="";
+  document.getElementById("results").innerHTML="";
+}
+
 /* ================= FAVORITES ================= */
 
 function toggleFav(){
@@ -354,6 +376,16 @@ function toggleFav(){
 function updateStar(){
   document.getElementById("star").innerText =
     favs.includes(currentKey) ? "★" : "☆";
+}
+
+function toggleFavorites(){
+  document.getElementById("favBox").classList.toggle("hidden");
+  renderFavs();
+}
+
+function renderFavs(){
+  document.getElementById("favList").innerHTML =
+    favs.map(k=>`<div onclick="show('${k}')">${k}</div>`).join("");
 }
 
 /* ================= MODAL ================= */
