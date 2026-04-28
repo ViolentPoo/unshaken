@@ -70,12 +70,21 @@ button,input,select{
   margin:3px;
   background:var(--card);
   color:var(--text);
+  font:inherit;
 }
 
 button{cursor:pointer;}
 button:hover{background:var(--accent);color:#fff;}
 
 .hidden{display:none !important;}
+
+/* VERSE */
+.star{
+  font-size:26px;
+  cursor:pointer;
+  user-select:none;
+  margin-top:8px;
+}
 
 /* SEARCH */
 .result-card{
@@ -92,27 +101,12 @@ button:hover{background:var(--accent);color:#fff;}
   margin-bottom:6px;
 }
 
-/* STAR */
-.star{
-  font-size:26px;
-  cursor:pointer;
-}
-
-/* FOOTER */
-.footer-left{
-  position:fixed;
-  left:10px;
-  bottom:10px;
-  font-size:10px;
-  color:var(--muted);
-}
-
-.footer-right{
-  position:fixed;
-  right:10px;
-  bottom:10px;
-  font-size:11px;
-  color:var(--muted);
+/* FAVORITES */
+.fav-item{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px;
+  margin-top:10px;
   cursor:pointer;
 }
 </style>
@@ -138,7 +132,6 @@ button:hover{background:var(--accent);color:#fff;}
   <button onclick="toggleSearch()">Search</button>
   <button onclick="toggleFavorites()">Favorites</button>
 
-  <!-- FIXED: dynamically populated -->
   <select id="translation" onchange="setTranslation(this.value)"></select>
 
   <select onchange="setTheme(this.value)">
@@ -180,23 +173,55 @@ button:hover{background:var(--accent);color:#fff;}
 
 <script>
 
-/* ================= TRANSLATIONS (RESTORED PROPERLY) ================= */
+/* ================= TRANSLATIONS ================= */
 
-const TRANSLATIONS = {
-  web:  "World English Bible (WEB)",
-  kjv:  "King James Version (KJV)",
-  asv:  "American Standard Version (ASV)",
-  akjv: "American King James Version (AKJV)",
-  cpdv: "Catholic Public Domain Version (CPDV)"
+const TRANSLATIONS={
+  web:"World English Bible (WEB)",
+  kjv:"King James Version (KJV)",
+  asv:"American Standard Version (ASV)",
+  akjv:"American King James Version (AKJV)",
+  cpdv:"Catholic Public Domain Version (CPDV)"
 };
 
 let currentTranslation="web";
 let canon={};
 let keys=[];
 let currentKey=null;
-let favs=[];
+let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 
-/* ================= BUILD DROPDOWN (FIX) ================= */
+/* ================= LOAD ================= */
+
+async function loadAll(){
+  canon={};
+
+  for(const t in TRANSLATIONS){
+    const txt=await(await fetch(`translations/${t}.txt`)).text();
+
+    txt.split("\n").forEach(line=>{
+      line=line.trim();
+      if(!line) return;
+
+      const p=line.split(/\s+/);
+      const i=p.findIndex(x=>x.includes(":"));
+      if(i<0) return;
+
+      const key=p.slice(0,i).join(" ")+" "+p[i];
+      const verse=p.slice(i+1).join(" ");
+
+      if(!canon[key]){
+        canon[key]={web:"",kjv:"",asv:"",akjv:"",cpdv:""};
+      }
+
+      canon[key][t]=verse;
+    });
+  }
+
+  keys=Object.keys(canon);
+  buildDropdown();
+  daily();
+}
+
+/* ================= DROPDOWN ================= */
 
 function buildDropdown(){
   const sel=document.getElementById("translation");
@@ -208,46 +233,63 @@ function buildDropdown(){
   ).join("");
 }
 
-/* ================= INIT ================= */
+/* ================= SHOW ================= */
 
-function init(){
-  buildDropdown();
+function show(key){
+  if(!canon[key]) return;
+
+  currentKey=key;
+
+  document.getElementById("verse").innerHTML=`
+    <div style="font-weight:700;color:#2b6cb0">${key}</div>
+    <div style="font-size:18px;line-height:1.6">
+      ${canon[key][currentTranslation] || canon[key].web}
+    </div>
+  `;
+
+  updateStar();
 }
 
-/* ================= TRANSLATION SWITCH ================= */
+/* ================= CORE ================= */
+
+function daily(){
+  if(!keys.length) return;
+  show(keys[Math.floor(Math.random()*keys.length)]);
+}
+
+function randomVerse(){
+  if(!keys.length) return;
+  show(keys[Math.floor(Math.random()*keys.length)]);
+}
+
+/* ================= TRANSLATION ================= */
 
 function setTranslation(t){
   currentTranslation=t;
   if(currentKey) show(currentKey);
 }
 
-/* ================= SEARCH TOGGLE ================= */
-
-function toggleSearch(){
-  const box=document.getElementById("searchBox");
-  box.classList.toggle("hidden");
-}
-
-/* ================= PLACEHOLDERS ================= */
-
-function daily(){
-  document.getElementById("verse").innerText="Daily verse";
-}
-
-function randomVerse(){
-  document.getElementById("verse").innerText="Random verse";
-}
-
-function toggleFavorites(){
-  document.getElementById("favBox").classList.toggle("hidden");
-}
-
 /* ================= SEARCH ================= */
 
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+}
+
 function instantSearch(){
-  const q=document.getElementById("q").value;
-  document.getElementById("results").innerHTML =
-    q ? `<div class="result-card">Search active</div>` : "";
+  const q=document.getElementById("q").value.toLowerCase();
+
+  const matches=keys.filter(k=>{
+    const all=Object.values(canon[k]).join(" ").toLowerCase();
+    return all.includes(q);
+  }).slice(0,40);
+
+  document.getElementById("results").innerHTML=
+    matches.map(k=>`
+      <div class="result-card" onclick="show('${k}')">
+        <div class="result-ref">${k}</div>
+        <div>${canon[k][currentTranslation]||canon[k].web}</div>
+      </div>
+    `).join("");
 }
 
 function clearSearch(){
@@ -255,11 +297,44 @@ function clearSearch(){
   document.getElementById("results").innerHTML="";
 }
 
-/* ================= STAR ================= */
+/* ================= FAVORITES (RESTORED) ================= */
 
 function toggleFav(){
-  const star=document.getElementById("star");
-  star.innerText = star.innerText==="☆" ? "★" : "☆";
+  if(!currentKey)return;
+
+  const i=favs.indexOf(currentKey);
+  if(i>-1)favs.splice(i,1);
+  else favs.push(currentKey);
+
+  localStorage.setItem("fav",JSON.stringify(favs));
+  updateStar();
+  renderFav();
+}
+
+function updateStar(){
+  document.getElementById("star").innerText=
+    favs.includes(currentKey)?"★":"☆";
+}
+
+function toggleFavorites(){
+  document.getElementById("favBox").classList.toggle("hidden");
+  renderFav();
+}
+
+function renderFav(){
+  const box=document.getElementById("favList");
+
+  if(!favs.length){
+    box.innerHTML="No favorites yet.";
+    return;
+  }
+
+  box.innerHTML=favs.map(k=>`
+    <div class="fav-item" onclick="show('${k}')">
+      <div class="result-ref">${k}</div>
+      <div>${canon[k]?.web||""}</div>
+    </div>
+  `).join("");
 }
 
 /* ================= THEME ================= */
@@ -271,7 +346,9 @@ function setTheme(m){
   );
 }
 
-window.onload=init;
+/* ================= INIT ================= */
+
+window.onload=loadAll;
 
 </script>
 
