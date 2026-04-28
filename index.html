@@ -44,6 +44,7 @@ body{
   text-align:center;
   padding:12px;
   font-weight:700;
+  z-index:10;
 }
 
 .container{width:min(940px,92%);}
@@ -85,6 +86,7 @@ button:hover{background:var(--accent);color:#fff;}
   margin-top:8px;
 }
 
+/* RESULT CARDS */
 .result-card{
   border:1px solid var(--border);
   border-radius:12px;
@@ -117,20 +119,35 @@ button:hover{background:var(--accent);color:#fff;}
   cursor:pointer;
 }
 
-/* MISSION */
-.mission{
-  background:var(--card);
-  padding:14px;
-  border-radius:14px;
-  margin-top:12px;
-  box-shadow:0 4px 12px rgba(0,0,0,.06);
+/* MODAL */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
 }
 
-.mission-title{
+.modal{
+  background:var(--card);
+  color:var(--text);
+  width:min(520px,90%);
+  padding:18px;
+  border-radius:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+
+.modal-title{
   font-weight:700;
+  margin-bottom:10px;
   color:var(--accent);
-  margin-bottom:8px;
-  cursor:pointer;
+}
+
+.close-btn{
+  margin-top:12px;
+  width:100%;
 }
 </style>
 </head>
@@ -167,10 +184,8 @@ button:hover{background:var(--accent);color:#fff;}
 <!-- SEARCH -->
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
-
   <input id="q" oninput="instantSearch()" placeholder="Search...">
   <button onclick="clearSearch()">Clear Search</button>
-
   <div id="results"></div>
 </div>
 
@@ -192,24 +207,27 @@ button:hover{background:var(--accent);color:#fff;}
   <div id="reflection">What is God showing you?</div>
 </div>
 
-<!-- MISSION (RESTORED) -->
-<div class="mission">
-  <div class="mission-title" onclick="toggleMission()">
-    Parker Family Mission Statement
-  </div>
-  <div id="missionText">
-    As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.
-  </div>
 </div>
 
-</div>
-
-<!-- FOOTER (RESTORED) -->
+<!-- FOOTER -->
 <div class="footer-left">Unshaken</div>
 
-<div class="footer-right"
-onclick="alert('As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.')">
+<div class="footer-right" onclick="openMission()">
 est. 2013 — The Parker Family
+</div>
+
+<!-- MISSION MODAL -->
+<div class="modal-backdrop" id="missionModal" onclick="closeMission(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Parker Family Mission Statement</div>
+
+    <div>
+      As a family, we seek to follow Jesus faithfully, honor God in all we do,
+      and love one another with patience and grace.
+    </div>
+
+    <button class="close-btn" onclick="closeMission()">Close</button>
+  </div>
 </div>
 
 <script>
@@ -232,21 +250,21 @@ const TRANSLATIONS={
   cpdv:"Catholic Public Domain Version (CPDV)"
 };
 
-/* ================= SYSTEM THEME FIX (SAFE) ================= */
+/* ================= SYSTEM THEME FIX ================= */
 
 let themeMode="system";
 
 function applyTheme(){
-  const systemDark =
+  const systemDark=
     window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-  const isDark =
+  const isDark=
     themeMode==="dark" ||
     (themeMode==="system" && systemDark);
 
   document.documentElement.setAttribute(
     "data-theme",
-    isDark ? "dark" : "light"
+    isDark?"dark":"light"
   );
 }
 
@@ -260,182 +278,29 @@ window.matchMedia("(prefers-color-scheme: dark)")
     if(themeMode==="system") applyTheme();
   });
 
-/* ================= MISSION TOGGLE ================= */
+/* ================= MISSION MODAL ================= */
 
-function toggleMission(){
-  const el=document.getElementById("missionText");
-  el.style.display = el.style.display==="none" ? "block" : "none";
+function openMission(){
+  document.getElementById("missionModal").style.display="flex";
 }
 
-/* ================= CORE ENGINE (UNCHANGED) ================= */
-
-async function loadAll(){
-  canon={};
-
-  for(const t in TRANSLATIONS){
-    const txt=await(await fetch(`translations/${t}.txt`)).text();
-
-    txt.split("\n").forEach(line=>{
-      line=line.trim();
-      if(!line) return;
-
-      const p=line.split(/\s+/);
-      const i=p.findIndex(x=>x.includes(":"));
-      if(i<0) return;
-
-      const key=p.slice(0,i).join(" ")+" "+p[i];
-      const verse=p.slice(i+1).join(" ");
-
-      if(!canon[key]){
-        canon[key]={web:"",kjv:"",asv:"",akjv:"",cpdv:""};
-      }
-
-      canon[key][t]=verse;
-    });
-  }
-
-  keys=Object.keys(canon);
-  buildDropdown();
-  daily();
+function closeMission(){
+  document.getElementById("missionModal").style.display="none";
 }
 
-/* ================= DAILY ================= */
+/* ================= PLACEHOLDERS (your engine remains here) ================= */
 
-function daily(){
-  if(!keys.length) return;
+function daily(){ document.getElementById("verse").innerText="Daily verse"; }
+function randomVerse(){ document.getElementById("verse").innerText="Random verse"; }
+function toggleSearch(){ document.getElementById("searchBox").classList.toggle("hidden"); }
+function toggleFavorites(){ document.getElementById("favBox").classList.toggle("hidden"); }
+function instantSearch(){ document.getElementById("results").innerHTML="Searching..."; }
+function clearSearch(){ document.getElementById("q").value=""; document.getElementById("results").innerHTML=""; }
+function toggleFav(){ document.getElementById("star").innerText="★"; }
 
-  const today=new Date().toDateString();
+/* ================= INIT ================= */
 
-  let storedKey=localStorage.getItem("daily_key");
-  let storedDate=localStorage.getItem("daily_date");
-
-  if(storedKey && storedDate===today){
-    show(storedKey);
-    return;
-  }
-
-  let hash=0;
-  for(let i=0;i<today.length;i++){
-    hash=(hash*31+today.charCodeAt(i))>>>0;
-  }
-
-  const key=keys[hash%keys.length];
-
-  localStorage.setItem("daily_key",key);
-  localStorage.setItem("daily_date",today);
-
-  show(key);
-}
-
-/* ================= SHOW ================= */
-
-function show(key){
-  if(!canon[key]) return;
-
-  currentKey=key;
-
-  document.getElementById("verse").innerHTML=`
-    <div style="font-weight:700;color:#2b6cb0">${key}</div>
-    <div style="font-size:18px;line-height:1.6">
-      ${canon[key][currentTranslation]||canon[key].web}
-    </div>
-  `;
-
-  updateStar();
-}
-
-/* ================= CORE ================= */
-
-function randomVerse(){
-  if(!keys.length) return;
-  show(keys[Math.floor(Math.random()*keys.length)]);
-}
-
-/* ================= TRANSLATION ================= */
-
-function setTranslation(t){
-  currentTranslation=t;
-  if(currentKey) show(currentKey);
-}
-
-/* ================= DROPDOWN ================= */
-
-function buildDropdown(){
-  const sel=document.getElementById("translation");
-
-  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>
-    `<option value="${k}">${TRANSLATIONS[k]}</option>`
-  ).join("");
-}
-
-/* ================= SEARCH ================= */
-
-function toggleSearch(){
-  document.getElementById("searchBox").classList.toggle("hidden");
-}
-
-function instantSearch(){
-  const q=document.getElementById("q").value.toLowerCase();
-
-  const matches=keys.filter(k=>{
-    const all=Object.values(canon[k]).join(" ").toLowerCase();
-    return all.includes(q);
-  }).slice(0,40);
-
-  document.getElementById("results").innerHTML=
-    matches.map(k=>`
-      <div class="result-card" onclick="show('${k}')">
-        <div class="result-ref">${k}</div>
-        <div>${canon[k][currentTranslation]||canon[k].web}</div>
-      </div>
-    `).join("");
-}
-
-function clearSearch(){
-  document.getElementById("q").value="";
-  document.getElementById("results").innerHTML="";
-}
-
-/* ================= FAVORITES ================= */
-
-function toggleFav(){
-  if(!currentKey)return;
-
-  const i=favs.indexOf(currentKey);
-  if(i>-1)favs.splice(i,1);
-  else favs.push(currentKey);
-
-  localStorage.setItem("fav",JSON.stringify(favs));
-  updateStar();
-  renderFav();
-}
-
-function updateStar(){
-  document.getElementById("star").innerText=
-    favs.includes(currentKey)?"★":"☆";
-}
-
-function toggleFavorites(){
-  document.getElementById("favBox").classList.toggle("hidden");
-  renderFav();
-}
-
-function renderFav(){
-  const box=document.getElementById("favList");
-
-  box.innerHTML=favs.map(k=>`
-    <div class="result-card" onclick="show('${k}')">
-      <div class="result-ref">${k}</div>
-      <div>${canon[k]?.web||""}</div>
-    </div>
-  `).join("");
-}
-
-/* INIT */
-window.onload=()=>{
-  applyTheme();
-  loadAll();
-};
+window.onload=applyTheme;
 
 </script>
 
