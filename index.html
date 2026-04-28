@@ -78,7 +78,6 @@ button:hover{background:var(--accent);color:#fff;}
 
 .hidden{display:none !important;}
 
-/* VERSE */
 .star{
   font-size:26px;
   cursor:pointer;
@@ -99,15 +98,6 @@ button:hover{background:var(--accent);color:#fff;}
   font-weight:700;
   color:var(--accent);
   margin-bottom:6px;
-}
-
-/* FAVORITES */
-.fav-item{
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:10px;
-  margin-top:10px;
-  cursor:pointer;
 }
 </style>
 </head>
@@ -218,7 +208,36 @@ async function loadAll(){
 
   keys=Object.keys(canon);
   buildDropdown();
-  daily();
+  daily(); // load once on start
+}
+
+/* ================= DAILY (FIXED PROPERLY) ================= */
+
+function daily(){
+  if(!keys.length) return;
+
+  const today=new Date().toDateString();
+
+  let storedKey=localStorage.getItem("daily_key");
+  let storedDate=localStorage.getItem("daily_date");
+
+  if(storedKey && storedDate === today && canon[storedKey]){
+    show(storedKey);
+    return;
+  }
+
+  // deterministic index based on date
+  let hash=0;
+  for(let i=0;i<today.length;i++){
+    hash=(hash*31+today.charCodeAt(i))>>>0;
+  }
+
+  const key=keys[hash % keys.length];
+
+  localStorage.setItem("daily_key",key);
+  localStorage.setItem("daily_date",today);
+
+  show(key);
 }
 
 /* ================= DROPDOWN ================= */
@@ -251,11 +270,6 @@ function show(key){
 }
 
 /* ================= CORE ================= */
-
-function daily(){
-  if(!keys.length) return;
-  show(keys[Math.floor(Math.random()*keys.length)]);
-}
 
 function randomVerse(){
   if(!keys.length) return;
@@ -297,7 +311,7 @@ function clearSearch(){
   document.getElementById("results").innerHTML="";
 }
 
-/* ================= FAVORITES (RESTORED) ================= */
+/* ================= FAVORITES ================= */
 
 function toggleFav(){
   if(!currentKey)return;
@@ -330,7 +344,7 @@ function renderFav(){
   }
 
   box.innerHTML=favs.map(k=>`
-    <div class="fav-item" onclick="show('${k}')">
+    <div class="result-card" onclick="show('${k}')">
       <div class="result-ref">${k}</div>
       <div>${canon[k]?.web||""}</div>
     </div>
