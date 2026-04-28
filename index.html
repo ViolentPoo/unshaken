@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unshaken v1.7.12</title>
+<title>Unshaken v1.7.13</title>
 
 <style>
 :root{
@@ -170,21 +170,14 @@ button:hover{background:var(--accent);color:#fff;}
   <button onclick="toggleSearch()">Search</button>
   <button onclick="toggleFavorites()">Favorites</button>
 
-  <!-- AUTO GENERATED TRANSLATIONS -->
   <select id="translationSelect" onchange="changeTranslation(this.value)"></select>
-
-  <select onchange="setTheme(this.value)">
-    <option value="system">System</option>
-    <option value="light">Day</option>
-    <option value="dark">Night</option>
-  </select>
 
 </div>
 
 <!-- SEARCH -->
 <div class="card hidden" id="searchBox">
-  <div class="section-title">Search Bible</div>
-  <input id="searchInput" placeholder="Search...">
+  <div class="section-title">Search</div>
+  <input id="searchInput" placeholder="Search verses...">
   <button onclick="runSearch()">Search</button>
   <button onclick="clearSearch()">Clear</button>
   <div id="searchResults"></div>
@@ -210,14 +203,13 @@ button:hover{background:var(--accent);color:#fff;}
 
 </div>
 
-<!-- FOOTERS -->
-<div class="footer-left">v1.7.12</div>
+<div class="footer-left">v1.7.13</div>
 
 <div class="footer-right" onclick="toggleMission()">
   est. 2013 — The Parker Family
 </div>
 
-<!-- MISSION MODAL -->
+<!-- MISSION -->
 <div id="missionModal" class="mission-modal hidden">
   <div class="mission-card">
     <div class="section-title">Family Mission</div>
@@ -228,86 +220,52 @@ button:hover{background:var(--accent);color:#fff;}
 
 <script>
 
-/* ================= TRANSLATIONS (NEW SYSTEM) ================= */
+/* ================= TRANSLATIONS ================= */
 
 const TRANSLATIONS = {
-  web:  { file: "translations/web.txt",  name: "World English Bible (WEB)" },
-  kjv:  { file: "translations/kjv.txt",  name: "King James Version (KJV)" },
-  asv:  { file: "translations/asv.txt",  name: "American Standard Version (ASV)" },
-  akjv: { file: "translations/akjv.txt", name: "American King James Version (AKJV)" },
-  cpdv: { file: "translations/cpdv.txt", name: "Catholic Public Domain Version (CPDV)" }
+  web:  { file:"translations/web.txt",  name:"World English Bible (WEB)" },
+  kjv:  { file:"translations/kjv.txt",  name:"King James Version (KJV)" },
+  asv:  { file:"translations/asv.txt",  name:"American Standard Version (ASV)" },
+  akjv: { file:"translations/akjv.txt", name:"American King James Version (AKJV)" },
+  cpdv: { file:"translations/cpdv.txt", name:"Catholic Public Domain Version (CPDV)" }
 };
 
 let currentTranslation = "web";
-
-/* ================= STATE ================= */
-
 let bibleIndex = [];
 let current = null;
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* ================= INIT DROPDOWN ================= */
+/* ================= TRANSLATION ================= */
 
 function buildTranslationDropdown(){
   const sel = document.getElementById("translationSelect");
 
-  sel.innerHTML = Object.keys(TRANSLATIONS).map(key =>
-    `<option value="${key}" ${key===currentTranslation?'selected':''}>
-      ${TRANSLATIONS[key].name}
+  sel.innerHTML = Object.keys(TRANSLATIONS).map(k =>
+    `<option value="${k}" ${k===currentTranslation?'selected':''}>
+      ${TRANSLATIONS[k].name}
     </option>`
   ).join("");
 }
-
-/* ================= LOAD BIBLE ================= */
 
 async function loadBible(){
   const res = await fetch(TRANSLATIONS[currentTranslation].file);
   const text = await res.text();
 
-  bibleIndex = text
-    .split("\n")
-    .map(l => l.trim())
+  bibleIndex = text.split("\n")
+    .map(l=>l.trim())
     .filter(Boolean)
-    .map(line => {
+    .map(line=>{
       const parts = line.split(/\s+/);
-      const refIndex = parts.findIndex(p => p.includes(":"));
+      const i = parts.findIndex(p=>p.includes(":"));
 
       return {
-        book: parts.slice(0, refIndex).join(" "),
-        ref: parts[refIndex],
-        text: parts.slice(refIndex + 1).join(" ")
+        book: parts.slice(0,i).join(" "),
+        ref: parts[i],
+        text: parts.slice(i+1).join(" ")
       };
     });
 
   loadDaily();
-}
-
-/* ================= TRANSLATION SWITCH ================= */
-
-function changeTranslation(t){
-  currentTranslation = t;
-  loadBible();
-}
-
-/* ================= HASH ================= */
-
-function hashSeed(input){
-  let h = 81213;
-  for(let i=0;i<String(input).length;i++){
-    h = (h * 31 + String(input).charCodeAt(i)) >>> 0;
-  }
-  return h;
-}
-
-/* ================= DAILY / RANDOM ================= */
-
-function loadDaily(){
-  const d = new Date().toISOString().split("T")[0];
-  setVerse(bibleIndex[hashSeed(d) % bibleIndex.length]);
-}
-
-function loadRandom(){
-  setVerse(bibleIndex[hashSeed(Date.now()) % bibleIndex.length]);
 }
 
 /* ================= VERSE ================= */
@@ -320,77 +278,118 @@ function setVerse(v){
      <div class="verse-text">${v.text}</div>`;
 
   updateStar();
-  updateDevotion(v);
+  updateDevotion();
+}
+
+/* ================= DAILY / RANDOM ================= */
+
+function hashSeed(input){
+  let h = 81213;
+  for(let i=0;i<String(input).length;i++){
+    h = (h * 31 + String(input).charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
+function loadDaily(){
+  const d = new Date().toDateString();
+  setVerse(bibleIndex[hashSeed(d) % bibleIndex.length]);
+}
+
+function loadRandom(){
+  setVerse(bibleIndex[hashSeed(Date.now()) % bibleIndex.length]);
 }
 
 /* ================= DEVOTION ================= */
 
-function updateDevotion(v){
+function updateDevotion(){
   document.getElementById("prayer").innerText = "Walk faithfully today.";
   document.getElementById("reflection").innerText = "What is God showing you?";
 }
 
-/* ================= FAVORITES ================= */
+/* ================= ⭐ FAVORITES FIXED ================= */
 
 function toggleFavorite(){
+  if(!current) return;
+
   const key = `${current.book} ${current.ref}`;
   const i = favorites.indexOf(key);
 
-  i > -1 ? favorites.splice(i,1) : favorites.push(key);
+  if(i > -1){
+    favorites.splice(i,1);
+  } else {
+    favorites.push(key);
+  }
 
   localStorage.setItem("fav", JSON.stringify(favorites));
+
   updateStar();
+  renderFavorites();
 }
 
 function updateStar(){
+  if(!current) return;
+
   const key = `${current.book} ${current.ref}`;
   document.getElementById("star").innerText =
     favorites.includes(key) ? "★" : "☆";
 }
 
-/* ================= SEARCH ================= */
+function renderFavorites(){
+  const box = document.getElementById("favoritesList");
+  if(!box) return;
+
+  box.innerHTML = "";
+
+  favorites.forEach(f=>{
+    const div = document.createElement("div");
+    div.className = "result";
+    div.innerText = f;
+
+    div.onclick = () => {
+      const match = bibleIndex.find(v =>
+        `${v.book} ${v.ref}` === f
+      );
+      if(match) setVerse(match);
+    };
+
+    box.appendChild(div);
+  });
+}
+
+/* ================= UI ================= */
 
 function toggleSearch(){
   document.getElementById("searchBox").classList.toggle("hidden");
 }
 
-/* ================= THEME ================= */
+function toggleFavorites(){
+  document.getElementById("favoritesBox").classList.toggle("hidden");
+  renderFavorites();
+}
 
-function setTheme(mode){
-  const dark = mode === "dark" ||
-    (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-
-  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+function changeTranslation(t){
+  currentTranslation = t;
+  loadBible();
 }
 
 /* ================= MISSION ================= */
 
-function getMissionStatement(){
-  const theme = document.documentElement.getAttribute("data-theme");
-
-  const base =
-  "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
-
-  if(theme === "dark") return base + " We trust God in the night.";
-  if(theme === "light") return base + " We walk in purpose each day.";
-  return base + " We trust God in every season.";
-}
-
 function toggleMission(){
-  const modal = document.getElementById("missionModal");
+  const m = document.getElementById("missionModal");
 
-  if(modal.classList.contains("hidden")){
-    document.getElementById("missionText").innerText = getMissionStatement();
-    modal.classList.remove("hidden");
+  if(m.classList.contains("hidden")){
+    document.getElementById("missionText").innerText =
+      "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
+    m.classList.remove("hidden");
   } else {
-    modal.classList.add("hidden");
+    m.classList.add("hidden");
   }
 }
 
 /* ================= INIT ================= */
 
 window.onload = () => {
-  setTheme("system");
   buildTranslationDropdown();
   loadBible();
 };
