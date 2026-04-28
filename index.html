@@ -85,6 +85,7 @@ button:hover{background:var(--accent);color:#fff;}
   margin-top:8px;
 }
 
+/* SEARCH */
 .result-card{
   border:1px solid var(--border);
   border-radius:12px;
@@ -107,12 +108,14 @@ button:hover{background:var(--accent);color:#fff;}
 
 <div class="container">
 
+<!-- VERSE -->
 <div class="card">
   <div class="section-title">Verse</div>
   <div id="verse">Loading...</div>
   <div class="star" id="star" onclick="toggleFav()">☆</div>
 </div>
 
+<!-- CONTROLS -->
 <div class="card">
   <button onclick="daily()">Daily</button>
   <button onclick="randomVerse()">Random</button>
@@ -128,6 +131,7 @@ button:hover{background:var(--accent);color:#fff;}
   </select>
 </div>
 
+<!-- SEARCH -->
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
 
@@ -137,16 +141,19 @@ button:hover{background:var(--accent);color:#fff;}
   <div id="results"></div>
 </div>
 
+<!-- FAVORITES -->
 <div class="card hidden" id="favBox">
   <div class="section-title">Favorites</div>
   <div id="favList"></div>
 </div>
 
+<!-- PRAYER -->
 <div class="card">
   <div class="section-title">Prayer</div>
   <div id="prayer">Walk faithfully today.</div>
 </div>
 
+<!-- REFLECTION -->
 <div class="card">
   <div class="section-title">Reflection</div>
   <div id="reflection">What is God showing you?</div>
@@ -158,46 +165,144 @@ button:hover{background:var(--accent);color:#fff;}
 
 /* ================= STATE ================= */
 
-let themeMode = "system";
+let currentTranslation="web";
+let canon={};
+let keys=[];
+let currentKey=null;
+let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 
-/* ================= THEME FIX (MINIMAL, NO REWRITE) ================= */
+/* ================= TRANSLATIONS ================= */
 
-function applyTheme(){
-  const systemDark =
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
+const TRANSLATIONS={
+  web:"World English Bible (WEB)",
+  kjv:"King James Version (KJV)",
+  asv:"American Standard Version (ASV)",
+  akjv:"American King James Version (AKJV)",
+  cpdv:"Catholic Public Domain Version (CPDV)"
+};
 
-  const isDark =
-    themeMode === "dark" ||
-    (themeMode === "system" && systemDark);
+/* ================= ENGINE RESTORED ================= */
 
-  document.documentElement.setAttribute(
-    "data-theme",
-    isDark ? "dark" : "light"
-  );
+async function loadAll(){
+  canon={};
+
+  for(const t in TRANSLATIONS){
+    const txt=await(await fetch(`translations/${t}.txt`)).text();
+
+    txt.split("\n").forEach(line=>{
+      line=line.trim();
+      if(!line) return;
+
+      const p=line.split(/\s+/);
+      const i=p.findIndex(x=>x.includes(":"));
+      if(i<0) return;
+
+      const key=p.slice(0,i).join(" ")+" "+p[i];
+      const verse=p.slice(i+1).join(" ");
+
+      if(!canon[key]){
+        canon[key]={web:"",kjv:"",asv:"",akjv:"",cpdv:""};
+      }
+
+      canon[key][t]=verse;
+    });
+  }
+
+  keys=Object.keys(canon);
+  buildDropdown();
+  daily();
 }
 
-function setTheme(mode){
-  themeMode = mode;
-  applyTheme();
+/* ================= DAILY ================= */
+
+function daily(){
+  if(!keys.length) return;
+
+  const today=new Date().toDateString();
+
+  let storedKey=localStorage.getItem("daily_key");
+  let storedDate=localStorage.getItem("daily_date");
+
+  if(storedKey && storedDate===today){
+    show(storedKey);
+    return;
+  }
+
+  let hash=0;
+  for(let i=0;i<today.length;i++){
+    hash=(hash*31+today.charCodeAt(i))>>>0;
+  }
+
+  const key=keys[hash%keys.length];
+
+  localStorage.setItem("daily_key",key);
+  localStorage.setItem("daily_date",today);
+
+  show(key);
 }
 
-/* 🔧 ONLY ADDITION: live OS change support */
-window.matchMedia("(prefers-color-scheme: dark)")
-  .addEventListener("change", () => {
-    if(themeMode === "system"){
-      applyTheme();
-    }
-  });
+/* ================= SHOW ================= */
 
-/* ================= PLACEHOLDER CORE (UNCHANGED) ================= */
+function show(key){
+  if(!canon[key]) return;
 
-function daily(){ document.getElementById("verse").innerText="Daily verse"; }
-function randomVerse(){ document.getElementById("verse").innerText="Random verse"; }
-function toggleSearch(){ document.getElementById("searchBox").classList.toggle("hidden"); }
-function toggleFavorites(){ document.getElementById("favBox").classList.toggle("hidden"); }
+  currentKey=key;
+
+  document.getElementById("verse").innerHTML=`
+    <div style="font-weight:700;color:#2b6cb0">${key}</div>
+    <div style="font-size:18px;line-height:1.6">
+      ${canon[key][currentTranslation]||canon[key].web}
+    </div>
+  `;
+
+  updateStar();
+}
+
+/* ================= CORE ================= */
+
+function randomVerse(){
+  if(!keys.length) return;
+  show(keys[Math.floor(Math.random()*keys.length)]);
+}
+
+/* ================= TRANSLATION ================= */
+
+function setTranslation(t){
+  currentTranslation=t;
+  if(currentKey) show(currentKey);
+}
+
+/* ================= DROPDOWN ================= */
+
+function buildDropdown(){
+  const sel=document.getElementById("translation");
+
+  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>
+    `<option value="${k}">${TRANSLATIONS[k]}</option>`
+  ).join("");
+}
+
+/* ================= SEARCH ================= */
+
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+}
 
 function instantSearch(){
-  document.getElementById("results").innerHTML="Searching...";
+  const q=document.getElementById("q").value.toLowerCase();
+
+  const matches=keys.filter(k=>{
+    const all=Object.values(canon[k]).join(" ").toLowerCase();
+    return all.includes(q);
+  }).slice(0,40);
+
+  document.getElementById("results").innerHTML=
+    matches.map(k=>`
+      <div class="result-card" onclick="show('${k}')">
+        <div class="result-ref">${k}</div>
+        <div>${canon[k][currentTranslation]||canon[k].web}</div>
+      </div>
+    `).join("");
 }
 
 function clearSearch(){
@@ -205,14 +310,53 @@ function clearSearch(){
   document.getElementById("results").innerHTML="";
 }
 
+/* ================= FAVORITES ================= */
+
 function toggleFav(){
-  const s=document.getElementById("star");
-  s.innerText = s.innerText==="☆"?"★":"☆";
+  if(!currentKey)return;
+
+  const i=favs.indexOf(currentKey);
+  if(i>-1)favs.splice(i,1);
+  else favs.push(currentKey);
+
+  localStorage.setItem("fav",JSON.stringify(favs));
+  updateStar();
+  renderFav();
 }
 
-function setTranslation(){}
+function updateStar(){
+  document.getElementById("star").innerText=
+    favs.includes(currentKey)?"★":"☆";
+}
 
-window.onload=applyTheme;
+function toggleFavorites(){
+  document.getElementById("favBox").classList.toggle("hidden");
+  renderFav();
+}
+
+function renderFav(){
+  const box=document.getElementById("favList");
+
+  box.innerHTML=favs.map(k=>`
+    <div class="result-card" onclick="show('${k}')">
+      <div class="result-ref">${k}</div>
+      <div>${canon[k]?.web||""}</div>
+    </div>
+  `).join("");
+}
+
+/* ================= THEME ================= */
+
+function setTheme(m){
+  document.documentElement.setAttribute(
+    "data-theme",
+    m==="dark"?"dark":"light"
+  );
+}
+
+/* ================= INIT ================= */
+
+window.onload=loadAll;
 
 </script>
 
