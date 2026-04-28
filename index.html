@@ -118,21 +118,17 @@ button:hover{background:var(--accent);color:#fff;}
   width:min(520px,90%);
 }
 
-/* ===== FAVORITES PREVIEW ADD ===== */
+/* FAVORITE PREVIEW */
 .fav-item{
   border-bottom:1px solid var(--border);
   padding:8px 0;
   cursor:pointer;
 }
-
-.fav-ref{
-  font-weight:700;
-}
-
+.fav-ref{font-weight:700;}
 .fav-preview{
   font-size:12px;
   color:var(--muted);
-  margin-top:2px;
+  margin-top:3px;
 }
 </style>
 </head>
@@ -281,12 +277,12 @@ async function loadAll(){
         canon[key][t]=verse;
       });
 
-    } catch(e){}
+    }catch(e){}
   }
 
-  keys = Object.keys(canon);
-  buildDropdown();
+  keys=Object.keys(canon);
 
+  buildDropdown();
   show(getDailyKey());
 }
 
@@ -303,6 +299,7 @@ function show(key){
   `;
 
   updateStar();
+  renderFav();
 }
 
 /* ================= DAILY ================= */
@@ -319,12 +316,51 @@ function randomVerse(){
 
 /* ================= TRANSLATION ================= */
 
+function buildDropdown(){
+  const sel=document.getElementById("translation");
+
+  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>
+    `<option value="${k}" ${k===currentTranslation?"selected":""}>
+      ${TRANSLATIONS[k]}
+    </option>`
+  ).join("");
+}
+
 function setTranslation(t){
   currentTranslation=t;
   if(currentKey) show(currentKey);
 }
 
-/* ================= FAVORITES (UPDATED ONLY) ================= */
+/* ================= SEARCH ================= */
+
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+}
+
+function instantSearch(){
+  const q=document.getElementById("q").value.toLowerCase();
+
+  const res=keys.filter(k=>
+    (canon[k][currentTranslation]||"").toLowerCase().includes(q)
+  ).slice(0,30);
+
+  document.getElementById("results").innerHTML=
+    res.map(k=>`
+      <div class="fav-item" onclick="show('${k}')">
+        <div class="fav-ref">${k}</div>
+        <div class="fav-preview">
+          ${(canon[k][currentTranslation]||"").slice(0,80)}...
+        </div>
+      </div>
+    `).join("");
+}
+
+function clearSearch(){
+  document.getElementById("q").value="";
+  document.getElementById("results").innerHTML="";
+}
+
+/* ================= FAVORITES ================= */
 
 function toggleFav(){
   if(!currentKey) return;
@@ -334,6 +370,7 @@ function toggleFav(){
   else favs.push(currentKey);
 
   localStorage.setItem("fav",JSON.stringify(favs));
+
   updateStar();
   renderFav();
 }
@@ -343,7 +380,6 @@ function toggleFavorites(){
   renderFav();
 }
 
-/* ⭐ ONLY CHANGE: preview added */
 function renderFav(){
   document.getElementById("favList").innerHTML =
     favs.map(k=>`
@@ -359,6 +395,16 @@ function renderFav(){
 function updateStar(){
   document.getElementById("star").innerText =
     favs.includes(currentKey) ? "★" : "☆";
+}
+
+/* ================= MODAL ================= */
+
+function openMission(){
+  document.getElementById("missionModal").style.display="flex";
+}
+
+function closeMission(){
+  document.getElementById("missionModal").style.display="none";
 }
 
 /* ================= INIT ================= */
