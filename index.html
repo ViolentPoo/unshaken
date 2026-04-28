@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unshaken v1.7.16</title>
+<title>Unshaken v1.7.17</title>
 
 <style>
 :root{
@@ -204,7 +204,7 @@ button:hover{background:var(--accent);color:#fff;}
 
 </div>
 
-<div class="footer-left">v1.7.16</div>
+<div class="footer-left">v1.7.17</div>
 
 <div class="footer-right" onclick="toggleMission()">
   est. 2013 — The Parker Family
@@ -234,14 +234,12 @@ let currentTranslation="web";
 let bibleIndex=[];
 let current=null;
 let favorites=JSON.parse(localStorage.getItem("fav")||"[]");
-
-/* 🔥 NEW: shared random seed */
-let currentSeed = null;
+let currentSeed=null;
 
 /* ================= THEME ================= */
 
 function setTheme(mode){
-  const dark =
+  const dark=
     mode==="dark"||
     (mode==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);
 
@@ -257,6 +255,8 @@ function buildTranslationDropdown(){
     `<option value="${k}">${TRANSLATIONS[k].name}</option>`
   ).join("");
 }
+
+/* ================= LOAD BIBLE ================= */
 
 async function loadBible(){
   const res=await fetch(TRANSLATIONS[currentTranslation].file);
@@ -277,9 +277,10 @@ async function loadBible(){
     });
 
   loadDaily();
+  return true;
 }
 
-/* ================= CORE FIX ================= */
+/* ================= SEED SYSTEM ================= */
 
 function setVerseBySeed(seed){
   const v=bibleIndex[seed % bibleIndex.length];
@@ -288,12 +289,12 @@ function setVerseBySeed(seed){
 
 function loadDaily(){
   const d=new Date().toDateString();
-  currentSeed = hashSeed(d);
+  currentSeed=hashSeed(d);
   setVerseBySeed(currentSeed);
 }
 
 function loadRandom(){
-  currentSeed = hashSeed(Date.now());
+  currentSeed=hashSeed(Date.now());
   setVerseBySeed(currentSeed);
 }
 
@@ -391,15 +392,15 @@ function toggleFavorites(){
   renderFavorites();
 }
 
+/* 🔥 FIXED TRANSLATION SWITCH */
 function changeTranslation(t){
   currentTranslation=t;
 
-  /* 🔥 IMPORTANT: DO NOT reset seed */
-  if(currentSeed !== null){
-    setVerseBySeed(currentSeed);
-  } else {
-    loadBible();
-  }
+  loadBible().then(()=>{
+    if(currentSeed!==null){
+      setVerseBySeed(currentSeed);
+    }
+  });
 }
 
 function renderFavorites(){
@@ -429,7 +430,7 @@ function toggleMission(){
     document.getElementById("missionText").innerText=
     "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
     m.classList.remove("hidden");
-  } else {
+  }else{
     m.classList.add("hidden");
   }
 }
