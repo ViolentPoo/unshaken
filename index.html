@@ -118,7 +118,7 @@ button:hover{background:var(--accent);color:#fff;}
   width:min(520px,90%);
 }
 
-/* ================= ONLY ADDITION (SAFE UI FIX) ================= */
+/* ================= VERSE UI FIX (ONLY ADDITION) ================= */
 
 .verse-ref{
   font-size:12px;
@@ -228,7 +228,7 @@ let keys=[];
 let currentKey=null;
 let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 
-/* ================= HASH ================= */
+/* ================= HASH DAILY ================= */
 
 function simpleHash(str){
   let h=0;
@@ -286,11 +286,10 @@ async function loadAll(){
   keys = Object.keys(canon).filter(k=>Object.keys(canon[k]).length);
 
   buildDropdown();
-
   show(getDailyKey());
 }
 
-/* ================= SHOW (ONLY UI FIX HERE) ================= */
+/* ================= SHOW (SAFE UI FIX ONLY) ================= */
 
 function show(key){
   if(!canon[key]) return;
