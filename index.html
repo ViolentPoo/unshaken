@@ -199,125 +199,164 @@ est. 2013 — The Parker Family
 <div class="modal-backdrop" id="missionModal" onclick="closeMission(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <h3>Parker Family Mission Statement</h3>
-    <p>As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.</p>
+    <p>
+      As a family, we seek to follow Jesus faithfully, honor God in all we do,
+      and love one another with patience and grace.
+    </p>
     <button onclick="closeMission()">Close</button>
   </div>
 </div>
 
 <script>
 
-const TRANSLATIONS={
-  web:"WEB",
-  kjv:"KJV",
-  asv:"ASV",
-  akjv:"AKJV",
-  cpdv:"CPDV"
+const TRANSLATIONS = {
+  web: "World English Bible (WEB)",
+  kjv: "King James Version (KJV)",
+  asv: "American Standard Version (ASV)",
+  akjv: "American King James Version (AKJV)",
+  cpdv: "Catholic Public Domain Version (CPDV)"
 };
 
-const DAILY_SEED=81213;
+const DAILY_SEED = 81213;
 
-let canon={},keys=[],currentKey=null,currentTranslation="web";
-let favs=JSON.parse(localStorage.getItem("fav")||"[]");
+let canon = {};
+let keys = [];
+let currentKey = null;
+let currentTranslation = "web";
+let favs = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* HASH DAILY */
+/* ================= HASH ================= */
+
 function hash(str){
-  let h=0;
-  for(let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))>>>0;
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  }
   return h;
 }
 
 function getDaily(){
-  const today=new Date().toDateString();
-  const h=hash(today+DAILY_SEED);
-  return keys.length?keys[h%keys.length]:null;
+  const today = new Date().toDateString();
+  const h = hash(today + DAILY_SEED);
+  return keys.length ? keys[h % keys.length] : null;
 }
 
-/* LOAD */
+/* ================= LOAD ================= */
+
 async function loadAll(){
-  for(const t in TRANSLATIONS){
+  canon = {};
+
+  for (const t in TRANSLATIONS){
     try{
-      const txt=await (await fetch(`translations/${t}.txt`)).text();
-      txt.split("\n").forEach(l=>{
-        l=l.trim();
-        if(!l)return;
-        const p=l.split(/\s+/);
-        const i=p.findIndex(x=>x.includes(":"));
-        if(i<0)return;
-        const k=p.slice(0,i).join(" ")+" "+p[i];
-        const v=p.slice(i+1).join(" ");
-        if(!canon[k]) canon[k]={};
-        canon[k][t]=v;
+      const txt = await (await fetch(`translations/${t}.txt`)).text();
+
+      txt.split("\n").forEach(line => {
+        line = line.trim();
+        if (!line) return;
+
+        const parts = line.split(/\s+/);
+        const i = parts.findIndex(x => x.includes(":"));
+        if (i < 0) return;
+
+        const key = parts.slice(0, i).join(" ") + " " + parts[i];
+        const verse = parts.slice(i + 1).join(" ");
+
+        if (!canon[key]) canon[key] = {};
+        canon[key][t] = verse;
       });
-    }catch(e){}
+
+    } catch(e){}
   }
 
-  keys=Object.keys(canon);
+  keys = Object.keys(canon);
+
   buildDropdown();
   show(getDaily());
 }
 
-/* SHOW */
-function show(k){
-  if(!canon[k]) return;
-  currentKey=k;
+/* ================= SHOW ================= */
 
-  document.getElementById("verse-title").innerText=k;
-  document.getElementById("verse").innerText=canon[k][currentTranslation]||"";
+function show(k){
+  if (!canon[k]) return;
+
+  currentKey = k;
+
+  document.getElementById("verse-title").innerText = k;
+  document.getElementById("verse").innerText =
+    canon[k][currentTranslation] || "";
 
   updateStar();
   renderFav();
 }
 
-/* DAILY */
-function daily(){show(getDaily());}
+/* ================= DAILY ================= */
 
-/* RANDOM */
-function randomVerse(){
-  show(keys[Math.floor(Math.random()*keys.length)]);
+function daily(){
+  show(getDaily());
 }
 
-/* TRANSLATION */
+/* ================= RANDOM ================= */
+
+function randomVerse(){
+  show(keys[Math.floor(Math.random() * keys.length)]);
+}
+
+/* ================= TRANSLATION ================= */
+
 function buildDropdown(){
-  document.getElementById("translation").innerHTML=
-    Object.keys(TRANSLATIONS).map(k=>
-      `<option value="${k}">${TRANSLATIONS[k]}</option>`
-    ).join("");
+  const sel = document.getElementById("translation");
+
+  sel.innerHTML = Object.keys(TRANSLATIONS).map(k =>
+    `<option value="${k}" ${k === currentTranslation ? "selected" : ""}>
+      ${TRANSLATIONS[k]}
+    </option>`
+  ).join("");
 }
 
 function setTranslation(t){
-  currentTranslation=t;
-  if(currentKey) show(currentKey);
+  currentTranslation = t;
+  if (currentKey) show(currentKey);
 }
 
-/* SEARCH */
+/* ================= SEARCH ================= */
+
 function toggleSearch(){
   document.getElementById("searchBox").classList.toggle("hidden");
 }
 
 function instantSearch(){
-  const q=document.getElementById("q").value.toLowerCase();
-  const res=keys.filter(k=>(canon[k][currentTranslation]||"").toLowerCase().includes(q)).slice(0,30);
+  const q = document.getElementById("q").value.toLowerCase();
 
-  document.getElementById("results").innerHTML=res.map(k=>`
-    <div class="fav-item" onclick="show('${k}')">
-      <div class="fav-ref">${k}</div>
-      <div class="fav-preview">${(canon[k][currentTranslation]||"").slice(0,80)}...</div>
-    </div>
-  `).join("");
+  const res = keys.filter(k =>
+    (canon[k][currentTranslation] || "").toLowerCase().includes(q)
+  ).slice(0, 30);
+
+  document.getElementById("results").innerHTML =
+    res.map(k => `
+      <div class="fav-item" onclick="show('${k}')">
+        <div class="fav-ref">${k}</div>
+        <div class="fav-preview">
+          ${(canon[k][currentTranslation] || "").slice(0, 80)}...
+        </div>
+      </div>
+    `).join("");
 }
 
 function clearSearch(){
-  document.getElementById("q").value="";
-  document.getElementById("results").innerHTML="";
+  document.getElementById("q").value = "";
+  document.getElementById("results").innerHTML = "";
 }
 
-/* FAVORITES */
+/* ================= FAVORITES ================= */
+
 function toggleFav(){
-  if(!currentKey) return;
-  const i=favs.indexOf(currentKey);
-  if(i>-1) favs.splice(i,1);
+  if (!currentKey) return;
+
+  const i = favs.indexOf(currentKey);
+  if (i > -1) favs.splice(i, 1);
   else favs.push(currentKey);
-  localStorage.setItem("fav",JSON.stringify(favs));
+
+  localStorage.setItem("fav", JSON.stringify(favs));
   updateStar();
   renderFav();
 }
@@ -328,35 +367,48 @@ function toggleFavorites(){
 }
 
 function renderFav(){
-  document.getElementById("favList").innerHTML=favs.map(k=>`
-    <div class="fav-item" onclick="show('${k}')">
-      <div class="fav-ref">${k}</div>
-      <div class="fav-preview">${(canon[k]?.[currentTranslation]||"").slice(0,90)}...</div>
-    </div>
-  `).join("");
+  document.getElementById("favList").innerHTML =
+    favs.map(k => `
+      <div class="fav-item" onclick="show('${k}')">
+        <div class="fav-ref">${k}</div>
+        <div class="fav-preview">
+          ${(canon[k]?.[currentTranslation] || "").slice(0, 90)}...
+        </div>
+      </div>
+    `).join("");
 }
 
 function updateStar(){
-  document.getElementById("star").innerText=favs.includes(currentKey)?"★":"☆";
+  document.getElementById("star").innerText =
+    favs.includes(currentKey) ? "★" : "☆";
 }
 
-/* THEME */
+/* ================= THEME ================= */
+
 function setTheme(mode){
-  const dark=mode==="dark"||(mode==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);
-  document.documentElement.setAttribute("data-theme",dark?"dark":"light");
+  const dark =
+    mode === "dark" ||
+    (mode === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+
+  document.documentElement.setAttribute(
+    "data-theme",
+    dark ? "dark" : "light"
+  );
 }
 
-/* MODAL */
+/* ================= MODAL ================= */
+
 function openMission(){
-  document.getElementById("missionModal").style.display="flex";
+  document.getElementById("missionModal").style.display = "flex";
 }
 
 function closeMission(){
-  document.getElementById("missionModal").style.display="none";
+  document.getElementById("missionModal").style.display = "none";
 }
 
-/* INIT */
-window.onload=loadAll;
+/* ================= INIT ================= */
+
+window.onload = loadAll;
 
 </script>
 
