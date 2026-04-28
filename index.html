@@ -86,7 +86,6 @@ button:hover{background:var(--accent);color:#fff;}
   margin-top:8px;
 }
 
-/* RESULT CARDS */
 .result-card{
   border:1px solid var(--border);
   border-radius:12px;
@@ -98,7 +97,6 @@ button:hover{background:var(--accent);color:#fff;}
 .result-ref{
   font-weight:700;
   color:var(--accent);
-  margin-bottom:6px;
 }
 
 /* FOOTER */
@@ -132,22 +130,9 @@ button:hover{background:var(--accent);color:#fff;}
 
 .modal{
   background:var(--card);
-  color:var(--text);
-  width:min(520px,90%);
-  padding:18px;
+  padding:16px;
   border-radius:14px;
-  box-shadow:0 10px 30px rgba(0,0,0,.25);
-}
-
-.modal-title{
-  font-weight:700;
-  margin-bottom:10px;
-  color:var(--accent);
-}
-
-.close-btn{
-  margin-top:12px;
-  width:100%;
+  width:min(520px,90%);
 }
 </style>
 </head>
@@ -160,8 +145,7 @@ button:hover{background:var(--accent);color:#fff;}
 
 <!-- VERSE -->
 <div class="card">
-  <div class="section-title">Verse</div>
-  <div id="verse">Loading...</div>
+  <div id="verse">Loading verses...</div>
   <div class="star" id="star" onclick="toggleFav()">☆</div>
 </div>
 
@@ -184,7 +168,7 @@ button:hover{background:var(--accent);color:#fff;}
 <!-- SEARCH -->
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
-  <input id="q" oninput="instantSearch()" placeholder="Search...">
+  <input id="q" oninput="instantSearch()" placeholder="Search verses...">
   <button onclick="clearSearch()">Clear Search</button>
   <div id="results"></div>
 </div>
@@ -216,17 +200,15 @@ button:hover{background:var(--accent);color:#fff;}
 est. 2013 — The Parker Family
 </div>
 
-<!-- MISSION MODAL -->
+<!-- MODAL -->
 <div class="modal-backdrop" id="missionModal" onclick="closeMission(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-title">Parker Family Mission Statement</div>
-
-    <div>
+    <h3>Parker Family Mission Statement</h3>
+    <p>
       As a family, we seek to follow Jesus faithfully, honor God in all we do,
       and love one another with patience and grace.
-    </div>
-
-    <button class="close-btn" onclick="closeMission()">Close</button>
+    </p>
+    <button onclick="closeMission()">Close</button>
   </div>
 </div>
 
@@ -234,15 +216,7 @@ est. 2013 — The Parker Family
 
 /* ================= STATE ================= */
 
-let currentTranslation="web";
-let canon={};
-let keys=[];
-let currentKey=null;
-let favs=JSON.parse(localStorage.getItem("fav")||"[]");
-
-/* ================= TRANSLATIONS ================= */
-
-const TRANSLATIONS={
+const TRANSLATIONS = {
   web:"World English Bible (WEB)",
   kjv:"King James Version (KJV)",
   asv:"American Standard Version (ASV)",
@@ -250,35 +224,191 @@ const TRANSLATIONS={
   cpdv:"Catholic Public Domain Version (CPDV)"
 };
 
-/* ================= SYSTEM THEME FIX ================= */
+let currentTranslation="web";
+let canon={};
+let keys=[];
+let currentKey=null;
+let favs=JSON.parse(localStorage.getItem("fav")||"[]");
+let dailyKey=null;
 
-let themeMode="system";
-
-function applyTheme(){
-  const systemDark=
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-  const isDark=
-    themeMode==="dark" ||
-    (themeMode==="system" && systemDark);
-
-  document.documentElement.setAttribute(
-    "data-theme",
-    isDark?"dark":"light"
-  );
-}
+/* ================= THEME ================= */
 
 function setTheme(mode){
-  themeMode=mode;
-  applyTheme();
+  const dark =
+    mode==="dark" ||
+    (mode==="system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  document.documentElement.setAttribute("data-theme",dark?"dark":"light");
 }
 
-window.matchMedia("(prefers-color-scheme: dark)")
-  .addEventListener("change",()=>{
-    if(themeMode==="system") applyTheme();
-  });
+/* ================= LOAD ENGINE (FIXED SAFETY) ================= */
 
-/* ================= MISSION MODAL ================= */
+async function loadAll(){
+  canon={};
+
+  for(const t in TRANSLATIONS){
+    try{
+      const txt = await (await fetch(`translations/${t}.txt`)).text();
+
+      txt.split("\n").forEach(line=>{
+        line=line.trim();
+        if(!line) return;
+
+        const parts=line.split(/\s+/);
+        const i=parts.findIndex(x=>x.includes(":"));
+        if(i<0) return;
+
+        const key = parts.slice(0,i).join(" ")+" "+parts[i];
+        const verse = parts.slice(i+1).join(" ");
+
+        if(!canon[key]) canon[key]={};
+
+        canon[key][t]=verse;
+      });
+
+    } catch(e){
+      console.warn("Missing:",t);
+    }
+  }
+
+  keys = Object.keys(canon).filter(k=>Object.keys(canon[k]).length);
+
+  if(!keys.length){
+    document.getElementById("verse").innerText="No verses loaded.";
+    return;
+  }
+
+  buildDropdown();
+
+  /* FIX: stable daily persistence */
+  if(!localStorage.getItem("dailyKey")){
+    dailyKey = keys[Math.floor(Math.random()*keys.length)];
+    localStorage.setItem("dailyKey",dailyKey);
+  } else {
+    dailyKey = localStorage.getItem("dailyKey");
+  }
+
+  show(dailyKey);
+}
+
+/* ================= SHOW ================= */
+
+function show(key){
+  if(!canon[key]) return;
+
+  currentKey=key;
+
+  const txt =
+    canon[key][currentTranslation] ||
+    canon[key].web ||
+    "Verse unavailable";
+
+  document.getElementById("verse").innerHTML=`
+    <div class="verse-ref">${key}</div>
+    <div class="verse-text">${txt}</div>
+  `;
+
+  updateStar();
+}
+
+/* ================= DAILY (FIXED PERSISTENT) ================= */
+
+function daily(){
+  if(!keys.length) return;
+  show(dailyKey);
+}
+
+/* ================= RANDOM ================= */
+
+function randomVerse(){
+  if(!keys.length) return;
+
+  dailyKey = keys[Math.floor(Math.random()*keys.length)];
+  localStorage.setItem("dailyKey",dailyKey);
+
+  show(dailyKey);
+}
+
+/* ================= TRANSLATION ================= */
+
+function setTranslation(t){
+  currentTranslation=t;
+  if(currentKey) show(currentKey);
+}
+
+/* ================= DROPDOWN ================= */
+
+function buildDropdown(){
+  const sel=document.getElementById("translation");
+
+  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>
+    `<option value="${k}" ${k===currentTranslation?"selected":""}>
+      ${TRANSLATIONS[k]}
+    </option>`
+  ).join("");
+}
+
+/* ================= SEARCH ================= */
+
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+}
+
+function instantSearch(){
+  const q=document.getElementById("q").value.toLowerCase();
+
+  const res=keys.filter(k=>
+    (canon[k][currentTranslation]||"").toLowerCase().includes(q)
+  ).slice(0,30);
+
+  document.getElementById("results").innerHTML=
+    res.map(k=>`
+      <div class="result-card" onclick="show('${k}')">
+        <div class="result-ref">${k}</div>
+      </div>
+    `).join("");
+}
+
+function clearSearch(){
+  document.getElementById("q").value="";
+  document.getElementById("results").innerHTML="";
+}
+
+/* ================= FAVORITES ================= */
+
+function toggleFav(){
+  if(!currentKey) return;
+
+  const i=favs.indexOf(currentKey);
+  if(i>-1) favs.splice(i,1);
+  else favs.push(currentKey);
+
+  localStorage.setItem("fav",JSON.stringify(favs));
+
+  updateStar();
+  renderFav();
+}
+
+function updateStar(){
+  document.getElementById("star").innerText =
+    favs.includes(currentKey) ? "★" : "☆";
+}
+
+function toggleFavorites(){
+  document.getElementById("favBox").classList.toggle("hidden");
+  renderFav();
+}
+
+function renderFav(){
+  document.getElementById("favList").innerHTML =
+    favs.map(k=>`
+      <div class="result-card" onclick="show('${k}')">
+        <div class="result-ref">${k}</div>
+      </div>
+    `).join("");
+}
+
+/* ================= MODAL ================= */
 
 function openMission(){
   document.getElementById("missionModal").style.display="flex";
@@ -288,19 +418,9 @@ function closeMission(){
   document.getElementById("missionModal").style.display="none";
 }
 
-/* ================= PLACEHOLDERS (your engine remains here) ================= */
-
-function daily(){ document.getElementById("verse").innerText="Daily verse"; }
-function randomVerse(){ document.getElementById("verse").innerText="Random verse"; }
-function toggleSearch(){ document.getElementById("searchBox").classList.toggle("hidden"); }
-function toggleFavorites(){ document.getElementById("favBox").classList.toggle("hidden"); }
-function instantSearch(){ document.getElementById("results").innerHTML="Searching..."; }
-function clearSearch(){ document.getElementById("q").value=""; document.getElementById("results").innerHTML=""; }
-function toggleFav(){ document.getElementById("star").innerText="★"; }
-
 /* ================= INIT ================= */
 
-window.onload=applyTheme;
+window.onload=loadAll;
 
 </script>
 
