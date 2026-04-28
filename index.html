@@ -141,7 +141,7 @@ button:hover{background:var(--accent);color:#fff;}
   line-height:1.6;
 }
 
-/* FAVORITES SWIPE */
+/* FAVORITES */
 .fav-item{
   position:relative;
   overflow:hidden;
@@ -211,8 +211,6 @@ button:hover{background:var(--accent);color:#fff;}
 
   <div class="search-row">
     <input id="q" placeholder="Search..." oninput="instantSearch()">
-
-    <!-- ✅ RESTORED CLEAR SEARCH BUTTON -->
     <button onclick="clearSearch()">Clear Search</button>
   </div>
 
@@ -250,15 +248,6 @@ est. 2013 — The Parker Family
 
 /* ================= STATE ================= */
 
-const TRANSLATIONS={
-  web:{file:"translations/web.txt",name:"World English Bible (WEB)"},
-  kjv:{file:"translations/kjv.txt",name:"King James Version (KJV)"},
-  asv:{file:"translations/asv.txt",name:"American Standard Version (ASV)"},
-  akjv:{file:"translations/akjv.txt",name:"American King James Version (AKJV)"},
-  cpdv:{file:"translations/cpdv.txt",name:"Catholic Public Domain Version (CPDV)"}
-};
-
-let currentTranslation="web";
 let canon={};
 let keys=[];
 let currentKey=null;
@@ -267,7 +256,7 @@ let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 /* ================= LOAD ================= */
 
 async function loadAll(){
-  const txt=await(await fetch(TRANSLATIONS.web.file)).text();
+  const txt=await(await fetch("translations/web.txt")).text();
 
   txt.split("\n").forEach(l=>{
     l=l.trim(); if(!l) return;
@@ -284,28 +273,14 @@ async function loadAll(){
 
   keys=Object.keys(canon);
 
-  buildDropdown();
   daily();
 }
 
-/* ================= TRANSLATION ================= */
-
-function buildDropdown(){
-  const sel=document.getElementById("translation");
-
-  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>`
-    <option value="${k}">${TRANSLATIONS[k].name}</option>
-  `).join("");
-}
-
-function setTranslation(t){
-  currentTranslation=t;
-  if(currentKey) show(currentKey);
-}
-
-/* ================= VERSE ================= */
+/* ================= SHOW ================= */
 
 function show(key){
+  if(!canon[key]) return;
+
   currentKey=key;
 
   document.getElementById("verse").innerHTML=`
@@ -316,9 +291,20 @@ function show(key){
   updateStar();
 }
 
+/* ================= RANDOM (FIXED) ================= */
+
+function randomVerse(){
+  if(!keys || keys.length===0) return;
+
+  const key=keys[Math.floor(Math.random()*keys.length)];
+  show(key);
+}
+
 /* ================= DAILY ================= */
 
 function daily(){
+  if(!keys.length) return;
+
   const today=new Date().toDateString();
 
   const saved=localStorage.getItem("daily_key");
@@ -364,7 +350,8 @@ function toggleFavorites(){
   renderFav();
 }
 
-/* SWIPE DELETE */
+/* ================= FAVORITES SWIPE ================= */
+
 function attachSwipe(el){
   let startX=0;
 
@@ -378,7 +365,6 @@ function attachSwipe(el){
   });
 }
 
-/* FAVORITES RENDER */
 function renderFav(){
   const box=document.getElementById("favList");
 
@@ -434,7 +420,6 @@ function instantSearch(){
   `).join("");
 }
 
-/* ✅ RESTORED CLEAR SEARCH */
 function clearSearch(){
   document.getElementById("q").value="";
   document.getElementById("results").innerHTML="";
@@ -445,8 +430,7 @@ function clearSearch(){
 function setTheme(mode){
   const dark=
     mode==="dark"||
-    (mode==="system"&&
-     window.matchMedia("(prefers-color-scheme: dark)").matches);
+    (mode==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   document.documentElement.setAttribute(
     "data-theme",
