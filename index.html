@@ -130,7 +130,7 @@ button:hover{background:var(--accent);color:#fff;}
 
 <!-- VERSE -->
 <div class="card">
-  <div id="verse">Loading verses...</div>
+  <div id="verse">Loading...</div>
   <div class="star" id="star" onclick="toggleFav()">☆</div>
 </div>
 
@@ -142,7 +142,6 @@ button:hover{background:var(--accent);color:#fff;}
   <button onclick="toggleFavorites()">Favorites</button>
 
   <select id="translation" onchange="setTranslation(this.value)"></select>
-
   <select onchange="setTheme(this.value)">
     <option value="system">System</option>
     <option value="light">Day</option>
@@ -227,7 +226,7 @@ function setTheme(mode){
   document.documentElement.setAttribute("data-theme",dark?"dark":"light");
 }
 
-/* ================= LOAD ================= */
+/* ================= LOAD ENGINE ================= */
 
 async function loadAll(){
   canon={};
@@ -260,24 +259,24 @@ async function loadAll(){
   ready=true;
 
   if(!keys.length){
-    document.getElementById("verse").innerText="No verses loaded.";
+    document.getElementById("verse").innerText =
+      "No verses loaded.";
     return;
   }
 
   buildDropdown();
-
   initDaily();
 
   show(dailyKey);
 }
 
-/* ================= DAILY (FIXED + SAFE) ================= */
+/* ================= DAILY (FIXED) ================= */
 
 function initDaily(){
-  const today=new Date().toDateString();
-  const storedDay=localStorage.getItem("daily_day");
+  const today = new Date().toDateString();
+  const storedDay = localStorage.getItem("daily_day");
 
-  if(storedDay!==today || !localStorage.getItem("daily_key")){
+  if(storedDay !== today || !localStorage.getItem("daily_key")){
     dailyKey = keys[Math.floor(Math.random()*keys.length)];
     localStorage.setItem("daily_key",dailyKey);
     localStorage.setItem("daily_day",today);
@@ -291,8 +290,12 @@ function initDaily(){
   }
 }
 
+/* 🔧 FIXED DAILY BUTTON */
 function daily(){
-  if(!ready || !keys.length) return;
+  if(!ready || !keys.length){
+    console.warn("Daily blocked: not ready");
+    return;
+  }
 
   if(!keys.includes(dailyKey)){
     dailyKey = keys[Math.floor(Math.random()*keys.length)];
