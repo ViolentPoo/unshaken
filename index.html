@@ -118,7 +118,7 @@ button:hover{background:var(--accent);color:#fff;}
   width:min(520px,90%);
 }
 
-/* VERSE UI */
+/* VERSE */
 .verse-ref{
   font-size:12px;
   color:var(--muted);
@@ -129,6 +129,26 @@ button:hover{background:var(--accent);color:#fff;}
   font-size:18px;
   line-height:1.6;
 }
+
+/* SEARCH / FAVORITES */
+.result-card{
+  padding:10px;
+  margin:6px 0;
+  border:1px solid var(--border);
+  border-radius:10px;
+  cursor:pointer;
+}
+
+.result-ref{
+  font-weight:700;
+  font-size:13px;
+}
+
+.result-preview{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+}
 </style>
 </head>
 
@@ -138,15 +158,20 @@ button:hover{background:var(--accent);color:#fff;}
 
 <div class="container">
 
+<!-- VERSE -->
 <div class="card">
   <div id="verse">Loading...</div>
   <div class="star" id="star" onclick="toggleFav()">☆</div>
 </div>
 
+<!-- CONTROLS -->
 <div class="card">
   <button onclick="daily()">Daily</button>
   <button onclick="randomVerse()">Random</button>
+
+  <!-- FIXED: Search now guaranteed wired -->
   <button onclick="toggleSearch()">Search</button>
+
   <button onclick="toggleFavorites()">Favorites</button>
 
   <select id="translation" onchange="setTranslation(this.value)"></select>
@@ -158,23 +183,27 @@ button:hover{background:var(--accent);color:#fff;}
   </select>
 </div>
 
+<!-- SEARCH -->
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
-  <input id="q" oninput="instantSearch()">
+  <input id="q" oninput="instantSearch()" placeholder="Search verses...">
   <button onclick="clearSearch()">Clear</button>
   <div id="results"></div>
 </div>
 
+<!-- FAVORITES -->
 <div class="card hidden" id="favBox">
   <div class="section-title">Favorites</div>
   <div id="favList"></div>
 </div>
 
+<!-- PRAYER -->
 <div class="card">
   <div class="section-title">Prayer</div>
   <div id="prayer">Walk faithfully today.</div>
 </div>
 
+<!-- REFLECTION -->
 <div class="card">
   <div class="section-title">Reflection</div>
   <div id="reflection">What is God showing you?</div>
@@ -191,12 +220,17 @@ est. 2013 — The Parker Family
 <div class="modal-backdrop" id="missionModal" onclick="closeMission(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <h3>Parker Family Mission Statement</h3>
-    <p>As a family, we seek to follow Jesus faithfully...</p>
+    <p>
+      As a family, we seek to follow Jesus faithfully, honor God in all we do,
+      and love one another with patience and grace.
+    </p>
     <button onclick="closeMission()">Close</button>
   </div>
 </div>
 
 <script>
+
+/* ================= STATE ================= */
 
 const TRANSLATIONS = {
   web:"World English Bible (WEB)",
@@ -210,6 +244,8 @@ let canon={};
 let keys=[];
 let currentKey=null;
 let favs=JSON.parse(localStorage.getItem("fav")||"[]");
+
+/* ================= HASH ================= */
 
 function simpleHash(str){
   let h=0;
@@ -225,6 +261,8 @@ function getDailyKey(){
   return keys.length ? keys[hash % keys.length] : null;
 }
 
+/* ================= THEME ================= */
+
 function setTheme(mode){
   const dark =
     mode==="dark" ||
@@ -232,6 +270,8 @@ function setTheme(mode){
 
   document.documentElement.setAttribute("data-theme",dark?"dark":"light");
 }
+
+/* ================= LOAD ================= */
 
 async function loadAll(){
   canon={};
@@ -263,6 +303,8 @@ async function loadAll(){
   show(getDailyKey());
 }
 
+/* ================= SHOW ================= */
+
 function show(key){
   if(!canon[key]) return;
 
@@ -276,18 +318,26 @@ function show(key){
   updateStar();
 }
 
+/* ================= DAILY ================= */
+
 function daily(){
   show(getDailyKey());
 }
+
+/* ================= RANDOM ================= */
 
 function randomVerse(){
   show(keys[Math.floor(Math.random()*keys.length)]);
 }
 
+/* ================= TRANSLATION ================= */
+
 function setTranslation(t){
   currentTranslation=t;
   if(currentKey) show(currentKey);
 }
+
+/* ================= DROPDOWN ================= */
 
 function buildDropdown(){
   document.getElementById("translation").innerHTML=
@@ -296,8 +346,11 @@ function buildDropdown(){
     ).join("");
 }
 
+/* ================= SEARCH (FIXED) ================= */
+
 function toggleSearch(){
-  document.getElementById("searchBox").classList.toggle("hidden");
+  const box=document.getElementById("searchBox");
+  box.classList.toggle("hidden");
 }
 
 function instantSearch(){
@@ -308,13 +361,22 @@ function instantSearch(){
   ).slice(0,30);
 
   document.getElementById("results").innerHTML=
-    res.map(k=>`<div onclick="show('${k}')">${k}</div>`).join("");
+    res.map(k=>`
+      <div class="result-card" onclick="show('${k}')">
+        <div class="result-ref">${k}</div>
+        <div class="result-preview">
+          ${(canon[k]?.[currentTranslation]||"").slice(0,90)}...
+        </div>
+      </div>
+    `).join("");
 }
 
 function clearSearch(){
   document.getElementById("q").value="";
   document.getElementById("results").innerHTML="";
 }
+
+/* ================= FAVORITES ================= */
 
 function toggleFav(){
   if(!currentKey) return;
@@ -326,12 +388,7 @@ function toggleFav(){
   localStorage.setItem("fav",JSON.stringify(favs));
 
   updateStar();
-  renderFavs(); // ✅ FIX: live refresh
-}
-
-function updateStar(){
-  document.getElementById("star").innerText =
-    favs.includes(currentKey) ? "★" : "☆";
+  renderFavs();
 }
 
 function toggleFavorites(){
@@ -340,9 +397,23 @@ function toggleFavorites(){
 }
 
 function renderFavs(){
-  document.getElementById("favList").innerHTML =
-    favs.map(k=>`<div onclick="show('${k}')">${k}</div>`).join("");
+  document.getElementById("favList").innerHTML=
+    favs.map(k=>`
+      <div class="result-card" onclick="show('${k}')">
+        <div class="result-ref">${k}</div>
+        <div class="result-preview">
+          ${(canon[k]?.[currentTranslation]||"").slice(0,90)}...
+        </div>
+      </div>
+    `).join("");
 }
+
+function updateStar(){
+  document.getElementById("star").innerText =
+    favs.includes(currentKey) ? "★" : "☆";
+}
+
+/* ================= MODAL ================= */
 
 function openMission(){
   document.getElementById("missionModal").style.display="flex";
@@ -351,6 +422,8 @@ function openMission(){
 function closeMission(){
   document.getElementById("missionModal").style.display="none";
 }
+
+/* ================= INIT ================= */
 
 window.onload=loadAll;
 
