@@ -77,19 +77,13 @@ button,input,select{
 }
 
 button{cursor:pointer;}
-
-button:hover{
-  background:var(--accent);
-  color:#fff;
-}
+button:hover{background:var(--accent);color:#fff;}
 
 input{
   width:min(420px,100%);
 }
 
-.hidden{
-  display:none !important;
-}
+.hidden{display:none !important;}
 
 .verse-ref{
   font-size:18px;
@@ -161,11 +155,24 @@ input{
   color:var(--muted);
 }
 
-.search-row{
+/* ⭐ FAVORITES IMPROVED LAYOUT */
+.fav-row{
   display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+}
+
+.remove-star{
+  font-size:20px;
+  cursor:pointer;
+  color:var(--accent);
+  user-select:none;
+  padding-left:6px;
+}
+
+.remove-star:hover{
+  color:red;
 }
 </style>
 </head>
@@ -203,15 +210,14 @@ input{
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
 
-  <div class="search-row">
-    <input
-      id="q"
-      placeholder="Type to search verses..."
-      oninput="instantSearch()"
-      onkeydown="handleSearchKey(event)"
-    >
-    <button onclick="clearSearch()">Clear Search</button>
-  </div>
+  <input
+    id="q"
+    placeholder="Type to search verses..."
+    oninput="instantSearch()"
+    onkeydown="handleSearchKey(event)"
+  >
+
+  <button onclick="clearSearch()">Clear Search</button>
 
   <div id="results"></div>
 </div>
@@ -244,7 +250,8 @@ est. 2013 — The Parker Family
 </div>
 
 <script>
-/* ================= TRANSLATIONS ================= */
+
+/* ================= STATE ================= */
 
 const TRANSLATIONS = {
   web:  { file:"translations/web.txt",  name:"World English Bible (WEB)" },
@@ -266,7 +273,7 @@ function setTheme(mode){
   const dark =
     mode === "dark" ||
     (mode === "system" &&
-     window.matchMedia("(prefers-color-scheme: dark)").matches);
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   document.documentElement.setAttribute(
     "data-theme",
@@ -274,7 +281,7 @@ function setTheme(mode){
   );
 }
 
-/* ================= LOAD / FAST INDEX ================= */
+/* ================= LOAD ================= */
 
 async function loadAll(){
   canon = {};
@@ -294,10 +301,7 @@ async function loadAll(){
       const verseText = p.slice(i+1).join(" ");
 
       if(!canon[key]){
-        canon[key] = {
-          versions:{},
-          searchBlob:""
-        };
+        canon[key] = { versions:{}, searchBlob:"" };
       }
 
       canon[key].versions[t] = verseText;
@@ -308,25 +312,12 @@ async function loadAll(){
 
   keys.forEach(k=>{
     canon[k].searchBlob = (
-      k + " " +
-      Object.values(canon[k].versions).join(" ")
+      k + " " + Object.values(canon[k].versions).join(" ")
     ).toLowerCase();
   });
 
   buildDropdown();
   daily();
-}
-
-/* ================= DROPDOWN ================= */
-
-function buildDropdown(){
-  const sel = document.getElementById("translation");
-
-  sel.innerHTML = Object.keys(TRANSLATIONS).map(k =>
-    `<option value="${k}" ${k===currentTranslation?"selected":""}>
-      ${TRANSLATIONS[k].name}
-    </option>`
-  ).join("");
 }
 
 /* ================= SHOW ================= */
@@ -336,16 +327,14 @@ function show(key){
 
   currentKey = key;
 
-  const txt =
-    canon[key].versions[currentTranslation] ||
-    "[missing in this translation]";
-
   document.getElementById("verse").innerHTML = `
     <div class="verse-ref">${key}</div>
-    <div class="verse-text">${txt}</div>
+    <div class="verse-text">
+      ${canon[key].versions[currentTranslation] || "[missing]"}
+    </div>
   `;
 
-  updateFav();
+  updateFavStar();
 }
 
 /* ================= DAILY / RANDOM ================= */
@@ -359,12 +348,10 @@ function hash(str){
 }
 
 function daily(){
-  if(!keys.length) return;
   show(keys[hash(new Date().toDateString()) % keys.length]);
 }
 
 function randomVerse(){
-  if(!keys.length) return;
   show(keys[Math.floor(Math.random() * keys.length)]);
 }
 
@@ -372,17 +359,11 @@ function randomVerse(){
 
 function setTranslation(t){
   currentTranslation = t;
-
   if(currentKey) show(currentKey);
-
-  if(!document.getElementById("searchBox").classList.contains("hidden")){
-    instantSearch();
-  }
-
   renderFav();
 }
 
-/* ================= FAVORITES ================= */
+/* ================= FAVORITES (FIXED & STABLE) ================= */
 
 function toggleFav(){
   if(!currentKey) return;
@@ -394,11 +375,12 @@ function toggleFav(){
 
   localStorage.setItem("fav", JSON.stringify(favs));
 
-  updateFav();
+  updateFavStar();
   renderFav();
 }
 
-function updateFav(){
+function updateFavStar(){
+  if(!currentKey) return;
   document.getElementById("star").innerText =
     favs.includes(currentKey) ? "★" : "☆";
 }
@@ -408,6 +390,7 @@ function toggleFavorites(){
   renderFav();
 }
 
+/* ⭐ CLEAN FAVORITES RENDER */
 function renderFav(){
   const box = document.getElementById("favList");
 
@@ -417,28 +400,42 @@ function renderFav(){
   }
 
   box.innerHTML = favs.map(k => `
-    <div class="result-card" onclick="show('${escapeQuotes(k)}')">
-      <div class="result-ref">${k}</div>
-      <div class="result-text">
-        ${(canon[k]?.versions[currentTranslation] || "").slice(0,180)}
+    <div class="result-card">
+      <div class="fav-row">
+        
+        <div onclick="show('${escapeQuotes(k)}')" style="flex:1">
+          <div class="result-ref">${k}</div>
+          <div class="result-text">
+            ${(canon[k]?.versions[currentTranslation] || "").slice(0,180)}
+          </div>
+        </div>
+
+        <!-- ⭐ REMOVE -->
+        <div class="remove-star"
+             onclick="event.stopPropagation(); removeFav('${escapeQuotes(k)}')">
+          ★
+        </div>
+
       </div>
     </div>
   `).join("");
 }
 
+function removeFav(key){
+  favs = favs.filter(f => f !== key);
+  localStorage.setItem("fav", JSON.stringify(favs));
+  renderFav();
+  updateFavStar();
+}
+
 /* ================= SEARCH ================= */
 
 function toggleSearch(){
-  const box = document.getElementById("searchBox");
-  box.classList.toggle("hidden");
-
-  if(!box.classList.contains("hidden")){
-    document.getElementById("q").focus();
-  }
+  document.getElementById("searchBox").classList.toggle("hidden");
 }
 
 function instantSearch(){
-  const q = document.getElementById("q").value.trim().toLowerCase();
+  const q = document.getElementById("q").value.toLowerCase();
   const results = document.getElementById("results");
 
   if(!q){
@@ -446,38 +443,23 @@ function instantSearch(){
     return;
   }
 
-  const matches = [];
+  const matches = keys.filter(k =>
+    canon[k].searchBlob.includes(q)
+  ).slice(0,40);
 
-  for(const k of keys){
-    if(canon[k].searchBlob.includes(q)){
-      matches.push(k);
-      if(matches.length >= 40) break;
-    }
-  }
-
-  if(!matches.length){
-    results.innerHTML = `<div class="empty">No results found.</div>`;
-    return;
-  }
-
-  results.innerHTML = matches.map(k=>{
-    const txt = canon[k].versions[currentTranslation] || "[missing]";
-
-    return `
-      <div class="result-card" onclick="show('${escapeQuotes(k)}')">
-        <div class="result-ref">${k}</div>
-        <div class="result-text">
-          ${txt.slice(0,220)}${txt.length>220?"...":""}
-        </div>
+  results.innerHTML = matches.map(k => `
+    <div class="result-card" onclick="show('${escapeQuotes(k)}')">
+      <div class="result-ref">${k}</div>
+      <div class="result-text">
+        ${canon[k].versions[currentTranslation]?.slice(0,220) || ""}
       </div>
-    `;
-  }).join("");
+    </div>
+  `).join("");
 }
 
 function clearSearch(){
   document.getElementById("q").value = "";
   document.getElementById("results").innerHTML = "";
-  document.getElementById("q").focus();
 }
 
 function handleSearchKey(e){
@@ -499,6 +481,7 @@ window.onload = ()=>{
   setTheme("system");
   loadAll();
 };
+
 </script>
 
 </body>
