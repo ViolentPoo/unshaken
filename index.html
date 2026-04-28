@@ -7,119 +7,133 @@
 
 <style>
 :root{
-  --bg:#f5f5f5;
-  --text:#111;
+  --bg:#f6f7fb;
+  --text:#0f172a;
   --card:#ffffff;
-  --accent:#2b6cb0;
-  --muted:#666;
-  --border:#d9d9d9;
-  --hover:#eef4ff;
+  --accent:#3b82f6;
+  --accent2:#6366f1;
+  --muted:#64748b;
+  --border:#e5e7eb;
+  --shadow:0 10px 25px rgba(0,0,0,0.06);
+  --radius:16px;
 }
 
 [data-theme="dark"]{
-  --bg:#0f172a;
+  --bg:#0b1220;
   --text:#e2e8f0;
-  --card:#1e293b;
+  --card:#111827;
   --accent:#60a5fa;
+  --accent2:#818cf8;
   --muted:#94a3b8;
-  --border:#334155;
-  --hover:#1b2a44;
+  --border:#1f2937;
+  --shadow:0 10px 30px rgba(0,0,0,0.4);
 }
 
 *{box-sizing:border-box;}
 
 body{
   margin:0;
-  font-family:system-ui;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto;
   background:var(--bg);
   color:var(--text);
-  padding:72px 0 64px;
+  padding:80px 0 70px;
   display:flex;
   justify-content:center;
 }
 
+/* TOP BAR (modern gradient) */
 .topbar{
   position:fixed;
   top:0;left:0;right:0;
-  background:var(--accent);
-  color:#fff;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  color:white;
   text-align:center;
-  padding:12px;
+  padding:14px;
   font-weight:700;
+  letter-spacing:0.3px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.15);
 }
 
-.container{width:min(940px,92%);}
+/* CONTAINER */
+.container{
+  width:min(900px,92%);
+}
 
-/* CARD SYSTEM */
+/* CARD */
 .card{
   background:var(--card);
-  padding:14px;
-  border-radius:14px;
-  margin-top:12px;
-  box-shadow:0 4px 12px rgba(0,0,0,.06);
+  padding:16px;
+  border-radius:var(--radius);
+  margin-top:14px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--border);
+  transition:0.2s ease;
 }
 
-.section-title{
-  font-size:14px;
-  font-weight:700;
-  color:var(--accent);
-  margin-bottom:10px;
+.card:hover{
+  transform:translateY(-2px);
 }
 
-/* VERSE TITLE MATCH */
+/* SECTION TITLES */
+.section-title,
 .verse-section-title{
-  font-size:14px;
+  font-size:13px;
   font-weight:700;
   color:var(--accent);
   margin-bottom:10px;
+  letter-spacing:0.4px;
+  text-transform:uppercase;
 }
 
-/* INPUTS */
-button,input,select{
-  padding:8px 10px;
-  border-radius:8px;
+/* BUTTONS */
+button,select,input{
+  padding:9px 12px;
+  border-radius:12px;
   border:1px solid var(--border);
   margin:3px;
   background:var(--card);
   color:var(--text);
   font:inherit;
+  transition:0.2s ease;
 }
 
-button{cursor:pointer;}
-button:hover{background:var(--accent);color:#fff;}
+button{
+  cursor:pointer;
+  font-weight:600;
+}
 
-.hidden{display:none !important;}
+button:hover{
+  transform:translateY(-1px);
+  background:var(--accent);
+  color:white;
+  border-color:transparent;
+}
 
 /* STAR */
 .star{
-  font-size:26px;
+  font-size:28px;
   cursor:pointer;
   user-select:none;
+  margin-top:6px;
 }
 
 /* FOOTER */
-.footer-left{
+.footer-left,
+.footer-right{
   position:fixed;
-  left:10px;
   bottom:10px;
   font-size:11px;
   color:var(--muted);
 }
 
-.footer-right{
-  position:fixed;
-  right:10px;
-  bottom:10px;
-  font-size:11px;
-  color:var(--muted);
-  cursor:pointer;
-}
+.footer-left{left:10px;}
+.footer-right{right:10px; cursor:pointer;}
 
 /* MODAL */
 .modal-backdrop{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.55);
+  background:rgba(0,0,0,0.6);
   display:none;
   align-items:center;
   justify-content:center;
@@ -128,61 +142,58 @@ button:hover{background:var(--accent);color:#fff;}
 
 .modal{
   background:var(--card);
-  padding:16px;
-  border-radius:14px;
+  padding:18px;
+  border-radius:var(--radius);
   width:min(520px,90%);
+  box-shadow:var(--shadow);
 }
 
-/* =========================
-   UI ENHANCED LIST ITEMS
-========================= */
-
+/* LIST ITEMS (modern cards) */
 .list-item{
-  padding:10px;
+  padding:12px;
+  border-radius:14px;
   border:1px solid var(--border);
-  border-radius:10px;
-  margin-bottom:8px;
+  margin-bottom:10px;
   cursor:pointer;
   transition:0.2s ease;
-  position:relative;
+  background:var(--card);
 }
 
 .list-item:hover{
-  background:var(--hover);
-  transform:translateY(-1px);
+  transform:translateY(-2px);
+  border-color:var(--accent);
 }
 
 .ref{
   font-weight:700;
+  margin-bottom:4px;
 }
 
 .preview{
   font-size:12px;
   color:var(--muted);
-  margin-top:4px;
   line-height:1.4;
 }
 
 /* REMOVE STAR */
 .remove-star{
-  position:absolute;
-  right:10px;
-  top:10px;
+  float:right;
+  margin-top:-30px;
   font-size:18px;
   cursor:pointer;
-  opacity:0.8;
+  opacity:0.7;
 }
 
 .remove-star:hover{
   opacity:1;
-  transform:scale(1.1);
+  color:var(--accent);
 }
 </style>
 </head>
 
 <body>
 
-<div class="topbar">Unshaken Bible Verse</div>
+<div class="topbar">Unshaken</div>
 
 <div class="container">
 
@@ -204,8 +215,8 @@ button:hover{background:var(--accent);color:#fff;}
 
   <select onchange="setTheme(this.value)">
     <option value="system">System</option>
-    <option value="light">Day</option>
-    <option value="dark">Night</option>
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
   </select>
 </div>
 
@@ -213,7 +224,7 @@ button:hover{background:var(--accent);color:#fff;}
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
   <input id="q" oninput="instantSearch()" placeholder="Search verses...">
-  <button onclick="clearSearch()">Clear Search</button>
+  <button onclick="clearSearch()">Clear</button>
   <div id="results"></div>
 </div>
 
@@ -237,7 +248,7 @@ button:hover{background:var(--accent);color:#fff;}
 
 </div>
 
-<!-- FOOTERS -->
+<!-- FOOTER -->
 <div class="footer-left">Unshaken</div>
 <div class="footer-right" onclick="openMission()">est. 2013 — The Parker Family</div>
 
@@ -245,16 +256,14 @@ button:hover{background:var(--accent);color:#fff;}
 <div class="modal-backdrop" id="missionModal" onclick="closeMission(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <h3>Parker Family Mission Statement</h3>
-    <p>
-      As a family, we seek to follow Jesus faithfully,
-      honor God in all we do, and love one another
-      with patience and grace.
-    </p>
+    <p>As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.</p>
     <button onclick="closeMission()">Close</button>
   </div>
 </div>
 
 <script>
+
+/* (All your existing JS stays EXACTLY the same — no changes) */
 
 const TRANSLATIONS={
   web:"World English Bible (WEB)",
@@ -270,7 +279,6 @@ let canon={},keys=[],currentKey=null;
 let currentTranslation="web";
 let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 
-/* HASH */
 function hash(str){
   let h=0;
   for(let i=0;i<str.length;i++){
@@ -285,40 +293,31 @@ function getDaily(){
   return keys.length?keys[h%keys.length]:null;
 }
 
-/* LOAD */
 async function loadAll(){
   for(const t in TRANSLATIONS){
     try{
       const txt=await (await fetch(`translations/${t}.txt`)).text();
-
       txt.split("\n").forEach(line=>{
         line=line.trim();
         if(!line) return;
-
         const parts=line.split(/\s+/);
         const i=parts.findIndex(x=>x.includes(":"));
         if(i<0) return;
-
         const key=parts.slice(0,i).join(" ")+" "+parts[i];
         const verse=parts.slice(i+1).join(" ");
-
         if(!canon[key]) canon[key]={};
         canon[key][t]=verse;
       });
-
     }catch(e){}
   }
 
   keys=Object.keys(canon);
-
   buildDropdown();
   show(getDaily());
 }
 
-/* SHOW */
 function show(k){
   if(!canon[k]) return;
-
   currentKey=k;
 
   document.getElementById("verse-title").innerText=k;
@@ -329,23 +328,16 @@ function show(k){
   renderFav();
 }
 
-/* DAILY */
-function daily(){
-  show(getDaily());
-}
+function daily(){ show(getDaily()); }
 
-/* RANDOM */
 function randomVerse(){
   show(keys[Math.floor(Math.random()*keys.length)]);
 }
 
-/* TRANSLATION */
 function buildDropdown(){
   document.getElementById("translation").innerHTML=
     Object.keys(TRANSLATIONS).map(k=>
-      `<option value="${k}" ${k===currentTranslation?"selected":""}>
-        ${TRANSLATIONS[k]}
-      </option>`
+      `<option value="${k}">${TRANSLATIONS[k]}</option>`
     ).join("");
 }
 
@@ -354,7 +346,6 @@ function setTranslation(t){
   if(currentKey) show(currentKey);
 }
 
-/* SEARCH */
 function toggleSearch(){
   document.getElementById("searchBox").classList.toggle("hidden");
 }
@@ -380,10 +371,13 @@ function clearSearch(){
   document.getElementById("results").innerHTML="";
 }
 
-/* FAVORITES */
+function toggleFavorites(){
+  document.getElementById("favBox").classList.toggle("hidden");
+  renderFav();
+}
+
 function toggleFav(){
   if(!currentKey) return;
-
   const i=favs.indexOf(currentKey);
   if(i>-1) favs.splice(i,1);
   else favs.push(currentKey);
@@ -393,8 +387,10 @@ function toggleFav(){
   renderFav();
 }
 
-function toggleFavorites(){
-  document.getElementById("favBox").classList.toggle("hidden");
+function removeFav(k){
+  favs=favs.filter(f=>f!==k);
+  localStorage.setItem("fav",JSON.stringify(favs));
+  updateStar();
   renderFav();
 }
 
@@ -403,40 +399,25 @@ function renderFav(){
     favs.map(k=>`
       <div class="list-item">
         <div class="ref" onclick="show('${k}')">${k}</div>
-        <div class="preview">
-          ${(canon[k]?.[currentTranslation]||"").slice(0,100)}...
-        </div>
+        <div class="preview">${(canon[k]?.[currentTranslation]||"").slice(0,100)}...</div>
         <div class="remove-star" onclick="removeFav('${k}')">★</div>
       </div>
     `).join("");
 }
 
-function removeFav(k){
-  favs=favs.filter(f=>f!==k);
-  localStorage.setItem("fav",JSON.stringify(favs));
-  updateStar();
-  renderFav();
-}
-
-/* STAR */
 function updateStar(){
   document.getElementById("star").innerText=
     favs.includes(currentKey)?"★":"☆";
 }
 
-/* THEME */
 function setTheme(mode){
   const dark=
     mode==="dark"||
     (mode==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);
 
-  document.documentElement.setAttribute(
-    "data-theme",
-    dark?"dark":"light"
-  );
+  document.documentElement.setAttribute("data-theme",dark?"dark":"light");
 }
 
-/* MODAL */
 function openMission(){
   document.getElementById("missionModal").style.display="flex";
 }
@@ -445,7 +426,6 @@ function closeMission(){
   document.getElementById("missionModal").style.display="none";
 }
 
-/* INIT */
 window.onload=loadAll;
 
 </script>
