@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unshaken v1.7.11</title>
+<title>Unshaken v1.7.12</title>
 
 <style>
 :root{
@@ -42,7 +42,6 @@ body{
   text-align:center;
   padding:12px;
   font-weight:700;
-  z-index:10;
 }
 
 .container{
@@ -78,11 +77,8 @@ button,input,select{
 button{cursor:pointer;}
 button:hover{background:var(--accent);color:#fff;}
 
-.hidden{
-  display:none !important;
-}
+.hidden{display:none !important;}
 
-/* VERSE */
 .verse-ref{
   font-weight:700;
   font-size:18px;
@@ -95,7 +91,6 @@ button:hover{background:var(--accent);color:#fff;}
   line-height:1.65;
 }
 
-/* STAR */
 .star{
   font-size:24px;
   cursor:pointer;
@@ -103,14 +98,17 @@ button:hover{background:var(--accent);color:#fff;}
   margin-top:10px;
 }
 
-/* SEARCH RESULTS */
 .result{
   padding:10px 0;
   border-bottom:1px solid rgba(0,0,0,.08);
   cursor:pointer;
 }
 
-/* FOOTERS */
+.small{
+  font-size:12px;
+  color:var(--muted);
+}
+
 .footer-left{
   position:fixed;
   left:10px;
@@ -166,16 +164,21 @@ button:hover{background:var(--accent);color:#fff;}
 
 <!-- CONTROLS -->
 <div class="card">
+
   <button onclick="loadDaily()">Daily</button>
   <button onclick="loadRandom()">Random</button>
   <button onclick="toggleSearch()">Search</button>
   <button onclick="toggleFavorites()">Favorites</button>
+
+  <!-- AUTO GENERATED TRANSLATIONS -->
+  <select id="translationSelect" onchange="changeTranslation(this.value)"></select>
 
   <select onchange="setTheme(this.value)">
     <option value="system">System</option>
     <option value="light">Day</option>
     <option value="dark">Night</option>
   </select>
+
 </div>
 
 <!-- SEARCH -->
@@ -184,7 +187,6 @@ button:hover{background:var(--accent);color:#fff;}
   <input id="searchInput" placeholder="Search...">
   <button onclick="runSearch()">Search</button>
   <button onclick="clearSearch()">Clear</button>
-
   <div id="searchResults"></div>
 </div>
 
@@ -209,13 +211,13 @@ button:hover{background:var(--accent);color:#fff;}
 </div>
 
 <!-- FOOTERS -->
-<div class="footer-left">v1.7.11</div>
+<div class="footer-left">v1.7.12</div>
 
 <div class="footer-right" onclick="toggleMission()">
   est. 2013 — The Parker Family
 </div>
 
-<!-- MISSION MODAL (FIXED) -->
+<!-- MISSION MODAL -->
 <div id="missionModal" class="mission-modal hidden">
   <div class="mission-card">
     <div class="section-title">Family Mission</div>
@@ -226,18 +228,44 @@ button:hover{background:var(--accent);color:#fff;}
 
 <script>
 
+/* ================= TRANSLATIONS (NEW SYSTEM) ================= */
+
+const TRANSLATIONS = {
+  web:  { file: "translations/web.txt",  name: "World English Bible (WEB)" },
+  kjv:  { file: "translations/kjv.txt",  name: "King James Version (KJV)" },
+  asv:  { file: "translations/asv.txt",  name: "American Standard Version (ASV)" },
+  akjv: { file: "translations/akjv.txt", name: "American King James Version (AKJV)" },
+  cpdv: { file: "translations/cpdv.txt", name: "Catholic Public Domain Version (CPDV)" }
+};
+
+let currentTranslation = "web";
+
+/* ================= STATE ================= */
+
 let bibleIndex = [];
 let current = null;
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
-const BIBLE_PATH = "translations/web.txt";
+/* ================= INIT DROPDOWN ================= */
 
-/* LOAD BIBLE */
+function buildTranslationDropdown(){
+  const sel = document.getElementById("translationSelect");
+
+  sel.innerHTML = Object.keys(TRANSLATIONS).map(key =>
+    `<option value="${key}" ${key===currentTranslation?'selected':''}>
+      ${TRANSLATIONS[key].name}
+    </option>`
+  ).join("");
+}
+
+/* ================= LOAD BIBLE ================= */
+
 async function loadBible(){
-  const res = await fetch(BIBLE_PATH);
+  const res = await fetch(TRANSLATIONS[currentTranslation].file);
   const text = await res.text();
 
-  bibleIndex = text.split("\n")
+  bibleIndex = text
+    .split("\n")
     .map(l => l.trim())
     .filter(Boolean)
     .map(line => {
@@ -254,7 +282,15 @@ async function loadBible(){
   loadDaily();
 }
 
-/* HASH */
+/* ================= TRANSLATION SWITCH ================= */
+
+function changeTranslation(t){
+  currentTranslation = t;
+  loadBible();
+}
+
+/* ================= HASH ================= */
+
 function hashSeed(input){
   let h = 81213;
   for(let i=0;i<String(input).length;i++){
@@ -263,7 +299,8 @@ function hashSeed(input){
   return h;
 }
 
-/* DAILY / RANDOM */
+/* ================= DAILY / RANDOM ================= */
+
 function loadDaily(){
   const d = new Date().toISOString().split("T")[0];
   setVerse(bibleIndex[hashSeed(d) % bibleIndex.length]);
@@ -273,7 +310,8 @@ function loadRandom(){
   setVerse(bibleIndex[hashSeed(Date.now()) % bibleIndex.length]);
 }
 
-/* VERSE */
+/* ================= VERSE ================= */
+
 function setVerse(v){
   current = v;
 
@@ -285,13 +323,15 @@ function setVerse(v){
   updateDevotion(v);
 }
 
-/* DEVOTION */
+/* ================= DEVOTION ================= */
+
 function updateDevotion(v){
   document.getElementById("prayer").innerText = "Walk faithfully today.";
-  document.getElementById("reflection").innerText = "What is God teaching you?";
+  document.getElementById("reflection").innerText = "What is God showing you?";
 }
 
-/* FAVORITES */
+/* ================= FAVORITES ================= */
+
 function toggleFavorite(){
   const key = `${current.book} ${current.ref}`;
   const i = favorites.indexOf(key);
@@ -308,12 +348,14 @@ function updateStar(){
     favorites.includes(key) ? "★" : "☆";
 }
 
-/* SEARCH */
+/* ================= SEARCH ================= */
+
 function toggleSearch(){
   document.getElementById("searchBox").classList.toggle("hidden");
 }
 
-/* THEME */
+/* ================= THEME ================= */
+
 function setTheme(mode){
   const dark = mode === "dark" ||
     (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -321,7 +363,7 @@ function setTheme(mode){
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
 }
 
-/* ================= FIXED MISSION LOGIC ================= */
+/* ================= MISSION ================= */
 
 function getMissionStatement(){
   const theme = document.documentElement.getAttribute("data-theme");
@@ -329,32 +371,27 @@ function getMissionStatement(){
   const base =
   "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
 
-  if(theme === "dark"){
-    return base + " We trust God even in dark seasons.";
-  }
-  if(theme === "light"){
-    return base + " We walk in gratitude and purpose each day.";
-  }
+  if(theme === "dark") return base + " We trust God in the night.";
+  if(theme === "light") return base + " We walk in purpose each day.";
   return base + " We trust God in every season.";
 }
 
 function toggleMission(){
   const modal = document.getElementById("missionModal");
-  const text = document.getElementById("missionText");
 
-  const hidden = modal.classList.contains("hidden");
-
-  if(hidden){
-    text.innerText = getMissionStatement();
+  if(modal.classList.contains("hidden")){
+    document.getElementById("missionText").innerText = getMissionStatement();
     modal.classList.remove("hidden");
   } else {
     modal.classList.add("hidden");
   }
 }
 
-/* INIT */
+/* ================= INIT ================= */
+
 window.onload = () => {
   setTheme("system");
+  buildTranslationDropdown();
   loadBible();
 };
 
