@@ -118,36 +118,20 @@ button:hover{background:var(--accent);color:#fff;}
   width:min(520px,90%);
 }
 
-/* VERSE */
-.verse-ref{
-  font-size:12px;
-  color:var(--muted);
-  margin-bottom:6px;
-}
-
-.verse-text{
-  font-size:18px;
-  line-height:1.6;
-}
-
-/* SEARCH / FAVORITES */
-.result-card{
-  padding:10px;
-  margin:6px 0;
+/* ================= FAVORITES STAR ROW ================= */
+.fav-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px;
   border:1px solid var(--border);
   border-radius:10px;
+  margin:6px 0;
+}
+
+.fav-star{
   cursor:pointer;
-}
-
-.result-ref{
-  font-weight:700;
-  font-size:13px;
-}
-
-.result-preview{
-  font-size:12px;
-  color:var(--muted);
-  margin-top:4px;
+  font-size:18px;
 }
 </style>
 </head>
@@ -168,10 +152,7 @@ button:hover{background:var(--accent);color:#fff;}
 <div class="card">
   <button onclick="daily()">Daily</button>
   <button onclick="randomVerse()">Random</button>
-
-  <!-- FIXED: Search now guaranteed wired -->
   <button onclick="toggleSearch()">Search</button>
-
   <button onclick="toggleFavorites()">Favorites</button>
 
   <select id="translation" onchange="setTranslation(this.value)"></select>
@@ -187,7 +168,7 @@ button:hover{background:var(--accent);color:#fff;}
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
   <input id="q" oninput="instantSearch()" placeholder="Search verses...">
-  <button onclick="clearSearch()">Clear</button>
+  <button onclick="clearSearch()">Clear Search</button>
   <div id="results"></div>
 </div>
 
@@ -229,12 +210,14 @@ est. 2013 — The Parker Family
 </div>
 
 <script>
-
 /* ================= STATE ================= */
 
 const TRANSLATIONS = {
   web:"World English Bible (WEB)",
-  kjv:"King James Version (KJV)"
+  kjv:"King James Version (KJV)",
+  asv:"American Standard Version (ASV)",
+  akjv:"American King James Version (AKJV)",
+  cpdv:"Catholic Public Domain Version (CPDV)"
 };
 
 const DAILY_SEED = 81213;
@@ -257,8 +240,11 @@ function simpleHash(str){
 
 function getDailyKey(){
   const today=new Date().toDateString();
-  const hash=simpleHash(today + DAILY_SEED);
-  return keys.length ? keys[hash % keys.length] : null;
+  const seed = today + DAILY_SEED;
+  const hash = simpleHash(seed);
+
+  if(!keys.length) return null;
+  return keys[hash % keys.length];
 }
 
 /* ================= THEME ================= */
@@ -294,13 +280,18 @@ async function loadAll(){
         if(!canon[key]) canon[key]={};
         canon[key][t]=verse;
       });
-    } catch(e){}
+
+    } catch(e){
+      console.error("Load error:",t,e);
+    }
   }
 
-  keys=Object.keys(canon);
+  keys = Object.keys(canon).filter(k=>Object.keys(canon[k]).length);
 
   buildDropdown();
-  show(getDailyKey());
+
+  const dk = getDailyKey();
+  show(dk);
 }
 
 /* ================= SHOW ================= */
@@ -310,9 +301,14 @@ function show(key){
 
   currentKey=key;
 
+  const txt =
+    canon[key][currentTranslation] ||
+    canon[key].web ||
+    "Verse unavailable";
+
   document.getElementById("verse").innerHTML=`
-    <div class="verse-ref">${key}</div>
-    <div class="verse-text">${canon[key][currentTranslation]||""}</div>
+    <div class="section-title">${key}</div>
+    <div>${txt}</div>
   `;
 
   updateStar();
@@ -321,13 +317,16 @@ function show(key){
 /* ================= DAILY ================= */
 
 function daily(){
-  show(getDailyKey());
+  const dk=getDailyKey();
+  if(dk) show(dk);
 }
 
 /* ================= RANDOM ================= */
 
 function randomVerse(){
-  show(keys[Math.floor(Math.random()*keys.length)]);
+  if(!keys.length) return;
+  const r = keys[Math.floor(Math.random()*keys.length)];
+  show(r);
 }
 
 /* ================= TRANSLATION ================= */
@@ -340,35 +339,30 @@ function setTranslation(t){
 /* ================= DROPDOWN ================= */
 
 function buildDropdown(){
-  document.getElementById("translation").innerHTML=
-    Object.keys(TRANSLATIONS).map(k=>
-      `<option value="${k}">${TRANSLATIONS[k]}</option>`
-    ).join("");
+  const sel=document.getElementById("translation");
+
+  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>
+    `<option value="${k}" ${k===currentTranslation?"selected":""}>
+      ${TRANSLATIONS[k]}
+    </option>`
+  ).join("");
 }
 
-/* ================= SEARCH (FIXED) ================= */
+/* ================= SEARCH ================= */
 
 function toggleSearch(){
-  const box=document.getElementById("searchBox");
-  box.classList.toggle("hidden");
+  document.getElementById("searchBox").classList.toggle("hidden");
 }
 
 function instantSearch(){
   const q=document.getElementById("q").value.toLowerCase();
 
   const res=keys.filter(k=>
-    (canon[k]?.[currentTranslation]||"").toLowerCase().includes(q)
+    (canon[k][currentTranslation]||"").toLowerCase().includes(q)
   ).slice(0,30);
 
   document.getElementById("results").innerHTML=
-    res.map(k=>`
-      <div class="result-card" onclick="show('${k}')">
-        <div class="result-ref">${k}</div>
-        <div class="result-preview">
-          ${(canon[k]?.[currentTranslation]||"").slice(0,90)}...
-        </div>
-      </div>
-    `).join("");
+    res.map(k=>`<div onclick="show('${k}')">${k}</div>`).join("");
 }
 
 function clearSearch(){
@@ -386,31 +380,39 @@ function toggleFav(){
   else favs.push(currentKey);
 
   localStorage.setItem("fav",JSON.stringify(favs));
-
+  renderFavs();
   updateStar();
-  renderFavs();
-}
-
-function toggleFavorites(){
-  document.getElementById("favBox").classList.toggle("hidden");
-  renderFavs();
-}
-
-function renderFavs(){
-  document.getElementById("favList").innerHTML=
-    favs.map(k=>`
-      <div class="result-card" onclick="show('${k}')">
-        <div class="result-ref">${k}</div>
-        <div class="result-preview">
-          ${(canon[k]?.[currentTranslation]||"").slice(0,90)}...
-        </div>
-      </div>
-    `).join("");
 }
 
 function updateStar(){
   document.getElementById("star").innerText =
     favs.includes(currentKey) ? "★" : "☆";
+}
+
+function renderFavs(){
+  document.getElementById("favList").innerHTML =
+    favs.map(k=>`
+      <div class="fav-row">
+        <div onclick="show('${k}')" style="flex:1;cursor:pointer;">
+          ${k}
+        </div>
+        <div class="fav-star" onclick="removeFav('${k}')">
+          ★
+        </div>
+      </div>
+    `).join("");
+}
+
+function removeFav(k){
+  favs = favs.filter(x => x !== k);
+  localStorage.setItem("fav", JSON.stringify(favs));
+  renderFavs();
+  updateStar();
+}
+
+function toggleFavorites(){
+  document.getElementById("favBox").classList.toggle("hidden");
+  renderFavs();
 }
 
 /* ================= MODAL ================= */
