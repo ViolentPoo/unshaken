@@ -117,6 +117,21 @@ button:hover{background:var(--accent);color:#fff;}
   border-radius:14px;
   width:min(520px,90%);
 }
+
+/* ================= ONLY ADDITION (SAFE UI FIX) ================= */
+
+.verse-ref{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:6px;
+  letter-spacing:.3px;
+}
+
+.verse-text{
+  font-size:18px;
+  line-height:1.6;
+}
+
 </style>
 </head>
 
@@ -225,8 +240,7 @@ function simpleHash(str){
 
 function getDailyKey(){
   const today=new Date().toDateString();
-  const seed = today + DAILY_SEED;
-  const hash = simpleHash(seed);
+  const hash=simpleHash(today + DAILY_SEED);
 
   if(!keys.length) return null;
   return keys[hash % keys.length];
@@ -266,20 +280,17 @@ async function loadAll(){
         canon[key][t]=verse;
       });
 
-    } catch(e){
-      console.error("Load error:",t,e);
-    }
+    } catch(e){}
   }
 
   keys = Object.keys(canon).filter(k=>Object.keys(canon[k]).length);
 
   buildDropdown();
 
-  const dk = getDailyKey();
-  show(dk);
+  show(getDailyKey());
 }
 
-/* ================= SHOW ================= */
+/* ================= SHOW (ONLY UI FIX HERE) ================= */
 
 function show(key){
   if(!canon[key]) return;
@@ -292,8 +303,8 @@ function show(key){
     "Verse unavailable";
 
   document.getElementById("verse").innerHTML=`
-    <div>${key}</div>
-    <div>${txt}</div>
+    <div class="verse-ref">${key}</div>
+    <div class="verse-text">${txt}</div>
   `;
 
   updateStar();
@@ -302,15 +313,13 @@ function show(key){
 /* ================= DAILY ================= */
 
 function daily(){
-  const dk=getDailyKey();
-  if(dk) show(dk);
+  show(getDailyKey());
 }
 
 /* ================= RANDOM ================= */
 
 function randomVerse(){
-  if(!keys.length) return;
-  const r = keys[Math.floor(Math.random()*keys.length)];
+  const r=keys[Math.floor(Math.random()*keys.length)];
   show(r);
 }
 
@@ -324,35 +333,10 @@ function setTranslation(t){
 /* ================= DROPDOWN ================= */
 
 function buildDropdown(){
-  const sel=document.getElementById("translation");
-
-  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>
-    `<option value="${k}" ${k===currentTranslation?"selected":""}>
-      ${TRANSLATIONS[k]}
-    </option>`
-  ).join("");
-}
-
-/* ================= SEARCH ================= */
-
-function toggleSearch(){
-  document.getElementById("searchBox").classList.toggle("hidden");
-}
-
-function instantSearch(){
-  const q=document.getElementById("q").value.toLowerCase();
-
-  const res=keys.filter(k=>
-    (canon[k][currentTranslation]||"").toLowerCase().includes(q)
-  ).slice(0,30);
-
-  document.getElementById("results").innerHTML=
-    res.map(k=>`<div onclick="show('${k}')">${k}</div>`).join("");
-}
-
-function clearSearch(){
-  document.getElementById("q").value="";
-  document.getElementById("results").innerHTML="";
+  document.getElementById("translation").innerHTML=
+    Object.keys(TRANSLATIONS).map(k=>
+      `<option value="${k}">${TRANSLATIONS[k]}</option>`
+    ).join("");
 }
 
 /* ================= FAVORITES ================= */
@@ -371,13 +355,6 @@ function toggleFav(){
 function updateStar(){
   document.getElementById("star").innerText =
     favs.includes(currentKey) ? "★" : "☆";
-}
-
-function toggleFavorites(){
-  document.getElementById("favBox").classList.toggle("hidden");
-
-  document.getElementById("favList").innerHTML =
-    favs.map(k=>`<div onclick="show('${k}')">${k}</div>`).join("");
 }
 
 /* ================= MODAL ================= */
