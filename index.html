@@ -155,7 +155,6 @@ input{
   color:var(--muted);
 }
 
-/* ⭐ FAVORITES IMPROVED LAYOUT */
 .fav-row{
   display:flex;
   justify-content:space-between;
@@ -168,7 +167,6 @@ input{
   cursor:pointer;
   color:var(--accent);
   user-select:none;
-  padding-left:6px;
 }
 
 .remove-star:hover{
@@ -210,12 +208,10 @@ input{
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
 
-  <input
-    id="q"
-    placeholder="Type to search verses..."
-    oninput="instantSearch()"
-    onkeydown="handleSearchKey(event)"
-  >
+  <input id="q"
+         placeholder="Type to search verses..."
+         oninput="instantSearch()"
+         onkeydown="handleSearchKey(event)">
 
   <button onclick="clearSearch()">Clear Search</button>
 
@@ -275,10 +271,7 @@ function setTheme(mode){
     (mode === "system" &&
       window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-  document.documentElement.setAttribute(
-    "data-theme",
-    dark ? "dark" : "light"
-  );
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
 }
 
 /* ================= LOAD ================= */
@@ -316,8 +309,20 @@ async function loadAll(){
     ).toLowerCase();
   });
 
-  buildDropdown();
+  buildDropdown();   // ✅ FIXED (was missing)
   daily();
+}
+
+/* ================= DROPDOWN FIX ================= */
+
+function buildDropdown(){
+  const sel = document.getElementById("translation");
+
+  sel.innerHTML = Object.keys(TRANSLATIONS).map(k => `
+    <option value="${k}" ${k === currentTranslation ? "selected" : ""}>
+      ${TRANSLATIONS[k].name}
+    </option>
+  `).join("");
 }
 
 /* ================= SHOW ================= */
@@ -359,11 +364,13 @@ function randomVerse(){
 
 function setTranslation(t){
   currentTranslation = t;
+
   if(currentKey) show(currentKey);
+
   renderFav();
 }
 
-/* ================= FAVORITES (FIXED & STABLE) ================= */
+/* ================= FAVORITES ================= */
 
 function toggleFav(){
   if(!currentKey) return;
@@ -381,6 +388,7 @@ function toggleFav(){
 
 function updateFavStar(){
   if(!currentKey) return;
+
   document.getElementById("star").innerText =
     favs.includes(currentKey) ? "★" : "☆";
 }
@@ -390,7 +398,6 @@ function toggleFavorites(){
   renderFav();
 }
 
-/* ⭐ CLEAN FAVORITES RENDER */
 function renderFav(){
   const box = document.getElementById("favList");
 
@@ -402,7 +409,6 @@ function renderFav(){
   box.innerHTML = favs.map(k => `
     <div class="result-card">
       <div class="fav-row">
-        
         <div onclick="show('${escapeQuotes(k)}')" style="flex:1">
           <div class="result-ref">${k}</div>
           <div class="result-text">
@@ -410,12 +416,10 @@ function renderFav(){
           </div>
         </div>
 
-        <!-- ⭐ REMOVE -->
         <div class="remove-star"
              onclick="event.stopPropagation(); removeFav('${escapeQuotes(k)}')">
           ★
         </div>
-
       </div>
     </div>
   `).join("");
