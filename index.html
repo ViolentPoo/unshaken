@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unshaken v1.8.4</title>
+<title>Unshaken v1.8.5</title>
 
 <style>
 :root{
@@ -134,7 +134,6 @@ button:hover{background:var(--accent);color:#fff;}
   <button onclick="toggleSearch()">Search</button>
   <button onclick="toggleFavorites()">Favorites</button>
 
-  <!-- FULL TRANSLATION NAMES RESTORED -->
   <select id="translation" onchange="setTranslation(this.value)"></select>
 
   <select onchange="setTheme(this.value)">
@@ -148,8 +147,12 @@ button:hover{background:var(--accent);color:#fff;}
 <!-- SEARCH -->
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
+
   <input id="q" placeholder="Search verse...">
-  <button onclick="search()">Go</button>
+
+  <button onclick="search()">Search</button>
+  <button onclick="clearSearch()">Clear Search</button>
+
   <div id="results"></div>
 </div>
 
@@ -173,7 +176,7 @@ button:hover{background:var(--accent);color:#fff;}
 
 </div>
 
-<div class="footer-left">v1.8.4</div>
+<div class="footer-left">v1.8.5</div>
 
 <div class="footer-right" onclick="alert(mission)">
   est. 2013 — The Parker Family
@@ -184,21 +187,15 @@ button:hover{background:var(--accent);color:#fff;}
 /* ================= TRANSLATIONS ================= */
 
 const TRANSLATIONS = {
-  web:  { file:"translations/web.txt",  name:"World English Bible (WEB)" },
-  kjv:  { file:"translations/kjv.txt",  name:"King James Version (KJV)" },
-  asv:  { file:"translations/asv.txt",  name:"American Standard Version (ASV)" },
-  akjv: { file:"translations/akjv.txt", name:"American King James Version (AKJV)" },
-  cpdv: { file:"translations/cpdv.txt", name:"Catholic Public Domain Version (CPDV)" }
+  web:"translations/web.txt",
+  kjv:"translations/kjv.txt",
+  asv:"translations/asv.txt",
+  akjv:"translations/akjv.txt",
+  cpdv:"translations/cpdv.txt"
 };
 
 let currentTranslation="web";
-
-/* ================= CORE DATA ================= */
-
-let canon={};
-let keys=[];
-let currentKey=null;
-
+let canon={}, keys=[], currentKey=null;
 let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 
 /* ================= THEME ================= */
@@ -214,10 +211,8 @@ function setTheme(mode){
 /* ================= LOAD ================= */
 
 async function loadAll(){
-  canon={};
-
   for(const t in TRANSLATIONS){
-    const txt=await (await fetch(TRANSLATIONS[t].file)).text();
+    const txt=await (await fetch(TRANSLATIONS[t])).text();
 
     txt.split("\n").forEach(line=>{
       line=line.trim();
@@ -239,13 +234,13 @@ async function loadAll(){
   daily();
 }
 
-/* ================= DROPDOWN (FULL NAMES) ================= */
+/* ================= DROPDOWN ================= */
 
 function buildDropdown(){
   const sel=document.getElementById("translation");
 
   sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>
-    `<option value="${k}">${TRANSLATIONS[k].name}</option>`
+    `<option value="${k}">${k.toUpperCase()}</option>`
   ).join("");
 }
 
@@ -262,6 +257,14 @@ function show(key){
 
   document.getElementById("prayer").innerText="Walk faithfully today.";
   document.getElementById("reflection").innerText="What is God showing you?";
+}
+
+/* ================= HISTORY (safe optional) ================= */
+
+function addHistory(key){
+  let h=JSON.parse(localStorage.getItem("history")||"[]");
+  h.unshift(key);
+  localStorage.setItem("history",JSON.stringify(h.slice(0,100)));
 }
 
 /* ================= SEED ================= */
@@ -287,47 +290,6 @@ function setTranslation(t){
   if(currentKey) show(currentKey);
 }
 
-/* ================= FAVORITES ================= */
-
-function toggleFav(){
-  if(!currentKey) return;
-
-  const i=favs.indexOf(currentKey);
-
-  if(i>-1) favs.splice(i,1);
-  else favs.push(currentKey);
-
-  localStorage.setItem("fav",JSON.stringify(favs));
-
-  updateFav();
-  renderFav();
-}
-
-function updateFav(){
-  if(!currentKey) return;
-
-  document.getElementById("star").innerText =
-    favs.includes(currentKey) ? "★" : "☆";
-}
-
-function toggleFavorites(){
-  document.getElementById("favBox").classList.toggle("hidden");
-  renderFav();
-}
-
-function renderFav(){
-  const box=document.getElementById("favList");
-  box.innerHTML="";
-
-  favs.forEach(f=>{
-    const div=document.createElement("div");
-    div.style.cursor="pointer";
-    div.innerText=f;
-    div.onclick=()=>show(f);
-    box.appendChild(div);
-  });
-}
-
 /* ================= SEARCH ================= */
 
 function toggleSearch(){
@@ -349,6 +311,53 @@ function search(){
         <span class="small">${canon[k][currentTranslation]?.slice(0,120)||""}</span>
       </div>`
     ).join("");
+}
+
+/* ================= CLEAR SEARCH (FIXED) ================= */
+
+function clearSearch(){
+  document.getElementById("q").value="";
+  document.getElementById("results").innerHTML="";
+}
+
+/* ================= FAVORITES ================= */
+
+function toggleFav(){
+  if(!currentKey) return;
+
+  const i=favs.indexOf(currentKey);
+
+  if(i>-1) favs.splice(i,1);
+  else favs.push(currentKey);
+
+  localStorage.setItem("fav",JSON.stringify(favs));
+
+  updateFav();
+  renderFav();
+}
+
+function updateFav(){
+  if(!currentKey) return;
+  document.getElementById("star").innerText =
+    favs.includes(currentKey) ? "★" : "☆";
+}
+
+function toggleFavorites(){
+  document.getElementById("favBox").classList.toggle("hidden");
+  renderFav();
+}
+
+function renderFav(){
+  const box=document.getElementById("favList");
+  box.innerHTML="";
+
+  favs.forEach(f=>{
+    const div=document.createElement("div");
+    div.style.cursor="pointer";
+    div.innerText=f;
+    div.onclick=()=>show(f);
+    box.appendChild(div);
+  });
 }
 
 /* ================= MISSION ================= */
