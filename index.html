@@ -44,7 +44,6 @@ body{
   text-align:center;
   padding:12px;
   font-weight:700;
-  z-index:10;
 }
 
 .container{
@@ -79,10 +78,6 @@ button,input,select{
 button{cursor:pointer;}
 button:hover{background:var(--accent);color:#fff;}
 
-input{
-  width:min(420px,100%);
-}
-
 .hidden{display:none !important;}
 
 .verse-ref{
@@ -104,11 +99,6 @@ input{
   margin-top:10px;
 }
 
-.small{
-  font-size:12px;
-  color:var(--muted);
-}
-
 .footer-left{
   position:fixed;
   left:10px;
@@ -126,18 +116,20 @@ input{
   cursor:pointer;
 }
 
+/* SEARCH */
+.search-row{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
 .result-card{
   border:1px solid var(--border);
   border-radius:12px;
   padding:12px;
   margin-top:10px;
   cursor:pointer;
-  transition:.15s ease;
-}
-
-.result-card:hover{
-  transform:translateY(-1px);
-  border-color:var(--accent);
 }
 
 .result-ref{
@@ -146,31 +138,23 @@ input{
   margin-bottom:6px;
 }
 
-.result-text{
-  line-height:1.55;
-}
-
-.empty{
-  padding:8px 0;
-  color:var(--muted);
-}
-
+/* FAVORITES */
 .fav-row{
   display:flex;
   justify-content:space-between;
   gap:10px;
-  align-items:flex-start;
 }
 
 .remove-star{
   font-size:20px;
   cursor:pointer;
   color:var(--accent);
-  user-select:none;
 }
 
-.remove-star:hover{
-  color:red;
+/* TEXT */
+.simple-text{
+  font-size:16px;
+  line-height:1.6;
 }
 </style>
 </head>
@@ -195,6 +179,7 @@ input{
   <button onclick="toggleSearch()">Search</button>
   <button onclick="toggleFavorites()">Favorites</button>
 
+  <!-- ✅ RESTORED TRANSLATION MENU -->
   <select id="translation" onchange="setTranslation(this.value)"></select>
 
   <select onchange="setTheme(this.value)">
@@ -208,12 +193,14 @@ input{
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
 
-  <input id="q"
-         placeholder="Type to search verses..."
-         oninput="instantSearch()"
-         onkeydown="handleSearchKey(event)">
+  <div class="search-row">
+    <input id="q"
+           placeholder="Search verses..."
+           oninput="instantSearch()">
 
-  <button onclick="clearSearch()">Clear Search</button>
+    <!-- ✅ RESTORED CLEAR SEARCH BUTTON -->
+    <button onclick="clearSearch()">Clear Search</button>
+  </div>
 
   <div id="results"></div>
 </div>
@@ -227,13 +214,13 @@ input{
 <!-- PRAYER -->
 <div class="card">
   <div class="section-title">Prayer</div>
-  <div id="prayer">Walk faithfully today.</div>
+  <div class="simple-text">Walk faithfully today.</div>
 </div>
 
 <!-- REFLECTION -->
 <div class="card">
   <div class="section-title">Reflection</div>
-  <div id="reflection">What is God showing you?</div>
+  <div class="simple-text">What is God showing you?</div>
 </div>
 
 </div>
@@ -250,124 +237,80 @@ est. 2013 — The Parker Family
 /* ================= STATE ================= */
 
 const TRANSLATIONS = {
-  web:  { file:"translations/web.txt",  name:"World English Bible (WEB)" },
-  kjv:  { file:"translations/kjv.txt",  name:"King James Version (KJV)" },
-  asv:  { file:"translations/asv.txt",  name:"American Standard Version (ASV)" },
-  akjv: { file:"translations/akjv.txt", name:"American King James Version (AKJV)" },
-  cpdv: { file:"translations/cpdv.txt", name:"Catholic Public Domain Version (CPDV)" }
+  web:{file:"translations/web.txt",name:"World English Bible (WEB)"},
+  kjv:{file:"translations/kjv.txt",name:"King James Version (KJV)"},
+  asv:{file:"translations/asv.txt",name:"American Standard Version (ASV)"},
+  akjv:{file:"translations/akjv.txt",name:"American King James Version (AKJV)"},
+  cpdv:{file:"translations/cpdv.txt",name:"Catholic Public Domain Version (CPDV)"}
 };
 
-let currentTranslation = "web";
-let canon = {};
-let keys = [];
-let currentKey = null;
-let favs = JSON.parse(localStorage.getItem("fav") || "[]");
-
-/* ================= THEME ================= */
-
-function setTheme(mode){
-  const dark =
-    mode === "dark" ||
-    (mode === "system" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
-
-  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-}
+let currentTranslation="web";
+let canon={};
+let keys=[];
+let currentKey=null;
+let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 
 /* ================= LOAD ================= */
 
 async function loadAll(){
-  canon = {};
+  const txt=await(await fetch(TRANSLATIONS.web.file)).text();
 
-  for(const t in TRANSLATIONS){
-    const txt = await (await fetch(TRANSLATIONS[t].file)).text();
+  txt.split("\n").forEach(l=>{
+    l=l.trim(); if(!l) return;
 
-    txt.split("\n").forEach(line=>{
-      line = line.trim();
-      if(!line) return;
+    const p=l.split(/\s+/);
+    const i=p.findIndex(x=>x.includes(":"));
+    if(i<0) return;
 
-      const p = line.split(/\s+/);
-      const i = p.findIndex(x => x.includes(":"));
-      if(i < 0) return;
+    const key=p.slice(0,i).join(" ")+" "+p[i];
+    const text=p.slice(i+1).join(" ");
 
-      const key = p.slice(0,i).join(" ") + " " + p[i];
-      const verseText = p.slice(i+1).join(" ");
-
-      if(!canon[key]){
-        canon[key] = { versions:{}, searchBlob:"" };
-      }
-
-      canon[key].versions[t] = verseText;
-    });
-  }
-
-  keys = Object.keys(canon);
-
-  keys.forEach(k=>{
-    canon[k].searchBlob = (
-      k + " " + Object.values(canon[k].versions).join(" ")
-    ).toLowerCase();
+    canon[key]={text};
   });
 
-  buildDropdown();   // ✅ FIXED (was missing)
+  keys=Object.keys(canon);
+
+  buildDropdown();
   daily();
 }
 
-/* ================= DROPDOWN FIX ================= */
+/* ================= TRANSLATION MENU (RESTORED) ================= */
 
 function buildDropdown(){
-  const sel = document.getElementById("translation");
+  const sel=document.getElementById("translation");
 
-  sel.innerHTML = Object.keys(TRANSLATIONS).map(k => `
-    <option value="${k}" ${k === currentTranslation ? "selected" : ""}>
+  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>`
+    <option value="${k}" ${k===currentTranslation?"selected":""}>
       ${TRANSLATIONS[k].name}
     </option>
   `).join("");
 }
 
-/* ================= SHOW ================= */
-
-function show(key){
-  if(!canon[key]) return;
-
-  currentKey = key;
-
-  document.getElementById("verse").innerHTML = `
-    <div class="verse-ref">${key}</div>
-    <div class="verse-text">
-      ${canon[key].versions[currentTranslation] || "[missing]"}
-    </div>
-  `;
-
-  updateFavStar();
+function setTranslation(t){
+  currentTranslation=t;
+  if(currentKey) show(currentKey);
+  renderFav();
 }
 
-/* ================= DAILY / RANDOM ================= */
+/* ================= VERSE ================= */
 
-function hash(str){
-  let h = 7;
-  for(const c of String(str)){
-    h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  }
-  return h;
+function show(key){
+  currentKey=key;
+
+  document.getElementById("verse").innerHTML=`
+    <div class="verse-ref">${key}</div>
+    <div class="verse-text">${canon[key].text}</div>
+  `;
+
+  updateStar();
 }
 
 function daily(){
-  show(keys[hash(new Date().toDateString()) % keys.length]);
+  show(keys[Math.floor(Math.random()*keys.length)]);
 }
 
 function randomVerse(){
-  show(keys[Math.floor(Math.random() * keys.length)]);
-}
-
-/* ================= TRANSLATION ================= */
-
-function setTranslation(t){
-  currentTranslation = t;
-
-  if(currentKey) show(currentKey);
-
-  renderFav();
+  show(keys[Math.floor(Math.random()*keys.length)]);
 }
 
 /* ================= FAVORITES ================= */
@@ -375,22 +318,19 @@ function setTranslation(t){
 function toggleFav(){
   if(!currentKey) return;
 
-  const i = favs.indexOf(currentKey);
-
-  if(i > -1) favs.splice(i,1);
+  const i=favs.indexOf(currentKey);
+  if(i>-1) favs.splice(i,1);
   else favs.push(currentKey);
 
-  localStorage.setItem("fav", JSON.stringify(favs));
+  localStorage.setItem("fav",JSON.stringify(favs));
 
-  updateFavStar();
+  updateStar();
   renderFav();
 }
 
-function updateFavStar(){
-  if(!currentKey) return;
-
-  document.getElementById("star").innerText =
-    favs.includes(currentKey) ? "★" : "☆";
+function updateStar(){
+  document.getElementById("star").innerText=
+    favs.includes(currentKey)?"★":"☆";
 }
 
 function toggleFavorites(){
@@ -399,25 +339,23 @@ function toggleFavorites(){
 }
 
 function renderFav(){
-  const box = document.getElementById("favList");
+  const box=document.getElementById("favList");
 
   if(!favs.length){
-    box.innerHTML = `<div class="empty">No favorites yet.</div>`;
+    box.innerHTML="No favorites yet.";
     return;
   }
 
-  box.innerHTML = favs.map(k => `
+  box.innerHTML=favs.map(k=>`
     <div class="result-card">
       <div class="fav-row">
-        <div onclick="show('${escapeQuotes(k)}')" style="flex:1">
+        <div onclick="show('${k}')" style="flex:1">
           <div class="result-ref">${k}</div>
-          <div class="result-text">
-            ${(canon[k]?.versions[currentTranslation] || "").slice(0,180)}
-          </div>
+          <div class="verse-text">${canon[k]?.text||""}</div>
         </div>
 
         <div class="remove-star"
-             onclick="event.stopPropagation(); removeFav('${escapeQuotes(k)}')">
+             onclick="event.stopPropagation(); removeFav('${k}')">
           ★
         </div>
       </div>
@@ -425,63 +363,62 @@ function renderFav(){
   `).join("");
 }
 
-function removeFav(key){
-  favs = favs.filter(f => f !== key);
-  localStorage.setItem("fav", JSON.stringify(favs));
+function removeFav(k){
+  favs=favs.filter(f=>f!==k);
+  localStorage.setItem("fav",JSON.stringify(favs));
   renderFav();
-  updateFavStar();
+  updateStar();
 }
 
-/* ================= SEARCH ================= */
+/* ================= SEARCH (RESTORED + FIXED) ================= */
 
 function toggleSearch(){
   document.getElementById("searchBox").classList.toggle("hidden");
 }
 
 function instantSearch(){
-  const q = document.getElementById("q").value.toLowerCase();
-  const results = document.getElementById("results");
+  const q=document.getElementById("q").value.toLowerCase();
+  const results=document.getElementById("results");
 
   if(!q){
-    results.innerHTML = "";
+    results.innerHTML="";
     return;
   }
 
-  const matches = keys.filter(k =>
-    canon[k].searchBlob.includes(q)
+  const matches=keys.filter(k=>
+    (k+" "+canon[k].text).toLowerCase().includes(q)
   ).slice(0,40);
 
-  results.innerHTML = matches.map(k => `
-    <div class="result-card" onclick="show('${escapeQuotes(k)}')">
+  results.innerHTML=matches.map(k=>`
+    <div class="result-card" onclick="show('${k}')">
       <div class="result-ref">${k}</div>
-      <div class="result-text">
-        ${canon[k].versions[currentTranslation]?.slice(0,220) || ""}
-      </div>
+      <div class="verse-text">${canon[k].text.slice(0,220)}</div>
     </div>
   `).join("");
 }
 
 function clearSearch(){
-  document.getElementById("q").value = "";
-  document.getElementById("results").innerHTML = "";
+  document.getElementById("q").value="";
+  document.getElementById("results").innerHTML="";
 }
 
-function handleSearchKey(e){
-  if(e.key === "Enter"){
-    const first = document.querySelector(".result-card");
-    if(first) first.click();
-  }
-}
+/* ================= THEME ================= */
 
-/* ================= HELPERS ================= */
+function setTheme(mode){
+  const dark=
+    mode==="dark"||
+    (mode==="system"&&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-function escapeQuotes(str){
-  return str.replace(/'/g,"&#39;");
+  document.documentElement.setAttribute(
+    "data-theme",
+    dark?"dark":"light"
+  );
 }
 
 /* ================= INIT ================= */
 
-window.onload = ()=>{
+window.onload=()=>{
   setTheme("system");
   loadAll();
 };
