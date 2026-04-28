@@ -56,7 +56,14 @@ body{
   box-shadow:0 4px 12px rgba(0,0,0,.06);
 }
 
-button,select,input{
+.section-title{
+  font-size:14px;
+  font-weight:700;
+  color:var(--accent);
+  margin-bottom:10px;
+}
+
+button,input,select{
   padding:8px 10px;
   border-radius:8px;
   border:1px solid var(--border);
@@ -69,8 +76,15 @@ button,select,input{
 button{cursor:pointer;}
 button:hover{background:var(--accent);color:#fff;}
 
-.star{font-size:26px;cursor:pointer;}
+.hidden{display:none !important;}
 
+.star{
+  font-size:26px;
+  cursor:pointer;
+  user-select:none;
+}
+
+/* FOOTER */
 .footer-left{
   position:fixed;
   left:10px;
@@ -105,7 +119,6 @@ button:hover{background:var(--accent);color:#fff;}
   border-radius:14px;
   width:min(520px,90%);
 }
-
 </style>
 </head>
 
@@ -115,18 +128,56 @@ button:hover{background:var(--accent);color:#fff;}
 
 <div class="container">
 
+<!-- VERSE -->
 <div class="card">
-  <div id="verse">Loading verses...</div>
+  <div id="verse">Loading...</div>
   <div class="star" id="star" onclick="toggleFav()">☆</div>
 </div>
 
+<!-- CONTROLS -->
 <div class="card">
   <button onclick="daily()">Daily</button>
   <button onclick="randomVerse()">Random</button>
+  <button onclick="toggleSearch()">Search</button>
+  <button onclick="toggleFavorites()">Favorites</button>
+
+  <select id="translation" onchange="setTranslation(this.value)"></select>
+  <select onchange="setTheme(this.value)">
+    <option value="system">System</option>
+    <option value="light">Day</option>
+    <option value="dark">Night</option>
+  </select>
+</div>
+
+<!-- SEARCH -->
+<div class="card hidden" id="searchBox">
+  <div class="section-title">Search</div>
+  <input id="q" oninput="instantSearch()" placeholder="Search verses...">
+  <button onclick="clearSearch()">Clear Search</button>
+  <div id="results"></div>
+</div>
+
+<!-- FAVORITES -->
+<div class="card hidden" id="favBox">
+  <div class="section-title">Favorites</div>
+  <div id="favList"></div>
+</div>
+
+<!-- PRAYER -->
+<div class="card">
+  <div class="section-title">Prayer</div>
+  <div id="prayer">Walk faithfully today.</div>
+</div>
+
+<!-- REFLECTION -->
+<div class="card">
+  <div class="section-title">Reflection</div>
+  <div id="reflection">What is God showing you?</div>
 </div>
 
 </div>
 
+<!-- FOOTER -->
 <div class="footer-left">Unshaken</div>
 
 <div class="footer-right" onclick="openMission()">
@@ -149,18 +200,37 @@ est. 2013 — The Parker Family
 
 /* ================= STATE ================= */
 
-let canon = {};
-let keys = [];
-let ready = false;
+const TRANSLATIONS = {
+  web:"World English Bible (WEB)",
+  kjv:"King James Version (KJV)",
+  asv:"American Standard Version (ASV)",
+  akjv:"American King James Version (AKJV)",
+  cpdv:"Catholic Public Domain Version (CPDV)"
+};
 
-/* ================= LOAD ================= */
+let currentTranslation="web";
+let canon={};
+let keys=[];
+let currentKey=null;
+let favs=JSON.parse(localStorage.getItem("fav")||"[]");
+let dailyKey=null;
+
+/* ================= THEME ================= */
+
+function setTheme(mode){
+  const dark =
+    mode==="dark" ||
+    (mode==="system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  document.documentElement.setAttribute("data-theme",dark?"dark":"light");
+}
+
+/* ================= LOAD ENGINE ================= */
 
 async function loadAll(){
-  canon = {};
+  canon={};
 
-  const translations = ["web","kjv","asv","akjv","cpdv"];
-
-  for(const t of translations){
+  for(const t in TRANSLATIONS){
     try{
       const txt = await (await fetch(`translations/${t}.txt`)).text();
 
@@ -179,60 +249,52 @@ async function loadAll(){
         canon[key][t]=verse;
       });
 
-    } catch(e){
-      console.warn("Missing:",t);
-    }
+    } catch(e){}
   }
 
   keys = Object.keys(canon).filter(k=>Object.keys(canon[k]).length);
-  ready = true;
 
-  initDaily();
-  daily();
-}
+  buildDropdown();
 
-/* ================= 🔧 FIXED DAILY SYSTEM ================= */
-
-function getDailyKey(){
+  /* ================= 🔧 FIX: DAILY STABILITY ================= */
   const today = new Date().toDateString();
+  const stored = localStorage.getItem("daily_key_day");
 
-  let hash = 0;
-  for(let i=0;i<today.length;i++){
-    hash = (hash * 31 + today.charCodeAt(i)) >>> 0;
+  if(stored !== today || !localStorage.getItem("daily_key")){
+    dailyKey = keys[Math.floor(Math.random()*keys.length)];
+    localStorage.setItem("daily_key",dailyKey);
+    localStorage.setItem("daily_key_day",today);
+  } else {
+    dailyKey = localStorage.getItem("daily_key");
   }
 
-  return keys[hash % keys.length];
-}
-
-let dailyKey = null;
-
-function initDaily(){
-  if(!keys.length) return;
-  dailyKey = getDailyKey();
+  show(dailyKey);
 }
 
 /* ================= SHOW ================= */
 
 function show(key){
-  if(!ready || !canon[key]) return;
+  if(!canon[key]) return;
 
-  document.getElementById("verse").innerText =
-    canon[key].web || "Verse unavailable";
+  currentKey=key;
+
+  const txt =
+    canon[key][currentTranslation] ||
+    canon[key].web ||
+    "Verse unavailable";
+
+  document.getElementById("verse").innerHTML=`
+    <div class="verse-ref">${key}</div>
+    <div class="verse-text">${txt}</div>
+  `;
+
+  updateStar();
 }
 
-/* ================= DAILY (FIXED) ================= */
+/* ================= DAILY ================= */
 
 function daily(){
-  if(!ready || !keys.length) return;
-
-  const today = new Date().toDateString();
-  const storedDay = localStorage.getItem("daily_day");
-
-  if(storedDay !== today || !dailyKey){
-    dailyKey = getDailyKey();
-    localStorage.setItem("daily_day", today);
-  }
-
+  if(!keys.length) return;
   show(dailyKey);
 }
 
@@ -241,8 +303,89 @@ function daily(){
 function randomVerse(){
   if(!keys.length) return;
 
-  const key = keys[Math.floor(Math.random()*keys.length)];
-  show(key);
+  dailyKey = keys[Math.floor(Math.random()*keys.length)];
+  localStorage.setItem("daily_key",dailyKey);
+
+  show(dailyKey);
+}
+
+/* ================= TRANSLATION ================= */
+
+function setTranslation(t){
+  currentTranslation=t;
+  if(currentKey) show(currentKey);
+}
+
+/* ================= DROPDOWN ================= */
+
+function buildDropdown(){
+  const sel=document.getElementById("translation");
+
+  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>
+    `<option value="${k}" ${k===currentTranslation?"selected":""}>
+      ${TRANSLATIONS[k]}
+    </option>`
+  ).join("");
+}
+
+/* ================= SEARCH ================= */
+
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+}
+
+function instantSearch(){
+  const q=document.getElementById("q").value.toLowerCase();
+
+  const res=keys.filter(k=>
+    (canon[k][currentTranslation]||"").toLowerCase().includes(q)
+  ).slice(0,30);
+
+  document.getElementById("results").innerHTML=
+    res.map(k=>`
+      <div class="result-card" onclick="show('${k}')">
+        <div class="result-ref">${k}</div>
+      </div>
+    `).join("");
+}
+
+function clearSearch(){
+  document.getElementById("q").value="";
+  document.getElementById("results").innerHTML="";
+}
+
+/* ================= FAVORITES ================= */
+
+function toggleFav(){
+  if(!currentKey) return;
+
+  const i=favs.indexOf(currentKey);
+  if(i>-1) favs.splice(i,1);
+  else favs.push(currentKey);
+
+  localStorage.setItem("fav",JSON.stringify(favs));
+
+  updateStar();
+  renderFav();
+}
+
+function updateStar(){
+  document.getElementById("star").innerText =
+    favs.includes(currentKey) ? "★" : "☆";
+}
+
+function toggleFavorites(){
+  document.getElementById("favBox").classList.toggle("hidden");
+  renderFav();
+}
+
+function renderFav(){
+  document.getElementById("favList").innerHTML =
+    favs.map(k=>`
+      <div class="result-card" onclick="show('${k}')">
+        <div class="result-ref">${k}</div>
+      </div>
+    `).join("");
 }
 
 /* ================= MODAL ================= */
@@ -257,7 +400,7 @@ function closeMission(){
 
 /* ================= INIT ================= */
 
-window.onload = loadAll;
+window.onload=loadAll;
 
 </script>
 
