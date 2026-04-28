@@ -85,7 +85,6 @@ button:hover{background:var(--accent);color:#fff;}
   margin-top:8px;
 }
 
-/* SEARCH */
 .result-card{
   border:1px solid var(--border);
   border-radius:12px;
@@ -98,6 +97,40 @@ button:hover{background:var(--accent);color:#fff;}
   font-weight:700;
   color:var(--accent);
   margin-bottom:6px;
+}
+
+/* FOOTER */
+.footer-left{
+  position:fixed;
+  left:10px;
+  bottom:10px;
+  font-size:11px;
+  color:var(--muted);
+}
+
+.footer-right{
+  position:fixed;
+  right:10px;
+  bottom:10px;
+  font-size:11px;
+  color:var(--muted);
+  cursor:pointer;
+}
+
+/* MISSION */
+.mission{
+  background:var(--card);
+  padding:14px;
+  border-radius:14px;
+  margin-top:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
+}
+
+.mission-title{
+  font-weight:700;
+  color:var(--accent);
+  margin-bottom:8px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -159,6 +192,24 @@ button:hover{background:var(--accent);color:#fff;}
   <div id="reflection">What is God showing you?</div>
 </div>
 
+<!-- MISSION (RESTORED) -->
+<div class="mission">
+  <div class="mission-title" onclick="toggleMission()">
+    Parker Family Mission Statement
+  </div>
+  <div id="missionText">
+    As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.
+  </div>
+</div>
+
+</div>
+
+<!-- FOOTER (RESTORED) -->
+<div class="footer-left">Unshaken</div>
+
+<div class="footer-right"
+onclick="alert('As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.')">
+est. 2013 — The Parker Family
 </div>
 
 <script>
@@ -181,7 +232,42 @@ const TRANSLATIONS={
   cpdv:"Catholic Public Domain Version (CPDV)"
 };
 
-/* ================= ENGINE RESTORED ================= */
+/* ================= SYSTEM THEME FIX (SAFE) ================= */
+
+let themeMode="system";
+
+function applyTheme(){
+  const systemDark =
+    window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+  const isDark =
+    themeMode==="dark" ||
+    (themeMode==="system" && systemDark);
+
+  document.documentElement.setAttribute(
+    "data-theme",
+    isDark ? "dark" : "light"
+  );
+}
+
+function setTheme(mode){
+  themeMode=mode;
+  applyTheme();
+}
+
+window.matchMedia("(prefers-color-scheme: dark)")
+  .addEventListener("change",()=>{
+    if(themeMode==="system") applyTheme();
+  });
+
+/* ================= MISSION TOGGLE ================= */
+
+function toggleMission(){
+  const el=document.getElementById("missionText");
+  el.style.display = el.style.display==="none" ? "block" : "none";
+}
+
+/* ================= CORE ENGINE (UNCHANGED) ================= */
 
 async function loadAll(){
   canon={};
@@ -345,18 +431,11 @@ function renderFav(){
   `).join("");
 }
 
-/* ================= THEME ================= */
-
-function setTheme(m){
-  document.documentElement.setAttribute(
-    "data-theme",
-    m==="dark"?"dark":"light"
-  );
-}
-
-/* ================= INIT ================= */
-
-window.onload=loadAll;
+/* INIT */
+window.onload=()=>{
+  applyTheme();
+  loadAll();
+};
 
 </script>
 
