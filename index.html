@@ -114,6 +114,14 @@ button:hover{background:var(--accent);color:#fff;}
   cursor:pointer;
 }
 
+/* SEARCH */
+.search-row{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
 .result-card{
   border:1px solid var(--border);
   border-radius:12px;
@@ -131,6 +139,39 @@ button:hover{background:var(--accent);color:#fff;}
 .simple-text{
   font-size:16px;
   line-height:1.6;
+}
+
+/* FAVORITES SWIPE */
+.fav-item{
+  position:relative;
+  overflow:hidden;
+  border:1px solid var(--border);
+  border-radius:12px;
+  margin-top:10px;
+  background:var(--card);
+}
+
+.fav-content{
+  padding:12px;
+  transition:transform .25s ease;
+}
+
+.fav-delete{
+  position:absolute;
+  right:0;
+  top:0;
+  bottom:0;
+  width:80px;
+  background:#e11d48;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+}
+
+.swiped .fav-content{
+  transform:translateX(-80px);
 }
 </style>
 </head>
@@ -167,8 +208,14 @@ button:hover{background:var(--accent);color:#fff;}
 <!-- SEARCH -->
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
-  <input id="q" placeholder="Search..." oninput="instantSearch()">
-  <button onclick="clearSearch()">Clear Search</button>
+
+  <div class="search-row">
+    <input id="q" placeholder="Search..." oninput="instantSearch()">
+
+    <!-- ✅ RESTORED CLEAR SEARCH BUTTON -->
+    <button onclick="clearSearch()">Clear Search</button>
+  </div>
+
   <div id="results"></div>
 </div>
 
@@ -203,6 +250,15 @@ est. 2013 — The Parker Family
 
 /* ================= STATE ================= */
 
+const TRANSLATIONS={
+  web:{file:"translations/web.txt",name:"World English Bible (WEB)"},
+  kjv:{file:"translations/kjv.txt",name:"King James Version (KJV)"},
+  asv:{file:"translations/asv.txt",name:"American Standard Version (ASV)"},
+  akjv:{file:"translations/akjv.txt",name:"American King James Version (AKJV)"},
+  cpdv:{file:"translations/cpdv.txt",name:"Catholic Public Domain Version (CPDV)"}
+};
+
+let currentTranslation="web";
 let canon={};
 let keys=[];
 let currentKey=null;
@@ -211,7 +267,7 @@ let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 /* ================= LOAD ================= */
 
 async function loadAll(){
-  const txt=await(await fetch("translations/web.txt")).text();
+  const txt=await(await fetch(TRANSLATIONS.web.file)).text();
 
   txt.split("\n").forEach(l=>{
     l=l.trim(); if(!l) return;
@@ -227,7 +283,24 @@ async function loadAll(){
   });
 
   keys=Object.keys(canon);
+
+  buildDropdown();
   daily();
+}
+
+/* ================= TRANSLATION ================= */
+
+function buildDropdown(){
+  const sel=document.getElementById("translation");
+
+  sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>`
+    <option value="${k}">${TRANSLATIONS[k].name}</option>
+  `).join("");
+}
+
+function setTranslation(t){
+  currentTranslation=t;
+  if(currentKey) show(currentKey);
 }
 
 /* ================= VERSE ================= */
@@ -243,32 +316,26 @@ function show(key){
   updateStar();
 }
 
-function randomVerse(){
-  show(keys[Math.floor(Math.random()*keys.length)]);
-}
-
-/* ================= DAILY (FIXED PERSISTENT) ================= */
+/* ================= DAILY ================= */
 
 function daily(){
-  const today = new Date().toDateString();
+  const today=new Date().toDateString();
 
-  const savedKey = localStorage.getItem("daily_key");
-  const savedDate = localStorage.getItem("daily_date");
+  const saved=localStorage.getItem("daily_key");
+  const date=localStorage.getItem("daily_date");
 
-  if(savedKey && savedDate === today && canon[savedKey]){
-    show(savedKey);
+  if(saved&&date===today){
+    show(saved);
     return;
   }
 
-  let hash = 0;
-  for(let i=0;i<today.length;i++){
-    hash = (hash * 31 + today.charCodeAt(i)) >>> 0;
-  }
+  let h=0;
+  for(let c of today) h=(h*31+c.charCodeAt(0))>>>0;
 
-  const key = keys[hash % keys.length];
+  const key=keys[h%keys.length];
 
-  localStorage.setItem("daily_key", key);
-  localStorage.setItem("daily_date", today);
+  localStorage.setItem("daily_key",key);
+  localStorage.setItem("daily_date",today);
 
   show(key);
 }
@@ -276,10 +343,10 @@ function daily(){
 /* ================= FAVORITES ================= */
 
 function toggleFav(){
-  if(!currentKey) return;
+  if(!currentKey)return;
 
   const i=favs.indexOf(currentKey);
-  if(i>-1) favs.splice(i,1);
+  if(i>-1)favs.splice(i,1);
   else favs.push(currentKey);
 
   localStorage.setItem("fav",JSON.stringify(favs));
@@ -297,6 +364,21 @@ function toggleFavorites(){
   renderFav();
 }
 
+/* SWIPE DELETE */
+function attachSwipe(el){
+  let startX=0;
+
+  el.addEventListener("touchstart",e=>{
+    startX=e.touches[0].clientX;
+  });
+
+  el.addEventListener("touchmove",e=>{
+    const dx=e.touches[0].clientX-startX;
+    if(dx<-40) el.classList.add("swiped");
+  });
+}
+
+/* FAVORITES RENDER */
 function renderFav(){
   const box=document.getElementById("favList");
 
@@ -306,11 +388,26 @@ function renderFav(){
   }
 
   box.innerHTML=favs.map(k=>`
-    <div class="result-card" onclick="show('${k}')">
-      <div class="result-ref">${k}</div>
-      <div class="verse-text">${canon[k]?.text||""}</div>
+    <div class="fav-item" id="fav-${k}">
+      <div class="fav-delete" onclick="removeFav('${k}')">Delete</div>
+      <div class="fav-content" onclick="show('${k}')">
+        <div class="result-ref">${k}</div>
+        <div class="verse-text">${canon[k]?.text||""}</div>
+      </div>
     </div>
   `).join("");
+
+  favs.forEach(k=>{
+    const el=document.getElementById(`fav-${k}`);
+    if(el) attachSwipe(el);
+  });
+}
+
+function removeFav(k){
+  favs=favs.filter(f=>f!==k);
+  localStorage.setItem("fav",JSON.stringify(favs));
+  renderFav();
+  updateStar();
 }
 
 /* ================= SEARCH ================= */
@@ -332,19 +429,16 @@ function instantSearch(){
   results.innerHTML=matches.map(k=>`
     <div class="result-card" onclick="show('${k}')">
       <div class="result-ref">${k}</div>
-      <div class="verse-text">${canon[k].text.slice(0,220)}</div>
+      <div class="verse-text">${canon[k].text.slice(0,200)}</div>
     </div>
   `).join("");
 }
 
+/* ✅ RESTORED CLEAR SEARCH */
 function clearSearch(){
   document.getElementById("q").value="";
   document.getElementById("results").innerHTML="";
 }
-
-/* ================= TRANSLATION ================= */
-
-function setTranslation(){}
 
 /* ================= THEME ================= */
 
@@ -352,7 +446,7 @@ function setTheme(mode){
   const dark=
     mode==="dark"||
     (mode==="system"&&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
+     window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   document.documentElement.setAttribute(
     "data-theme",
