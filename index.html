@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unshaken v1.7.12</title>
+<title>Unshaken v1.7.13</title>
 
 <style>
 :root{
@@ -65,7 +65,7 @@ body{
   margin-bottom:10px;
 }
 
-button,input,select{
+button,select{
   padding:8px 10px;
   border-radius:8px;
   border:1px solid #ccc;
@@ -98,17 +98,6 @@ button:hover{background:var(--accent);color:#fff;}
   margin-top:10px;
 }
 
-.result{
-  padding:10px 0;
-  border-bottom:1px solid rgba(0,0,0,.08);
-  cursor:pointer;
-}
-
-.small{
-  font-size:12px;
-  color:var(--muted);
-}
-
 .footer-left{
   position:fixed;
   left:10px;
@@ -125,6 +114,11 @@ button:hover{background:var(--accent);color:#fff;}
   font-size:11px;
   color:var(--muted);
   cursor:pointer;
+}
+
+.small{
+  font-size:12px;
+  color:var(--muted);
 }
 
 /* MODAL */
@@ -144,7 +138,6 @@ button:hover{background:var(--accent);color:#fff;}
   color:var(--text);
   padding:18px;
   border-radius:14px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
 </style>
 </head>
@@ -167,33 +160,14 @@ button:hover{background:var(--accent);color:#fff;}
 
   <button onclick="loadDaily()">Daily</button>
   <button onclick="loadRandom()">Random</button>
-  <button onclick="toggleSearch()">Search</button>
-  <button onclick="toggleFavorites()">Favorites</button>
 
-  <!-- AUTO GENERATED TRANSLATIONS -->
+  <!-- STREAK -->
+  <div class="small">
+    🔥 Streak: <span id="streakCount">0</span> days
+  </div>
+
   <select id="translationSelect" onchange="changeTranslation(this.value)"></select>
 
-  <select onchange="setTheme(this.value)">
-    <option value="system">System</option>
-    <option value="light">Day</option>
-    <option value="dark">Night</option>
-  </select>
-
-</div>
-
-<!-- SEARCH -->
-<div class="card hidden" id="searchBox">
-  <div class="section-title">Search Bible</div>
-  <input id="searchInput" placeholder="Search...">
-  <button onclick="runSearch()">Search</button>
-  <button onclick="clearSearch()">Clear</button>
-  <div id="searchResults"></div>
-</div>
-
-<!-- FAVORITES -->
-<div class="card hidden" id="favoritesBox">
-  <div class="section-title">Favorites</div>
-  <div id="favoritesList"></div>
 </div>
 
 <!-- PRAYER -->
@@ -211,13 +185,13 @@ button:hover{background:var(--accent);color:#fff;}
 </div>
 
 <!-- FOOTERS -->
-<div class="footer-left">v1.7.12</div>
+<div class="footer-left">v1.7.13</div>
 
 <div class="footer-right" onclick="toggleMission()">
   est. 2013 — The Parker Family
 </div>
 
-<!-- MISSION MODAL -->
+<!-- MISSION -->
 <div id="missionModal" class="mission-modal hidden">
   <div class="mission-card">
     <div class="section-title">Family Mission</div>
@@ -228,14 +202,14 @@ button:hover{background:var(--accent);color:#fff;}
 
 <script>
 
-/* ================= TRANSLATIONS (NEW SYSTEM) ================= */
+/* ================= TRANSLATIONS ================= */
 
 const TRANSLATIONS = {
-  web:  { file: "translations/web.txt",  name: "World English Bible (WEB)" },
-  kjv:  { file: "translations/kjv.txt",  name: "King James Version (KJV)" },
-  asv:  { file: "translations/asv.txt",  name: "American Standard Version (ASV)" },
-  akjv: { file: "translations/akjv.txt", name: "American King James Version (AKJV)" },
-  cpdv: { file: "translations/cpdv.txt", name: "Catholic Public Domain Version (CPDV)" }
+  web:  { file:"translations/web.txt", name:"World English Bible (WEB)" },
+  kjv:  { file:"translations/kjv.txt", name:"King James Version (KJV)" },
+  asv:  { file:"translations/asv.txt", name:"American Standard Version (ASV)" },
+  akjv: { file:"translations/akjv.txt", name:"American King James Version (AKJV)" },
+  cpdv: { file:"translations/cpdv.txt", name:"Catholic Public Domain Version (CPDV)" }
 };
 
 let currentTranslation = "web";
@@ -246,14 +220,40 @@ let bibleIndex = [];
 let current = null;
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* ================= INIT DROPDOWN ================= */
+/* ================= STREAK SYSTEM (CLEAN) ================= */
 
-function buildTranslationDropdown(){
+let streak = JSON.parse(localStorage.getItem("streak") || "{}");
+
+function updateStreak(){
+  const today = new Date().toDateString();
+
+  if(streak.lastDay === today) return;
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const isContinue = streak.lastDay === yesterday.toDateString();
+
+  streak.count = isContinue ? (streak.count || 0) + 1 : 1;
+  streak.lastDay = today;
+
+  localStorage.setItem("streak", JSON.stringify(streak));
+
+  renderStreak();
+}
+
+function renderStreak(){
+  document.getElementById("streakCount").innerText = streak.count || 0;
+}
+
+/* ================= DROPDOWN ================= */
+
+function buildDropdown(){
   const sel = document.getElementById("translationSelect");
 
-  sel.innerHTML = Object.keys(TRANSLATIONS).map(key =>
-    `<option value="${key}" ${key===currentTranslation?'selected':''}>
-      ${TRANSLATIONS[key].name}
+  sel.innerHTML = Object.keys(TRANSLATIONS).map(k =>
+    `<option value="${k}" ${k===currentTranslation?'selected':''}>
+      ${TRANSLATIONS[k].name}
     </option>`
   ).join("");
 }
@@ -264,50 +264,21 @@ async function loadBible(){
   const res = await fetch(TRANSLATIONS[currentTranslation].file);
   const text = await res.text();
 
-  bibleIndex = text
-    .split("\n")
+  bibleIndex = text.split("\n")
     .map(l => l.trim())
     .filter(Boolean)
     .map(line => {
       const parts = line.split(/\s+/);
-      const refIndex = parts.findIndex(p => p.includes(":"));
+      const i = parts.findIndex(p => p.includes(":"));
 
       return {
-        book: parts.slice(0, refIndex).join(" "),
-        ref: parts[refIndex],
-        text: parts.slice(refIndex + 1).join(" ")
+        book: parts.slice(0,i).join(" "),
+        ref: parts[i],
+        text: parts.slice(i+1).join(" ")
       };
     });
 
   loadDaily();
-}
-
-/* ================= TRANSLATION SWITCH ================= */
-
-function changeTranslation(t){
-  currentTranslation = t;
-  loadBible();
-}
-
-/* ================= HASH ================= */
-
-function hashSeed(input){
-  let h = 81213;
-  for(let i=0;i<String(input).length;i++){
-    h = (h * 31 + String(input).charCodeAt(i)) >>> 0;
-  }
-  return h;
-}
-
-/* ================= DAILY / RANDOM ================= */
-
-function loadDaily(){
-  const d = new Date().toISOString().split("T")[0];
-  setVerse(bibleIndex[hashSeed(d) % bibleIndex.length]);
-}
-
-function loadRandom(){
-  setVerse(bibleIndex[hashSeed(Date.now()) % bibleIndex.length]);
 }
 
 /* ================= VERSE ================= */
@@ -319,13 +290,34 @@ function setVerse(v){
     `<div class="verse-ref">${v.book} ${v.ref}</div>
      <div class="verse-text">${v.text}</div>`;
 
+  updateDevotion();
   updateStar();
-  updateDevotion(v);
+
+  updateStreak(); // 🔥 THIS is the key integration point
+}
+
+/* ================= DAILY / RANDOM ================= */
+
+function hashSeed(input){
+  let h = 81213;
+  for(let i=0;i<String(input).length;i++){
+    h = (h * 31 + String(input).charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
+function loadDaily(){
+  const d = new Date().toDateString();
+  setVerse(bibleIndex[hashSeed(d) % bibleIndex.length]);
+}
+
+function loadRandom(){
+  setVerse(bibleIndex[hashSeed(Date.now()) % bibleIndex.length]);
 }
 
 /* ================= DEVOTION ================= */
 
-function updateDevotion(v){
+function updateDevotion(){
   document.getElementById("prayer").innerText = "Walk faithfully today.";
   document.getElementById("reflection").innerText = "What is God showing you?";
 }
@@ -348,51 +340,37 @@ function updateStar(){
     favorites.includes(key) ? "★" : "☆";
 }
 
-/* ================= SEARCH ================= */
+/* ================= TRANSLATION SWITCH ================= */
 
-function toggleSearch(){
-  document.getElementById("searchBox").classList.toggle("hidden");
-}
-
-/* ================= THEME ================= */
-
-function setTheme(mode){
-  const dark = mode === "dark" ||
-    (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-
-  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+function changeTranslation(t){
+  currentTranslation = t;
+  loadBible();
 }
 
 /* ================= MISSION ================= */
 
-function getMissionStatement(){
-  const theme = document.documentElement.getAttribute("data-theme");
-
-  const base =
-  "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
-
-  if(theme === "dark") return base + " We trust God in the night.";
-  if(theme === "light") return base + " We walk in purpose each day.";
-  return base + " We trust God in every season.";
+function getMission(){
+  return "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
 }
 
 function toggleMission(){
-  const modal = document.getElementById("missionModal");
+  const m = document.getElementById("missionModal");
 
-  if(modal.classList.contains("hidden")){
-    document.getElementById("missionText").innerText = getMissionStatement();
-    modal.classList.remove("hidden");
+  if(m.classList.contains("hidden")){
+    document.getElementById("missionText").innerText = getMission();
+    m.classList.remove("hidden");
   } else {
-    modal.classList.add("hidden");
+    m.classList.add("hidden");
   }
 }
 
 /* ================= INIT ================= */
 
 window.onload = () => {
-  setTheme("system");
-  buildTranslationDropdown();
+  setTheme?.("system");
+  buildDropdown();
   loadBible();
+  renderStreak();
 };
 
 </script>
