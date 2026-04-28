@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unshaken v1.7.10</title>
+<title>Unshaken v1.7.11</title>
 
 <style>
 :root{
@@ -78,8 +78,11 @@ button,input,select{
 button{cursor:pointer;}
 button:hover{background:var(--accent);color:#fff;}
 
-.hidden{display:none;}
+.hidden{
+  display:none !important;
+}
 
+/* VERSE */
 .verse-ref{
   font-weight:700;
   font-size:18px;
@@ -92,6 +95,7 @@ button:hover{background:var(--accent);color:#fff;}
   line-height:1.65;
 }
 
+/* STAR */
 .star{
   font-size:24px;
   cursor:pointer;
@@ -99,15 +103,11 @@ button:hover{background:var(--accent);color:#fff;}
   margin-top:10px;
 }
 
+/* SEARCH RESULTS */
 .result{
   padding:10px 0;
   border-bottom:1px solid rgba(0,0,0,.08);
   cursor:pointer;
-}
-
-.small{
-  font-size:12px;
-  color:var(--muted);
 }
 
 /* FOOTERS */
@@ -185,7 +185,6 @@ button:hover{background:var(--accent);color:#fff;}
   <button onclick="runSearch()">Search</button>
   <button onclick="clearSearch()">Clear</button>
 
-  <div class="small" id="searchMeta"></div>
   <div id="searchResults"></div>
 </div>
 
@@ -210,13 +209,13 @@ button:hover{background:var(--accent);color:#fff;}
 </div>
 
 <!-- FOOTERS -->
-<div class="footer-left">v1.7.10</div>
+<div class="footer-left">v1.7.11</div>
 
 <div class="footer-right" onclick="toggleMission()">
   est. 2013 — The Parker Family
 </div>
 
-<!-- MISSION MODAL -->
+<!-- MISSION MODAL (FIXED) -->
 <div id="missionModal" class="mission-modal hidden">
   <div class="mission-card">
     <div class="section-title">Family Mission</div>
@@ -227,189 +226,102 @@ button:hover{background:var(--accent);color:#fff;}
 
 <script>
 
-/* ================= STATE ================= */
-
 let bibleIndex = [];
 let current = null;
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
 const BIBLE_PATH = "translations/web.txt";
 
-/* ================= LOAD BIBLE ================= */
-
+/* LOAD BIBLE */
 async function loadBible(){
   const res = await fetch(BIBLE_PATH);
   const text = await res.text();
 
-  bibleIndex = text
-    .split("\n")
-    .map(v => v.trim())
+  bibleIndex = text.split("\n")
+    .map(l => l.trim())
     .filter(Boolean)
     .map(line => {
       const parts = line.split(/\s+/);
       const refIndex = parts.findIndex(p => p.includes(":"));
 
-      const book = parts.slice(0, refIndex).join(" ");
-      const ref = parts[refIndex];
-      const verseText = parts.slice(refIndex + 1).join(" ");
-
-      return { book, ref, text: verseText };
+      return {
+        book: parts.slice(0, refIndex).join(" "),
+        ref: parts[refIndex],
+        text: parts.slice(refIndex + 1).join(" ")
+      };
     });
 
   loadDaily();
 }
 
-/* ================= HASH ================= */
-
+/* HASH */
 function hashSeed(input){
-  let hash = 81213;
+  let h = 81213;
   for(let i=0;i<String(input).length;i++){
-    hash = (hash * 31 + String(input).charCodeAt(i)) >>> 0;
+    h = (h * 31 + String(input).charCodeAt(i)) >>> 0;
   }
-  return hash;
+  return h;
 }
 
-/* ================= DAILY / RANDOM ================= */
-
+/* DAILY / RANDOM */
 function loadDaily(){
-  const date = new Date().toISOString().split("T")[0];
-  const seed = hashSeed(date);
-  setVerse(bibleIndex[seed % bibleIndex.length]);
+  const d = new Date().toISOString().split("T")[0];
+  setVerse(bibleIndex[hashSeed(d) % bibleIndex.length]);
 }
 
 function loadRandom(){
-  const seed = hashSeed(Date.now());
-  setVerse(bibleIndex[seed % bibleIndex.length]);
+  setVerse(bibleIndex[hashSeed(Date.now()) % bibleIndex.length]);
 }
 
-/* ================= VERSE ================= */
-
+/* VERSE */
 function setVerse(v){
   current = v;
 
-  document.getElementById("verse").innerHTML = `
-    <div class="verse-ref">${v.book} ${v.ref}</div>
-    <div class="verse-text">${v.text}</div>
-  `;
+  document.getElementById("verse").innerHTML =
+    `<div class="verse-ref">${v.book} ${v.ref}</div>
+     <div class="verse-text">${v.text}</div>`;
 
   updateStar();
   updateDevotion(v);
 }
 
-/* ================= DEVOTION ================= */
-
-function getTimeOfDay(){
-  const h = new Date().getHours();
-  if(h < 12) return "morning";
-  if(h < 18) return "day";
-  return "night";
-}
-
-function getDevotion(v){
-  const t = getTimeOfDay();
-
-  const base = {
-    morning:{ prayer:"Guide my steps.", reflection:"How will I begin today?" },
-    day:{ prayer:"Give me strength.", reflection:"How am I responding right now?" },
-    night:{ prayer:"Thank You for today.", reflection:"Where did I see God today?" }
-  };
-
-  let prayer = base[t].prayer;
-  let reflection = base[t].reflection;
-
-  const txt = v.text.toLowerCase();
-
-  if(txt.includes("fear")) prayer += " Remove fear.";
-  if(txt.includes("love")) reflection += " Who can I love better?";
-
-  return { prayer, reflection };
-}
-
+/* DEVOTION */
 function updateDevotion(v){
-  const d = getDevotion(v);
-  document.getElementById("prayer").innerText = d.prayer;
-  document.getElementById("reflection").innerText = d.reflection;
+  document.getElementById("prayer").innerText = "Walk faithfully today.";
+  document.getElementById("reflection").innerText = "What is God teaching you?";
 }
 
-/* ================= FAVORITES ================= */
-
+/* FAVORITES */
 function toggleFavorite(){
-  if(!current) return;
-
   const key = `${current.book} ${current.ref}`;
   const i = favorites.indexOf(key);
 
-  if(i > -1) favorites.splice(i,1);
-  else favorites.push(key);
+  i > -1 ? favorites.splice(i,1) : favorites.push(key);
 
   localStorage.setItem("fav", JSON.stringify(favorites));
   updateStar();
-  renderFavorites();
 }
 
 function updateStar(){
-  if(!current) return;
   const key = `${current.book} ${current.ref}`;
   document.getElementById("star").innerText =
     favorites.includes(key) ? "★" : "☆";
 }
 
-function toggleFavorites(){
-  document.getElementById("favoritesBox").classList.toggle("hidden");
-  renderFavorites();
-}
-
-function renderFavorites(){
-  document.getElementById("favoritesList").innerHTML =
-    favorites.length ? favorites.join("<br>") : "No favorites yet.";
-}
-
-/* ================= SEARCH ================= */
-
+/* SEARCH */
 function toggleSearch(){
   document.getElementById("searchBox").classList.toggle("hidden");
 }
 
-function runSearch(){
-  const q = document.getElementById("searchInput").value.toLowerCase();
-
-  const results = bibleIndex.filter(v =>
-    v.text.toLowerCase().includes(q)
-  );
-
-  document.getElementById("searchMeta").innerText =
-    `Found ${results.length} results`;
-
-  const box = document.getElementById("searchResults");
-  box.innerHTML = "";
-
-  results.slice(0,50).forEach(v=>{
-    const el = document.createElement("div");
-    el.className = "result";
-    el.innerHTML = `<strong>${v.book} ${v.ref}</strong><br>${v.text}`;
-    el.onclick = () => setVerse(v);
-    box.appendChild(el);
-  });
-}
-
-function clearSearch(){
-  document.getElementById("searchInput").value = "";
-  document.getElementById("searchMeta").innerText = "";
-  document.getElementById("searchResults").innerHTML = "";
-}
-
-/* ================= THEME ================= */
-
+/* THEME */
 function setTheme(mode){
-  if(mode === "system"){
-    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-  } else {
-    document.documentElement.setAttribute("data-theme", mode);
-  }
+  const dark = mode === "dark" ||
+    (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
 }
 
-/* ================= MISSION MODAL ================= */
+/* ================= FIXED MISSION LOGIC ================= */
 
 function getMissionStatement(){
   const theme = document.documentElement.getAttribute("data-theme");
@@ -418,7 +330,7 @@ function getMissionStatement(){
   "As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.";
 
   if(theme === "dark"){
-    return base + " We trust Him even in the night seasons.";
+    return base + " We trust God even in dark seasons.";
   }
   if(theme === "light"){
     return base + " We walk in gratitude and purpose each day.";
@@ -428,17 +340,19 @@ function getMissionStatement(){
 
 function toggleMission(){
   const modal = document.getElementById("missionModal");
+  const text = document.getElementById("missionText");
 
-  if(modal.classList.contains("hidden")){
-    document.getElementById("missionText").innerText = getMissionStatement();
+  const hidden = modal.classList.contains("hidden");
+
+  if(hidden){
+    text.innerText = getMissionStatement();
     modal.classList.remove("hidden");
   } else {
     modal.classList.add("hidden");
   }
 }
 
-/* ================= INIT ================= */
-
+/* INIT */
 window.onload = () => {
   setTheme("system");
   loadBible();
