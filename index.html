@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unshaken v1.7.13</title>
+<title>Unshaken v1.7.14</title>
 
 <style>
 :root{
@@ -172,6 +172,13 @@ button:hover{background:var(--accent);color:#fff;}
 
   <select id="translationSelect" onchange="changeTranslation(this.value)"></select>
 
+  <!-- THEME RESTORED -->
+  <select onchange="setTheme(this.value)">
+    <option value="system">System</option>
+    <option value="light">Day</option>
+    <option value="dark">Night</option>
+  </select>
+
 </div>
 
 <!-- SEARCH -->
@@ -203,7 +210,7 @@ button:hover{background:var(--accent);color:#fff;}
 
 </div>
 
-<div class="footer-left">v1.7.13</div>
+<div class="footer-left">v1.7.14</div>
 
 <div class="footer-right" onclick="toggleMission()">
   est. 2013 — The Parker Family
@@ -234,6 +241,20 @@ let currentTranslation = "web";
 let bibleIndex = [];
 let current = null;
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
+
+/* ================= THEME SYSTEM RESTORED ================= */
+
+function setTheme(mode){
+  const dark =
+    mode === "dark" ||
+    (mode === "system" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  document.documentElement.setAttribute(
+    "data-theme",
+    dark ? "dark" : "light"
+  );
+}
 
 /* ================= TRANSLATION ================= */
 
@@ -307,7 +328,7 @@ function updateDevotion(){
   document.getElementById("reflection").innerText = "What is God showing you?";
 }
 
-/* ================= ⭐ FAVORITES FIXED ================= */
+/* ================= FAVORITES FIXED ================= */
 
 function toggleFavorite(){
   if(!current) return;
@@ -315,11 +336,8 @@ function toggleFavorite(){
   const key = `${current.book} ${current.ref}`;
   const i = favorites.indexOf(key);
 
-  if(i > -1){
-    favorites.splice(i,1);
-  } else {
-    favorites.push(key);
-  }
+  if(i > -1) favorites.splice(i,1);
+  else favorites.push(key);
 
   localStorage.setItem("fav", JSON.stringify(favorites));
 
@@ -390,6 +408,7 @@ function toggleMission(){
 /* ================= INIT ================= */
 
 window.onload = () => {
+  setTheme("system");
   buildTranslationDropdown();
   loadBible();
 };
