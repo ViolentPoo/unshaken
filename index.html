@@ -76,9 +76,7 @@ button,input,select{
   font:inherit;
 }
 
-button{
-  cursor:pointer;
-}
+button{cursor:pointer;}
 
 button:hover{
   background:var(--accent);
@@ -86,7 +84,7 @@ button:hover{
 }
 
 input{
-  width:min(340px,100%);
+  width:min(420px,100%);
 }
 
 .hidden{
@@ -156,12 +154,18 @@ input{
 
 .result-text{
   line-height:1.55;
-  color:var(--text);
 }
 
 .empty{
   padding:8px 0;
   color:var(--muted);
+}
+
+.search-row{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
 }
 </style>
 </head>
@@ -199,10 +203,15 @@ input{
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
 
-  <input id="q" placeholder="Type to search verses..." oninput="instantSearch()">
-
-  <button onclick="search()">Search</button>
-  <button onclick="clearSearch()">Clear Search</button>
+  <div class="search-row">
+    <input
+      id="q"
+      placeholder="Type to search verses..."
+      oninput="instantSearch()"
+      onkeydown="handleSearchKey(event)"
+    >
+    <button onclick="clearSearch()">Clear Search</button>
+  </div>
 
   <div id="results"></div>
 </div>
@@ -235,9 +244,7 @@ est. 2013 — The Parker Family
 </div>
 
 <script>
-/* ======================================================
-   TRANSLATIONS
-====================================================== */
+/* ================= TRANSLATIONS ================= */
 
 const TRANSLATIONS = {
   web:  { file:"translations/web.txt",  name:"World English Bible (WEB)" },
@@ -253,9 +260,7 @@ let keys = [];
 let currentKey = null;
 let favs = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* ======================================================
-   THEME
-====================================================== */
+/* ================= THEME ================= */
 
 function setTheme(mode){
   const dark =
@@ -269,9 +274,7 @@ function setTheme(mode){
   );
 }
 
-/* ======================================================
-   LOAD + FAST INDEXING
-====================================================== */
+/* ================= LOAD / FAST INDEX ================= */
 
 async function loadAll(){
   canon = {};
@@ -303,7 +306,6 @@ async function loadAll(){
 
   keys = Object.keys(canon);
 
-  /* Build cached search blobs once */
   keys.forEach(k=>{
     canon[k].searchBlob = (
       k + " " +
@@ -315,9 +317,7 @@ async function loadAll(){
   daily();
 }
 
-/* ======================================================
-   DROPDOWN
-====================================================== */
+/* ================= DROPDOWN ================= */
 
 function buildDropdown(){
   const sel = document.getElementById("translation");
@@ -329,9 +329,7 @@ function buildDropdown(){
   ).join("");
 }
 
-/* ======================================================
-   SHOW VERSE
-====================================================== */
+/* ================= SHOW ================= */
 
 function show(key){
   if(!canon[key]) return;
@@ -350,9 +348,7 @@ function show(key){
   updateFav();
 }
 
-/* ======================================================
-   DAILY / RANDOM
-====================================================== */
+/* ================= DAILY / RANDOM ================= */
 
 function hash(str){
   let h = 7;
@@ -364,46 +360,40 @@ function hash(str){
 
 function daily(){
   if(!keys.length) return;
-  const key = keys[hash(new Date().toDateString()) % keys.length];
-  show(key);
+  show(keys[hash(new Date().toDateString()) % keys.length]);
 }
 
 function randomVerse(){
   if(!keys.length) return;
-  const key = keys[Math.floor(Math.random() * keys.length)];
-  show(key);
+  show(keys[Math.floor(Math.random() * keys.length)]);
 }
 
-/* ======================================================
-   TRANSLATION SWITCH
-====================================================== */
+/* ================= TRANSLATION ================= */
 
 function setTranslation(t){
   currentTranslation = t;
+
   if(currentKey) show(currentKey);
 
-  /* refresh search previews if search is open */
   if(!document.getElementById("searchBox").classList.contains("hidden")){
     instantSearch();
   }
+
+  renderFav();
 }
 
-/* ======================================================
-   FAVORITES
-====================================================== */
+/* ================= FAVORITES ================= */
 
 function toggleFav(){
   if(!currentKey) return;
 
   const i = favs.indexOf(currentKey);
 
-  if(i > -1){
-    favs.splice(i,1);
-  }else{
-    favs.push(currentKey);
-  }
+  if(i > -1) favs.splice(i,1);
+  else favs.push(currentKey);
 
   localStorage.setItem("fav", JSON.stringify(favs));
+
   updateFav();
   renderFav();
 }
@@ -426,27 +416,25 @@ function renderFav(){
     return;
   }
 
-  box.innerHTML = favs.map(k=>`
+  box.innerHTML = favs.map(k => `
     <div class="result-card" onclick="show('${escapeQuotes(k)}')">
       <div class="result-ref">${k}</div>
       <div class="result-text">
-        ${(canon[k]?.versions[currentTranslation] || "").slice(0,160)}
+        ${(canon[k]?.versions[currentTranslation] || "").slice(0,180)}
       </div>
     </div>
   `).join("");
 }
 
-/* ======================================================
-   SEARCH
-====================================================== */
+/* ================= SEARCH ================= */
 
 function toggleSearch(){
-  document.getElementById("searchBox").classList.toggle("hidden");
-  document.getElementById("q").focus();
-}
+  const box = document.getElementById("searchBox");
+  box.classList.toggle("hidden");
 
-function search(){
-  instantSearch();
+  if(!box.classList.contains("hidden")){
+    document.getElementById("q").focus();
+  }
 }
 
 function instantSearch(){
@@ -473,9 +461,7 @@ function instantSearch(){
   }
 
   results.innerHTML = matches.map(k=>{
-    const txt =
-      canon[k].versions[currentTranslation] ||
-      "[missing]";
+    const txt = canon[k].versions[currentTranslation] || "[missing]";
 
     return `
       <div class="result-card" onclick="show('${escapeQuotes(k)}')">
@@ -491,19 +477,23 @@ function instantSearch(){
 function clearSearch(){
   document.getElementById("q").value = "";
   document.getElementById("results").innerHTML = "";
+  document.getElementById("q").focus();
 }
 
-/* ======================================================
-   HELPERS
-====================================================== */
+function handleSearchKey(e){
+  if(e.key === "Enter"){
+    const first = document.querySelector(".result-card");
+    if(first) first.click();
+  }
+}
+
+/* ================= HELPERS ================= */
 
 function escapeQuotes(str){
   return str.replace(/'/g,"&#39;");
 }
 
-/* ======================================================
-   INIT
-====================================================== */
+/* ================= INIT ================= */
 
 window.onload = ()=>{
   setTheme("system");
