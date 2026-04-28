@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unshaken v1.7.20</title>
+<title>Unshaken v1.7.21</title>
 
 <style>
 :root{
@@ -158,6 +158,8 @@ button:hover{background:var(--accent);color:#fff;}
 
   <button onclick="loadDaily()">Daily</button>
   <button onclick="loadRandom()">Random</button>
+  <button onclick="toggleSearch()">Search</button>
+  <button onclick="toggleFavorites()">Favorites</button>
 
   <select id="translationSelect" onchange="changeTranslation(this.value)"></select>
 
@@ -167,6 +169,21 @@ button:hover{background:var(--accent);color:#fff;}
     <option value="dark">Night</option>
   </select>
 
+</div>
+
+<!-- SEARCH -->
+<div class="card hidden" id="searchBox">
+  <div class="section-title">Search</div>
+  <input id="searchInput" placeholder="Search verses...">
+  <button onclick="runSearch()">Search</button>
+  <button onclick="clearSearch()">Clear</button>
+  <div id="searchResults"></div>
+</div>
+
+<!-- FAVORITES -->
+<div class="card hidden" id="favoritesBox">
+  <div class="section-title">Favorites</div>
+  <div id="favoritesList"></div>
 </div>
 
 <div class="card">
@@ -181,7 +198,7 @@ button:hover{background:var(--accent);color:#fff;}
 
 </div>
 
-<div class="footer-left">v1.7.20</div>
+<div class="footer-left">v1.7.21</div>
 
 <div class="footer-right" onclick="toggleMission()">
   est. 2013 — The Parker Family
@@ -212,7 +229,7 @@ let bibleIndex=[];
 let bibleMap={};
 let current=null;
 let currentSeed=null;
-let favorites=[];
+let favorites=JSON.parse(localStorage.getItem("fav")||"[]");
 
 /* ================= THEME ================= */
 
@@ -224,7 +241,7 @@ function setTheme(mode){
   document.documentElement.setAttribute("data-theme",dark?"dark":"light");
 }
 
-/* ================= INIT DROPDOWN (FIXED) ================= */
+/* ================= INIT ================= */
 
 function buildTranslationDropdown(){
   const sel=document.getElementById("translationSelect");
@@ -232,8 +249,6 @@ function buildTranslationDropdown(){
   sel.innerHTML=Object.keys(TRANSLATIONS).map(k=>
     `<option value="${k}">${TRANSLATIONS[k].name}</option>`
   ).join("");
-
-  sel.value=currentTranslation;
 }
 
 /* ================= LOAD BIBLE ================= */
@@ -280,18 +295,6 @@ function setVerseBySeed(seed){
   setVerse(bibleMap[key]);
 }
 
-/* ================= FIRST LOAD FIX ================= */
-
-function initApp(){
-  buildTranslationDropdown();
-
-  loadBible().then(()=>{
-    loadDaily(); // ✅ FIXED: only after data exists
-  });
-}
-
-/* ================= DAILY / RANDOM ================= */
-
 function loadDaily(){
   currentSeed=hashSeed(new Date().toDateString());
   setVerseBySeed(currentSeed);
@@ -302,7 +305,7 @@ function loadRandom(){
   setVerseBySeed(currentSeed);
 }
 
-/* ================= RENDER ================= */
+/* ================= VERSE ================= */
 
 function setVerse(v){
   current=v;
@@ -312,11 +315,17 @@ function setVerse(v){
    <div class="verse-text">${v.text}</div>`;
 
   updateStar();
+  updateDevotion();
+}
+
+/* ================= DEVOTION ================= */
+
+function updateDevotion(){
   document.getElementById("prayer").innerText="Walk faithfully today.";
   document.getElementById("reflection").innerText="What is God showing you?";
 }
 
-/* ================= FAVORITES ================= */
+/* ================= FAVORITES (RESTORED) ================= */
 
 function toggleFavorite(){
   if(!current)return;
@@ -327,7 +336,10 @@ function toggleFavorite(){
   if(i>-1)favorites.splice(i,1);
   else favorites.push(key);
 
+  localStorage.setItem("fav",JSON.stringify(favorites));
+
   updateStar();
+  renderFavorites();
 }
 
 function updateStar(){
@@ -338,17 +350,69 @@ function updateStar(){
     favorites.includes(key)?"★":"☆";
 }
 
+function toggleFavorites(){
+  document.getElementById("favoritesBox").classList.toggle("hidden");
+  renderFavorites();
+}
+
+function renderFavorites(){
+  const box=document.getElementById("favoritesList");
+  box.innerHTML="";
+
+  favorites.forEach(f=>{
+    const div=document.createElement("div");
+    div.className="result";
+    div.innerText=f;
+
+    div.onclick=()=>{
+      const v=bibleIndex.find(x=>`${x.book} ${x.ref}`===f);
+      if(v)setVerse(v);
+    };
+
+    box.appendChild(div);
+  });
+}
+
+/* ================= SEARCH (RESTORED) ================= */
+
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+}
+
+function runSearch(){
+  const q=document.getElementById("searchInput").value.toLowerCase();
+
+  const matches=bibleIndex.filter(v=>
+    (v.book+" "+v.ref+" "+v.text).toLowerCase().includes(q)
+  ).slice(0,50);
+
+  document.getElementById("searchResults").innerHTML=
+    matches.map(v=>
+      `<div class="result" onclick="setVerseFromSearch('${v.book}','${v.ref}')">
+        <strong>${v.book} ${v.ref}</strong><br>
+        <span class="small">${v.text.slice(0,120)}...</span>
+      </div>`
+    ).join("");
+}
+
+function setVerseFromSearch(book,ref){
+  const v=bibleMap[book+" "+ref];
+  if(v)setVerse(v);
+}
+
+function clearSearch(){
+  document.getElementById("searchInput").value="";
+  document.getElementById("searchResults").innerHTML="";
+}
+
 /* ================= TRANSLATION SWITCH ================= */
 
 function changeTranslation(t){
   currentTranslation=t;
 
   loadBible().then(()=>{
-    if(currentSeed!==null){
-      setVerseBySeed(currentSeed);
-    } else {
-      loadDaily();
-    }
+    if(currentSeed!==null) setVerseBySeed(currentSeed);
+    else loadDaily();
   });
 }
 
@@ -366,9 +430,13 @@ function toggleMission(){
   }
 }
 
-/* ================= START ================= */
+/* ================= INIT ================= */
 
-window.onload=initApp;
+window.onload=()=>{
+  setTheme("system");
+  buildTranslationDropdown();
+  loadBible().then(loadDaily);
+};
 
 </script>
 
