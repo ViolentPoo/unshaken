@@ -219,8 +219,6 @@ button:hover{
 
 <script>
 
-/* --- unchanged core --- */
-
 const TRANSLATIONS={
   web:"World English Bible (WEB)",
   kjv:"King James Version (KJV)",
@@ -279,12 +277,60 @@ function buildDropdown(){
 
 function setTranslation(t){currentTranslation=t;if(currentKey)show(currentKey);}
 
-/* --- SEARCH unchanged --- */
-function toggleSearch(){document.getElementById("searchBox").classList.toggle("hidden");}
-function clearSearch(){q.value="";hero.innerHTML="";results.innerHTML="";}
+/* ✅ SEARCH RESTORED */
+function toggleSearch(){
+  document.getElementById("searchBox").classList.toggle("hidden");
+}
 
-/* --- FAVORITES SAFE VERSION --- */
+function instantSearch(){
+  const q=document.getElementById("q").value.toLowerCase().trim();
+  if(!q){
+    hero.innerHTML="";
+    results.innerHTML="";
+    return;
+  }
 
+  const words=q.split(/\s+/);
+  let scored=[];
+
+  for(const k of keys){
+    const text=(canon[k][currentTranslation]||"").toLowerCase();
+
+    let score=0;
+    if(text.includes(q)) score+=5;
+    words.forEach(w=>{ if(text.includes(w)) score++; });
+
+    if(score>0) scored.push({k,score,text});
+  }
+
+  scored.sort((a,b)=>b.score-a.score);
+
+  const heroVerse=scored[0];
+
+  document.getElementById("hero").innerHTML=
+    heroVerse ? `
+      <div class="hero-card" onclick="show('${heroVerse.k}')">
+        <div class="hero-ref">${heroVerse.k}</div>
+        <div class="hero-text">${formatVerse(heroVerse.text).slice(0,140)}...</div>
+      </div>
+    ` : "";
+
+  document.getElementById("results").innerHTML=
+    scored.slice(1,25).map(s=>`
+      <div class="list-item" onclick="show('${s.k}')">
+        <div class="ref">${s.k}</div>
+        <div class="preview">${formatVerse(s.text).slice(0,90)}...</div>
+      </div>
+    `).join("");
+}
+
+function clearSearch(){
+  document.getElementById("q").value="";
+  document.getElementById("hero").innerHTML="";
+  document.getElementById("results").innerHTML="";
+}
+
+/* FAVORITES (SAFE) */
 function toggleFavorites(){
   document.getElementById("favBox").classList.toggle("hidden");
   renderFav();
@@ -310,7 +356,6 @@ function renderFav(){
     </div>
   `).join("");
 
-  /* attach listeners safely */
   container.querySelectorAll(".list-item").forEach(el=>{
     el.addEventListener("click",()=>show(el.dataset.key));
   });
@@ -332,13 +377,11 @@ function updateStar(){
   document.getElementById("star").innerText=favs.includes(currentKey)?"★":"☆";
 }
 
-/* THEME */
 function setTheme(m){
   const d=m==="dark"||(m==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.setAttribute("data-theme",d?"dark":"light");
 }
 
-/* MODAL */
 function openMission(){document.getElementById("missionModal").style.display="flex";}
 function closeMission(){document.getElementById("missionModal").style.display="none";}
 
