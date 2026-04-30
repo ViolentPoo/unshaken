@@ -62,7 +62,6 @@ body{
   border:1px solid var(--border);
 }
 
-/* TITLES */
 .section-title,
 .verse-section-title{
   font-size:13px;
@@ -72,7 +71,6 @@ body{
   text-transform:uppercase;
 }
 
-/* BUTTONS */
 button,select,input{
   padding:9px 12px;
   border-radius:12px;
@@ -89,10 +87,8 @@ button:hover{
   cursor:pointer;
 }
 
-/* STAR */
 .star{font-size:28px;cursor:pointer;}
 
-/* LIST */
 .list-item{
   padding:12px;
   border-radius:14px;
@@ -104,7 +100,6 @@ button:hover{
 .ref{font-weight:700;}
 .preview{font-size:12px;color:var(--muted);margin-top:4px;}
 
-/* HERO */
 .hero-card{
   padding:14px;
   border-radius:14px;
@@ -114,9 +109,8 @@ button:hover{
 }
 
 .hero-ref{font-weight:800;}
-.hero-text{font-size:12px;opacity:0.95;margin-top:6px;}
+.hero-text{font-size:12px;margin-top:6px;}
 
-/* FOOTER */
 .footer-left,
 .footer-right{
   position:fixed;
@@ -128,7 +122,6 @@ button:hover{
 .footer-left{left:10px;}
 .footer-right{right:10px;cursor:pointer;}
 
-/* MODAL */
 .modal-backdrop{
   position:fixed;
   inset:0;
@@ -146,10 +139,7 @@ button:hover{
   width:min(520px,90%);
 }
 
-/* HIDDEN FIX */
-.hidden{
-  display:none !important;
-}
+.hidden{display:none !important;}
 </style>
 </head>
 
@@ -159,24 +149,20 @@ button:hover{
 
 <div class="container">
 
-<!-- VERSE -->
 <div class="card">
   <div class="verse-section-title" id="verse-title">Verse</div>
   <div id="verse">Loading...</div>
   <div class="star" id="star" onclick="toggleFav()">☆</div>
 </div>
 
-<!-- CONTROLS -->
 <div class="card">
   <button onclick="daily()">Daily</button>
   <button onclick="randomVerse()">Random</button>
   <button onclick="toggleSearch()">Search</button>
   <button onclick="toggleFavorites()">Favorites</button>
 
-  <!-- RESTORED -->
   <select id="translation" onchange="setTranslation(this.value)"></select>
 
-  <!-- RESTORED THEME -->
   <select onchange="setTheme(this.value)">
     <option value="system">System</option>
     <option value="light">Light</option>
@@ -184,7 +170,6 @@ button:hover{
   </select>
 </div>
 
-<!-- SEARCH -->
 <div class="card hidden" id="searchBox">
   <div class="section-title">Search</div>
   <input id="q" oninput="instantSearch()" placeholder="Search verses...">
@@ -194,19 +179,16 @@ button:hover{
   <div id="results"></div>
 </div>
 
-<!-- FAVORITES -->
 <div class="card hidden" id="favBox">
   <div class="section-title">Favorites</div>
   <div id="favList"></div>
 </div>
 
-<!-- PRAYER -->
 <div class="card">
   <div class="section-title">Prayer</div>
   <div id="prayer">Walk faithfully today.</div>
 </div>
 
-<!-- REFLECTION -->
 <div class="card">
   <div class="section-title">Reflection</div>
   <div id="reflection">What is God showing you?</div>
@@ -214,13 +196,9 @@ button:hover{
 
 </div>
 
-<!-- FOOTER RESTORED CLICK -->
 <div class="footer-left">Unshaken</div>
-<div class="footer-right" onclick="openMission()">
-est. 2013 — The Parker Family
-</div>
+<div class="footer-right" onclick="openMission()">est. 2013 — The Parker Family</div>
 
-<!-- MODAL -->
 <div class="modal-backdrop" id="missionModal" onclick="closeMission(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <h3>Parker Family Mission Statement</h3>
@@ -231,8 +209,6 @@ est. 2013 — The Parker Family
 
 <script>
 
-/* SAME CORE DATA */
-
 const TRANSLATIONS={
   web:"World English Bible (WEB)",
   kjv:"King James Version (KJV)",
@@ -241,9 +217,29 @@ const TRANSLATIONS={
   cpdv:"Catholic Public Domain Version (CPDV)"
 };
 
+const DAILY_SEED = 81213;
+
 let canon={},keys=[],currentKey=null;
 let currentTranslation="web";
 let favs=JSON.parse(localStorage.getItem("fav")||"[]");
+
+/* HASH DAILY SYSTEM */
+function hash(str){
+  let h=0;
+  for(let i=0;i<str.length;i++){
+    h=(h*31 + str.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
+function getDaily(){
+  const today=new Date().toDateString();
+  const seed = today + DAILY_SEED;
+  const h = hash(seed);
+
+  if(!keys.length) return null;
+  return keys[h % keys.length];
+}
 
 /* LOAD */
 async function loadAll(){
@@ -270,7 +266,9 @@ async function loadAll(){
 
   keys=Object.keys(canon);
   buildDropdown();
-  show(keys[0]);
+
+  const dk = getDaily();
+  if(dk) show(dk);
 }
 
 /* SHOW */
@@ -285,10 +283,10 @@ function show(k){
   updateStar();
 }
 
-/* DAILY */
+/* DAILY BUTTON */
 function daily(){
-  const h=(new Date().toDateString().length*81213)%keys.length;
-  show(keys[h]);
+  const dk = getDaily();
+  if(dk) show(dk);
 }
 
 /* RANDOM */
@@ -309,13 +307,13 @@ function setTranslation(t){
   if(currentKey) show(currentKey);
 }
 
-/* SEARCH FIXED */
+/* SEARCH */
 function toggleSearch(){
   document.getElementById("searchBox").classList.toggle("hidden");
 }
 
 function instantSearch(){
-  const q=document.getElementById("q").value.toLowerCase();
+  const q=document.getElementById("q").value.toLowerCase().trim();
   if(!q){
     document.getElementById("hero").innerHTML="";
     document.getElementById("results").innerHTML="";
@@ -396,7 +394,7 @@ function updateStar(){
     favs.includes(currentKey)?"★":"☆";
 }
 
-/* THEME FIXED */
+/* THEME */
 function setTheme(mode){
   const dark=
     mode==="dark"||
@@ -405,7 +403,7 @@ function setTheme(mode){
   document.documentElement.setAttribute("data-theme",dark?"dark":"light");
 }
 
-/* MODAL FIXED */
+/* MODAL */
 function openMission(){
   document.getElementById("missionModal").style.display="flex";
 }
