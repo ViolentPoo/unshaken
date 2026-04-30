@@ -223,7 +223,14 @@ let canon={},keys=[],currentKey=null;
 let currentTranslation="web";
 let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 
-/* HASH DAILY SYSTEM */
+/* ✅ FORMAT FIX */
+function formatVerse(text){
+  if(!text) return "";
+  text = text.trim();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/* HASH DAILY */
 function hash(str){
   let h=0;
   for(let i=0;i<str.length;i++){
@@ -278,12 +285,12 @@ function show(k){
 
   document.getElementById("verse-title").innerText=k;
   document.getElementById("verse").innerText=
-    canon[k][currentTranslation]||"";
+    formatVerse(canon[k][currentTranslation]||"");
 
   updateStar();
 }
 
-/* DAILY BUTTON */
+/* DAILY */
 function daily(){
   const dk = getDaily();
   if(dk) show(dk);
@@ -321,7 +328,6 @@ function instantSearch(){
   }
 
   const words=q.split(/\s+/);
-
   let scored=[];
 
   for(const k of keys){
@@ -342,7 +348,7 @@ function instantSearch(){
     hero ? `
       <div class="hero-card" onclick="show('${hero.k}')">
         <div class="hero-ref">${hero.k}</div>
-        <div class="hero-text">${hero.text.slice(0,140)}...</div>
+        <div class="hero-text">${formatVerse(hero.text).slice(0,140)}...</div>
       </div>
     ` : "";
 
@@ -350,7 +356,7 @@ function instantSearch(){
     scored.slice(1,25).map(s=>`
       <div class="list-item" onclick="show('${s.k}')">
         <div class="ref">${s.k}</div>
-        <div class="preview">${s.text.slice(0,90)}...</div>
+        <div class="preview">${formatVerse(s.text).slice(0,90)}...</div>
       </div>
     `).join("");
 }
@@ -384,7 +390,7 @@ function renderFav(){
     favs.map(k=>`
       <div class="list-item" onclick="show('${k}')">
         <div class="ref">${k}</div>
-        <div class="preview">${(canon[k]?.[currentTranslation]||"").slice(0,100)}...</div>
+        <div class="preview">${formatVerse(canon[k]?.[currentTranslation]||"").slice(0,100)}...</div>
       </div>
     `).join("");
 }
