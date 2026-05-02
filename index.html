@@ -208,8 +208,8 @@ button:hover{
 <div class="footer-left">Unshaken</div>
 <div class="footer-right" onclick="openMission()">est. 2013 — The Parker Family</div>
 
-<div class="modal-backdrop" id="missionModal">
-  <div class="modal">
+<div class="modal-backdrop" id="missionModal" onclick="closeMission(event)">
+  <div class="modal" onclick="event.stopPropagation()">
     <h3>Parker Family Mission Statement</h3>
     <p>As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.</p>
     <button onclick="closeMission()">Close</button>
@@ -234,8 +234,11 @@ let favs=JSON.parse(localStorage.getItem("fav")||"[]");
 
 let EXTRAS={
   prayers:["Walk faithfully today."],
-  reflections:["What is God showing you?"]
+  reflections:["What is God showing you?"],
+  topics:{}
 };
+
+let dailyKeyForExtras=null;
 
 function formatVerse(t){
   return t ? t.trim().charAt(0).toUpperCase()+t.trim().slice(1) : "";
@@ -257,8 +260,7 @@ function getDaily(){
 
 function getDailyIndex(length,offset){
   if(!length) return 0;
-  const today=new Date().toDateString();
-  return hash(today+DAILY_SEED+offset)%length;
+  return hash(new Date().toDateString()+DAILY_SEED+offset)%length;
 }
 
 /* THEME */
@@ -292,23 +294,83 @@ async function loadExtras(){
   try{
     const res=await fetch("content/extras.json");
     if(!res.ok) throw new Error("extras.json failed to load");
+
     const data=await res.json();
 
     EXTRAS={
       prayers:Array.isArray(data.prayers)&&data.prayers.length ? data.prayers : EXTRAS.prayers,
-      reflections:Array.isArray(data.reflections)&&data.reflections.length ? data.reflections : EXTRAS.reflections
+      reflections:Array.isArray(data.reflections)&&data.reflections.length ? data.reflections : EXTRAS.reflections,
+      topics:data.topics && typeof data.topics==="object" ? data.topics : {}
     };
   }catch(e){
     console.warn("Using fallback prayer/reflection content.",e);
   }
 }
 
-function setDailyExtras(){
-  const prayerIndex=getDailyIndex(EXTRAS.prayers.length,1);
-  const reflectionIndex=getDailyIndex(EXTRAS.reflections.length,2);
+function getTopicForVerse(key){
+  if(!key || !canon[key]) return null;
 
-  document.getElementById("prayer").innerText=EXTRAS.prayers[prayerIndex]||"Walk faithfully today.";
-  document.getElementById("reflection").innerText=EXTRAS.reflections[reflectionIndex]||"What is God showing you?";
+  const verseText=(
+    canon[key][currentTranslation] ||
+    canon[key].web ||
+    ""
+  ).toLowerCase();
+
+  const topicScores=[];
+
+  Object.keys(EXTRAS.topics||{}).forEach(topicName=>{
+    const topic=EXTRAS.topics[topicName];
+    const keywords=Array.isArray(topic.keywords) ? topic.keywords : [];
+
+    let score=0;
+
+    keywords.forEach(rawKeyword=>{
+      const keyword=String(rawKeyword).toLowerCase().trim();
+      if(!keyword) return;
+
+      if(verseText.includes(keyword)){
+        score += keyword.includes(" ") ? 3 : 1;
+      }
+    });
+
+    if(score>0){
+      topicScores.push({topicName,score});
+    }
+  });
+
+  if(!topicScores.length) return null;
+
+  const bestScore=Math.max(...topicScores.map(t=>t.score));
+  const tied=topicScores.filter(t=>t.score===bestScore);
+
+  if(tied.length===1) return tied[0].topicName;
+
+  const tieIndex=hash(new Date().toDateString()+DAILY_SEED+"topic-tie")%tied.length;
+  return tied[tieIndex].topicName;
+}
+
+function chooseDailyItem(items,offset){
+  if(!items || !items.length) return "";
+  return items[getDailyIndex(items.length,offset)];
+}
+
+function setDailyExtras(){
+  const topicName=getTopicForVerse(dailyKeyForExtras);
+  const topic=topicName ? EXTRAS.topics[topicName] : null;
+
+  const topicPrayers=topic && Array.isArray(topic.prayers) && topic.prayers.length ? topic.prayers : null;
+  const topicReflections=topic && Array.isArray(topic.reflections) && topic.reflections.length ? topic.reflections : null;
+
+  const prayer=topicPrayers
+    ? chooseDailyItem(topicPrayers,"prayer-"+topicName)
+    : chooseDailyItem(EXTRAS.prayers,"prayer-general");
+
+  const reflection=topicReflections
+    ? chooseDailyItem(topicReflections,"reflection-"+topicName)
+    : chooseDailyItem(EXTRAS.reflections,"reflection-general");
+
+  document.getElementById("prayer").innerText=prayer||"Walk faithfully today.";
+  document.getElementById("reflection").innerText=reflection||"What is God showing you?";
 }
 
 /* LOAD VERSES */
@@ -340,7 +402,10 @@ async function loadAll(){
   buildDropdown();
 
   const dk=getDaily();
+  dailyKeyForExtras=dk;
+
   if(dk) show(dk);
+  setDailyExtras();
 }
 
 function show(k){
@@ -356,7 +421,9 @@ function show(k){
 
 function daily(){
   const dk=getDaily();
+  dailyKeyForExtras=dk;
   if(dk) show(dk);
+  setDailyExtras();
 }
 
 function randomVerse(){
@@ -374,6 +441,7 @@ function buildDropdown(){
 function setTranslation(t){
   currentTranslation=t;
   if(currentKey) show(currentKey);
+  setDailyExtras();
 }
 
 /* SEARCH */
@@ -494,7 +562,6 @@ window.onload=async()=>{
   initTheme();
   await loadExtras();
   await loadAll();
-  setDailyExtras();
 };
 
 </script>
