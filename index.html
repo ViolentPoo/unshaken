@@ -307,8 +307,48 @@ async function loadExtras(){
   }
 }
 
-function getTopicForVerse(key){
-  if(!key || !canon[key]) return null;
+/* TOPIC ENGINE: WEIGHTED KEYWORDS + MULTI-TOPIC BLENDING */
+
+function normalizeKeyword(rawKeyword){
+  if(typeof rawKeyword==="string"){
+    return {
+      term:rawKeyword.toLowerCase().trim(),
+      weight:1
+    };
+  }
+
+  if(rawKeyword && typeof rawKeyword==="object"){
+    return {
+      term:String(rawKeyword.term || rawKeyword.keyword || "").toLowerCase().trim(),
+      weight:Number(rawKeyword.weight || 1)
+    };
+  }
+
+  return {term:"",weight:0};
+}
+
+function scoreTopic(topic,verseText){
+  const keywords=Array.isArray(topic.keywords) ? topic.keywords : [];
+  let score=0;
+  let hits=[];
+
+  keywords.forEach(rawKeyword=>{
+    const item=normalizeKeyword(rawKeyword);
+    if(!item.term) return;
+
+    if(verseText.includes(item.term)){
+      const phraseBonus=item.term.includes(" ") ? 2 : 1;
+      const value=item.weight * phraseBonus;
+      score += value;
+      hits.push(item.term);
+    }
+  });
+
+  return {score,hits};
+}
+
+function getTopicMatchesForVerse(key){
+  if(!key || !canon[key]) return [];
 
   const verseText=(
     canon[key][currentTranslation] ||
@@ -316,37 +356,81 @@ function getTopicForVerse(key){
     ""
   ).toLowerCase();
 
-  const topicScores=[];
+  const scored=[];
 
   Object.keys(EXTRAS.topics||{}).forEach(topicName=>{
     const topic=EXTRAS.topics[topicName];
-    const keywords=Array.isArray(topic.keywords) ? topic.keywords : [];
+    const result=scoreTopic(topic,verseText);
 
-    let score=0;
-
-    keywords.forEach(rawKeyword=>{
-      const keyword=String(rawKeyword).toLowerCase().trim();
-      if(!keyword) return;
-
-      if(verseText.includes(keyword)){
-        score += keyword.includes(" ") ? 3 : 1;
-      }
-    });
-
-    if(score>0){
-      topicScores.push({topicName,score});
+    if(result.score>0){
+      scored.push({
+        topicName,
+        score:result.score,
+        hits:result.hits
+      });
     }
   });
 
-  if(!topicScores.length) return null;
+  if(!scored.length) return [];
 
-  const bestScore=Math.max(...topicScores.map(t=>t.score));
-  const tied=topicScores.filter(t=>t.score===bestScore);
+  scored.sort((a,b)=>b.score-a.score);
 
-  if(tied.length===1) return tied[0].topicName;
+  const topScore=scored[0].score;
+  const closeThreshold=0.75;
 
-  const tieIndex=hash(new Date().toDateString()+DAILY_SEED+"topic-tie")%tied.length;
-  return tied[tieIndex].topicName;
+  let closeMatches=scored.filter(item=>item.score>=topScore*closeThreshold);
+
+  if(closeMatches.length>2){
+    closeMatches=closeMatches.slice(0,2);
+  }
+
+  const tiedForFirst=closeMatches.filter(item=>item.score===topScore);
+
+  if(tiedForFirst.length>1){
+    const chosenIndex=hash(new Date().toDateString()+DAILY_SEED+"topic-tie")%tiedForFirst.length;
+    const chosenFirst=tiedForFirst[chosenIndex];
+
+    closeMatches=[
+      chosenFirst,
+      ...closeMatches.filter(item=>item.topicName!==chosenFirst.topicName)
+    ];
+  }
+
+  return closeMatches.slice(0,2);
+}
+
+function weightedTopicItems(topicMatches,type){
+  const items=[];
+
+  topicMatches.forEach(match=>{
+    const topic=EXTRAS.topics[match.topicName];
+    const list=topic && Array.isArray(topic[type]) ? topic[type] : [];
+
+    list.forEach(text=>{
+      items.push({
+        text,
+        weight:match.score,
+        topic:match.topicName
+      });
+    });
+  });
+
+  return items;
+}
+
+function chooseWeightedDailyItem(items,offset){
+  if(!items || !items.length) return "";
+
+  const expanded=[];
+
+  items.forEach(item=>{
+    const repeat=Math.max(1,Math.round(item.weight));
+    for(let i=0;i<repeat;i++){
+      expanded.push(item.text);
+    }
+  });
+
+  return expanded[getDailyIndex(expanded.length,offset)];
 }
 
 function chooseDailyItem(items,offset){
@@ -355,18 +439,17 @@ function chooseDailyItem(items,offset){
 }
 
 function setDailyExtras(){
-  const topicName=getTopicForVerse(dailyKeyForExtras);
-  const topic=topicName ? EXTRAS.topics[topicName] : null;
+  const topicMatches=getTopicMatchesForVerse(dailyKeyForExtras);
 
-  const topicPrayers=topic && Array.isArray(topic.prayers) && topic.prayers.length ? topic.prayers : null;
-  const topicReflections=topic && Array.isArray(topic.reflections) && topic.reflections.length ? topic.reflections : null;
+  const prayerItems=weightedTopicItems(topicMatches,"prayers");
+  const reflectionItems=weightedTopicItems(topicMatches,"reflections");
 
-  const prayer=topicPrayers
-    ? chooseDailyItem(topicPrayers,"prayer-"+topicName)
+  const prayer=prayerItems.length
+    ? chooseWeightedDailyItem(prayerItems,"topic-prayer")
     : chooseDailyItem(EXTRAS.prayers,"prayer-general");
 
-  const reflection=topicReflections
-    ? chooseDailyItem(topicReflections,"reflection-"+topicName)
+  const reflection=reflectionItems.length
+    ? chooseWeightedDailyItem(reflectionItems,"topic-reflection")
     : chooseDailyItem(EXTRAS.reflections,"reflection-general");
 
   document.getElementById("prayer").innerText=prayer||"Walk faithfully today.";
