@@ -46,5 +46,85 @@
     "Where did God give me strength today?",
     "Who might need encouragement from me tomorrow?",
     "What am I learning in this season?"
-  ]
+  ],
+  "topics": {
+    "faith": {
+      "keywords": ["faith", "believe", "trust", "trusted", "trusting", "confidence"],
+      "prayers": [
+        "Lord, help me trust You more deeply today.",
+        "Strengthen my faith when I cannot see the whole path.",
+        "Help me believe Your promises even when life feels uncertain."
+      ],
+      "reflections": [
+        "Where is God inviting me to trust Him more?",
+        "What would faith look like in this situation?",
+        "Am I trusting God’s timing or trying to control the outcome?"
+      ]
+    },
+    "peace": {
+      "keywords": ["peace", "rest", "comfort", "still", "quiet", "fear not"],
+      "prayers": [
+        "Lord, quiet my heart and lead me in Your peace.",
+        "Give me rest from anxious thoughts today.",
+        "Help me receive Your peace instead of carrying worry alone."
+      ],
+      "reflections": [
+        "Where do I need God’s peace today?",
+        "What worry can I surrender instead of carrying?",
+        "How can I make room for stillness with God?"
+      ]
+    },
+    "strength": {
+      "keywords": ["strength", "strong", "mighty", "power", "endure", "courage"],
+      "prayers": [
+        "Lord, give me strength for what is in front of me.",
+        "Help me stand firm with courage and patience.",
+        "Remind me that Your strength is greater than my weakness."
+      ],
+      "reflections": [
+        "Where do I need strength today?",
+        "How has God carried me before?",
+        "What would courage look like in this moment?"
+      ]
+    },
+    "love": {
+      "keywords": ["love", "loved", "charity", "kindness", "mercy", "compassion"],
+      "prayers": [
+        "Lord, help my words and actions reflect Your love.",
+        "Teach me to love with patience, humility, and grace.",
+        "Give me a heart that notices and serves others."
+      ],
+      "reflections": [
+        "Who needs love from me today?",
+        "Did I choose kindness when it was inconvenient?",
+        "How can I reflect God’s love more clearly?"
+      ]
+    },
+    "wisdom": {
+      "keywords": ["wisdom", "wise", "understanding", "knowledge", "discern", "instruction"],
+      "prayers": [
+        "Lord, give me wisdom for today’s decisions.",
+        "Help me slow down and choose what honors You.",
+        "Teach me to listen before I act."
+      ],
+      "reflections": [
+        "Where do I need wisdom right now?",
+        "Am I seeking God’s direction or only my own opinion?",
+        "What choice today requires discernment?"
+      ]
+    },
+    "hope": {
+      "keywords": ["hope", "wait", "promise", "future", "deliver", "renew"],
+      "prayers": [
+        "Lord, renew my hope and help me keep going.",
+        "Remind me that You are still working even when I cannot see it.",
+        "Help me hold onto Your promises today."
+      ],
+      "reflections": [
+        "What hope can I hold onto today?",
+        "Where have I seen God working slowly but faithfully?",
+        "What promise do I need to remember?"
+      ]
+    }
+  }
 }
