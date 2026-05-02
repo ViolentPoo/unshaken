@@ -1,0 +1,172 @@
+{
+  "prayers": [
+    "Lord, guide my steps today and keep me steady.",
+    "Give me strength to face whatever comes.",
+    "Help me walk in faith and not fear.",
+    "Fill me with patience and wisdom today.",
+    "Let my actions reflect Your love.",
+    "Keep my heart focused on what matters most.",
+    "Help me trust You in every situation.",
+    "Lord, help me listen before I speak.",
+    "Give me peace when my thoughts feel heavy.",
+    "Teach me to love others with patience and grace.",
+    "Help me choose faith over fear today.",
+    "Lord, give me wisdom for the decisions ahead.",
+    "Keep my heart humble and my spirit steady.",
+    "Help me see Your goodness in small moments.",
+    "Give me courage to do what is right.",
+    "Lord, help me forgive quickly and love deeply.",
+    "Guide my words so they bring peace.",
+    "Help me stay rooted when life feels uncertain.",
+    "Lord, remind me that I am not walking alone.",
+    "Give me strength to serve others with joy.",
+    "Help me trust Your timing today.",
+    "Lord, shape my heart to reflect Your mercy."
+  ],
+  "reflections": [
+    "Where did I see God today?",
+    "What challenged my faith today?",
+    "Did I respond with grace and patience?",
+    "What am I grateful for today?",
+    "Where can I grow tomorrow?",
+    "Did I trust God or rely on myself?",
+    "Who can I encourage today?",
+    "What did today teach me about patience?",
+    "Where did I need more faith today?",
+    "How did I show love to someone else?",
+    "What worry can I surrender to God?",
+    "What moment today reminded me to be thankful?",
+    "Did my words bring peace or tension today?",
+    "Where did I see an opportunity to serve?",
+    "What is one thing I handled better than before?",
+    "Where do I need to ask for forgiveness?",
+    "What blessing did I almost overlook today?",
+    "How can I be more present tomorrow?",
+    "What truth do I need to hold onto tonight?",
+    "Where did God give me strength today?",
+    "Who might need encouragement from me tomorrow?",
+    "What am I learning in this season?"
+  ],
+  "topics": {
+    "faith": {
+      "keywords": [
+        {"term":"faith","weight":5},
+        {"term":"believe","weight":4},
+        {"term":"trust","weight":4},
+        {"term":"confidence","weight":3},
+        {"term":"walk by faith","weight":7},
+        {"term":"not by sight","weight":7}
+      ],
+      "prayers": [
+        "Lord, help me trust You more deeply today.",
+        "Strengthen my faith when I cannot see the whole path.",
+        "Help me believe Your promises even when life feels uncertain."
+      ],
+      "reflections": [
+        "Where is God inviting me to trust Him more?",
+        "What would faith look like in this situation?",
+        "Am I trusting God’s timing or trying to control the outcome?"
+      ]
+    },
+    "peace": {
+      "keywords": [
+        {"term":"peace","weight":5},
+        {"term":"rest","weight":4},
+        {"term":"comfort","weight":4},
+        {"term":"still","weight":3},
+        {"term":"fear not","weight":6},
+        {"term":"be still","weight":7}
+      ],
+      "prayers": [
+        "Lord, quiet my heart and lead me in Your peace.",
+        "Give me rest from anxious thoughts today.",
+        "Help me receive Your peace instead of carrying worry alone."
+      ],
+      "reflections": [
+        "Where do I need God’s peace today?",
+        "What worry can I surrender instead of carrying?",
+        "How can I make room for stillness with God?"
+      ]
+    },
+    "strength": {
+      "keywords": [
+        {"term":"strength","weight":5},
+        {"term":"strong","weight":4},
+        {"term":"power","weight":3},
+        {"term":"endure","weight":4},
+        {"term":"courage","weight":4},
+        {"term":"be strong","weight":7}
+      ],
+      "prayers": [
+        "Lord, give me strength for what is in front of me.",
+        "Help me stand firm with courage and patience.",
+        "Remind me that Your strength is greater than my weakness."
+      ],
+      "reflections": [
+        "Where do I need strength today?",
+        "How has God carried me before?",
+        "What would courage look like in this moment?"
+      ]
+    },
+    "love": {
+      "keywords": [
+        {"term":"love","weight":5},
+        {"term":"loved","weight":4},
+        {"term":"mercy","weight":4},
+        {"term":"compassion","weight":4},
+        {"term":"kindness","weight":3},
+        {"term":"love one another","weight":8}
+      ],
+      "prayers": [
+        "Lord, help my words and actions reflect Your love.",
+        "Teach me to love with patience, humility, and grace.",
+        "Give me a heart that notices and serves others."
+      ],
+      "reflections": [
+        "Who needs love from me today?",
+        "Did I choose kindness when it was inconvenient?",
+        "How can I reflect God’s love more clearly?"
+      ]
+    },
+    "wisdom": {
+      "keywords": [
+        {"term":"wisdom","weight":5},
+        {"term":"wise","weight":4},
+        {"term":"understanding","weight":4},
+        {"term":"knowledge","weight":3},
+        {"term":"discern","weight":4},
+        {"term":"instruction","weight":3}
+      ],
+      "prayers": [
+        "Lord, give me wisdom for today’s decisions.",
+        "Help me slow down and choose what honors You.",
+        "Teach me to listen before I act."
+      ],
+      "reflections": [
+        "Where do I need wisdom right now?",
+        "Am I seeking God’s direction or only my own opinion?",
+        "What choice today requires discernment?"
+      ]
+    },
+    "hope": {
+      "keywords": [
+        {"term":"hope","weight":5},
+        {"term":"wait","weight":3},
+        {"term":"promise","weight":4},
+        {"term":"future","weight":3},
+        {"term":"deliver","weight":4},
+        {"term":"renew","weight":4}
+      ],
+      "prayers": [
+        "Lord, renew my hope and help me keep going.",
+        "Remind me that You are still working even when I cannot see it.",
+        "Help me hold onto Your promises today."
+      ],
+      "reflections": [
+        "What hope can I hold onto today?",
+        "Where have I seen God working slowly but faithfully?",
+        "What promise do I need to remember?"
+      ]
+    }
+  }
+}
