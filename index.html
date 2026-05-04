@@ -119,11 +119,6 @@ button.secondary{
   border:1px solid var(--border);
 }
 
-button.small{
-  padding:7px 11px;
-  font-size:.85rem;
-}
-
 .star{
   background:transparent;
   color:#f59e0b;
@@ -131,6 +126,17 @@ button.small{
   font-size:1.8rem;
   padding:0;
   line-height:1;
+  width:auto;
+}
+
+.favorite-star{
+  background:transparent;
+  color:#f59e0b;
+  border:0;
+  font-size:1.35rem;
+  padding:0;
+  line-height:1;
+  width:auto;
 }
 
 .controls{
@@ -173,6 +179,22 @@ select,input{
   font-weight:800;
   color:var(--accent);
   margin-bottom:4px;
+}
+
+.favorite-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+
+.favorite-body{
+  cursor:pointer;
+  flex:1;
+}
+
+.favorite-body:hover .favorite-ref{
+  text-decoration:underline;
 }
 
 .muted{
@@ -267,7 +289,7 @@ mark{
     width:100%;
   }
 
-  .star{
+  .star,.favorite-star{
     width:auto;
   }
 }
@@ -363,7 +385,7 @@ mark{
 </main>
 
 <footer>
-  <span>v1.8.1</span>
+  <span>v1.9.1</span>
   <span class="footer-link" id="missionOpen">est. 2013 — The Parker Family</span>
 </footer>
 
@@ -380,7 +402,7 @@ mark{
 </div>
 
 <script>
-const VERSION = "1.8.1";
+const VERSION = "1.9.1";
 const DAILY_OFFSET = 81213;
 
 const TRANSLATIONS = {
@@ -543,6 +565,13 @@ async function loadTranslation(key){
     localStorage.setItem("unshaken_translation", key);
 
     showDailyVerse();
+
+    const searchCardVisible = !document.getElementById("searchCard").classList.contains("hidden");
+    const existingQuery = document.getElementById("searchInput").value.trim();
+
+    if(searchCardVisible && existingQuery){
+      searchBible();
+    }
   }catch(error){
     verseRefEl.textContent = "Unable to load translation";
     verseTextEl.textContent = "Please make sure your translation files are in the translations folder.";
@@ -622,7 +651,6 @@ function hashString(str){
 
 function getTodayKey(){
   const now = new Date();
-
   return `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
 }
 
@@ -636,7 +664,6 @@ function getRandomVerse(){
   }
 
   const seed = Date.now() + DAILY_OFFSET;
-
   return allVerses[seed % allVerses.length];
 }
 
@@ -673,7 +700,6 @@ function pickSmartVerse(mode){
   }
 
   const topPool = ranked.slice(0, Math.min(25, ranked.length));
-
   return topPool[Math.floor(Math.random() * topPool.length)];
 }
 
@@ -806,13 +832,16 @@ function verseKey(verse){
   return `${currentTranslation}|${verse.reference}|${verse.text}`;
 }
 
+function favoriteKeyFromItem(item){
+  return `${item.translation}|${item.reference}|${item.text}`;
+}
+
 function updateFavoriteButton(){
   if(!currentVerse){
     return;
   }
 
   const key = verseKey(currentVerse);
-
   favoriteBtn.textContent = favorites.some(f=>f.key === key) ? "★" : "☆";
 }
 
@@ -836,9 +865,51 @@ function toggleFavorite(){
     });
   }
 
-  localStorage.setItem("unshaken_favorites", JSON.stringify(favorites));
+  saveFavorites();
   updateFavoriteButton();
   renderFavorites();
+}
+
+function removeFavorite(key){
+  favorites = favorites.filter(f=>f.key !== key);
+  saveFavorites();
+  updateFavoriteButton();
+  renderFavorites();
+}
+
+function openFavorite(key){
+  const favorite = favorites.find(f=>f.key === key);
+
+  if(!favorite){
+    return;
+  }
+
+  currentTranslation = favorite.translation;
+  document.getElementById("translationSelect").value = favorite.translation;
+
+  currentVerse = {
+    reference: favorite.reference,
+    text: favorite.text,
+    scores: scoreVerse(`${favorite.reference} ${favorite.text}`)
+  };
+
+  verseRefEl.textContent = currentVerse.reference;
+  verseTextEl.textContent = currentVerse.text;
+
+  document.getElementById("modeSelect").value = "random";
+  smartLabel.classList.add("hidden");
+
+  updateFavoriteButton();
+  generateDevotional(currentVerse, "random");
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+function saveFavorites(){
+  localStorage.setItem("unshaken_favorites", JSON.stringify(favorites));
 }
 
 function renderFavorites(){
@@ -851,11 +922,29 @@ function renderFavorites(){
 
   container.innerHTML = favorites.map(f=>`
     <div class="favorite-item">
-      <div class="favorite-ref">${escapeHtml(f.reference)}</div>
-      <div>${escapeHtml(f.text)}</div>
-      <div class="muted">${TRANSLATIONS[f.translation]?.name || f.translation}</div>
+      <div class="favorite-header">
+        <div class="favorite-body" data-favorite-open="${escapeHtml(f.key)}">
+          <div class="favorite-ref">${escapeHtml(f.reference)}</div>
+          <div>${escapeHtml(f.text)}</div>
+          <div class="muted">${TRANSLATIONS[f.translation]?.name || f.translation}</div>
+        </div>
+        <button class="favorite-star" data-favorite-remove="${escapeHtml(f.key)}" title="Remove from favorites">★</button>
+      </div>
     </div>
   `).join("");
+
+  container.querySelectorAll("[data-favorite-open]").forEach(item=>{
+    item.addEventListener("click",()=>{
+      openFavorite(item.getAttribute("data-favorite-open"));
+    });
+  });
+
+  container.querySelectorAll("[data-favorite-remove]").forEach(button=>{
+    button.addEventListener("click",event=>{
+      event.stopPropagation();
+      removeFavorite(button.getAttribute("data-favorite-remove"));
+    });
+  });
 }
 
 function searchBible(){
@@ -863,7 +952,7 @@ function searchBible(){
   const results = document.getElementById("searchResults");
 
   if(!query){
-    results.innerHTML = `<p class="muted">Enter a word or phrase to search.</p>`;
+    results.innerHTML = `<p class="muted">Start typing to search the Bible.</p>`;
     return;
   }
 
@@ -898,7 +987,7 @@ function highlight(text, query){
 
 function clearSearch(){
   document.getElementById("searchInput").value = "";
-  document.getElementById("searchResults").innerHTML = "";
+  document.getElementById("searchResults").innerHTML = `<p class="muted">Start typing to search the Bible.</p>`;
 }
 
 function escapeHtml(str){
@@ -952,7 +1041,16 @@ function bindEvents(){
   });
 
   document.getElementById("searchToggleBtn").addEventListener("click",()=>{
-    document.getElementById("searchCard").classList.toggle("hidden");
+    const searchCard = document.getElementById("searchCard");
+    searchCard.classList.toggle("hidden");
+
+    if(!searchCard.classList.contains("hidden")){
+      document.getElementById("searchInput").focus();
+
+      if(!document.getElementById("searchInput").value.trim()){
+        document.getElementById("searchResults").innerHTML = `<p class="muted">Start typing to search the Bible.</p>`;
+      }
+    }
   });
 
   document.getElementById("favoritesToggleBtn").addEventListener("click",()=>{
@@ -961,6 +1059,8 @@ function bindEvents(){
   });
 
   document.getElementById("searchBtn").addEventListener("click",searchBible);
+
+  document.getElementById("searchInput").addEventListener("input",searchBible);
 
   document.getElementById("searchInput").addEventListener("keydown",e=>{
     if(e.key === "Enter"){
