@@ -1,130 +1,128 @@
 {
-  "prayers": [
-    "Lord, guide my steps today and keep me steady.",
-    "Give me strength to face whatever comes.",
-    "Help me walk in faith and not fear.",
-    "Fill me with patience and wisdom today.",
-    "Let my actions reflect Your love.",
-    "Keep my heart focused on what matters most.",
-    "Help me trust You in every situation.",
-    "Lord, help me listen before I speak.",
-    "Give me peace when my thoughts feel heavy.",
-    "Teach me to love others with patience and grace.",
-    "Help me choose faith over fear today.",
-    "Lord, give me wisdom for the decisions ahead.",
-    "Keep my heart humble and my spirit steady.",
-    "Help me see Your goodness in small moments.",
-    "Give me courage to do what is right.",
-    "Lord, help me forgive quickly and love deeply.",
-    "Guide my words so they bring peace.",
-    "Help me stay rooted when life feels uncertain.",
-    "Lord, remind me that I am not walking alone.",
-    "Give me strength to serve others with joy.",
-    "Help me trust Your timing today.",
-    "Lord, shape my heart to reflect Your mercy."
-  ],
-  "reflections": [
-    "Where did I see God today?",
-    "What challenged my faith today?",
-    "Did I respond with grace and patience?",
-    "What am I grateful for today?",
-    "Where can I grow tomorrow?",
-    "Did I trust God or rely on myself?",
-    "Who can I encourage today?",
-    "What did today teach me about patience?",
-    "Where did I need more faith today?",
-    "How did I show love to someone else?",
-    "What worry can I surrender to God?",
-    "What moment today reminded me to be thankful?",
-    "Did my words bring peace or tension today?",
-    "Where did I see an opportunity to serve?",
-    "What is one thing I handled better than before?",
-    "Where do I need to ask for forgiveness?",
-    "What blessing did I almost overlook today?",
-    "How can I be more present tomorrow?",
-    "What truth do I need to hold onto tonight?",
-    "Where did God give me strength today?",
-    "Who might need encouragement from me tomorrow?",
-    "What am I learning in this season?"
-  ],
-  "topics": {
-    "faith": {
-      "keywords": ["faith", "believe", "trust", "trusted", "trusting", "confidence"],
-      "prayers": [
-        "Lord, help me trust You more deeply today.",
-        "Strengthen my faith when I cannot see the whole path.",
-        "Help me believe Your promises even when life feels uncertain."
-      ],
-      "reflections": [
-        "Where is God inviting me to trust Him more?",
-        "What would faith look like in this situation?",
-        "Am I trusting God’s timing or trying to control the outcome?"
-      ]
-    },
-    "peace": {
-      "keywords": ["peace", "rest", "comfort", "still", "quiet", "fear not"],
-      "prayers": [
-        "Lord, quiet my heart and lead me in Your peace.",
-        "Give me rest from anxious thoughts today.",
-        "Help me receive Your peace instead of carrying worry alone."
-      ],
-      "reflections": [
-        "Where do I need God’s peace today?",
-        "What worry can I surrender instead of carrying?",
-        "How can I make room for stillness with God?"
-      ]
-    },
-    "strength": {
-      "keywords": ["strength", "strong", "mighty", "power", "endure", "courage"],
-      "prayers": [
-        "Lord, give me strength for what is in front of me.",
-        "Help me stand firm with courage and patience.",
-        "Remind me that Your strength is greater than my weakness."
-      ],
-      "reflections": [
-        "Where do I need strength today?",
-        "How has God carried me before?",
-        "What would courage look like in this moment?"
-      ]
-    },
-    "love": {
-      "keywords": ["love", "loved", "charity", "kindness", "mercy", "compassion"],
-      "prayers": [
-        "Lord, help my words and actions reflect Your love.",
-        "Teach me to love with patience, humility, and grace.",
-        "Give me a heart that notices and serves others."
-      ],
-      "reflections": [
-        "Who needs love from me today?",
-        "Did I choose kindness when it was inconvenient?",
-        "How can I reflect God’s love more clearly?"
-      ]
-    },
-    "wisdom": {
-      "keywords": ["wisdom", "wise", "understanding", "knowledge", "discern", "instruction"],
-      "prayers": [
-        "Lord, give me wisdom for today’s decisions.",
-        "Help me slow down and choose what honors You.",
-        "Teach me to listen before I act."
-      ],
-      "reflections": [
-        "Where do I need wisdom right now?",
-        "Am I seeking God’s direction or only my own opinion?",
-        "What choice today requires discernment?"
-      ]
-    },
-    "hope": {
-      "keywords": ["hope", "wait", "promise", "future", "deliver", "renew"],
-      "prayers": [
-        "Lord, renew my hope and help me keep going.",
-        "Remind me that You are still working even when I cannot see it.",
-        "Help me hold onto Your promises today."
-      ],
-      "reflections": [
-        "What hope can I hold onto today?",
-        "Where have I seen God working slowly but faithfully?",
-        "What promise do I need to remember?"
-      ]
-    }
+  "prayers": {
+    "faith": [
+      "Lord, strengthen my faith today. Help me trust You even when I cannot see the whole path ahead.",
+      "God, remind me that You are steady, faithful, and near. Teach me to walk by faith instead of fear.",
+      "Father, help my heart believe Your promises and rest in Your timing."
+    ],
+    "hope": [
+      "Lord, renew my hope today. Remind me that my current moment is not the end of the story.",
+      "God, help me hold onto Your promises and see beyond what feels heavy right now.",
+      "Father, breathe fresh hope into my heart and help me keep moving forward with You."
+    ],
+    "love": [
+      "Lord, help me receive Your love and reflect it to others today.",
+      "Father, teach me to love with patience, kindness, and humility.",
+      "God, let Your love shape my words, my choices, and my attitude today."
+    ],
+    "strength": [
+      "Lord, give me strength for what is in front of me today. Help me not give up when things feel hard.",
+      "Father, be my strength when I feel weak and my courage when I feel uncertain.",
+      "God, help me stand firm, move forward, and stay grounded in You."
+    ],
+    "peace": [
+      "Lord, calm my heart and quiet my mind. Help me rest in Your presence today.",
+      "God, replace my worry with peace and my fear with trust.",
+      "Father, steady my thoughts and remind me that You are with me."
+    ],
+    "grace": [
+      "Lord, thank You for grace. Help me live today with a heart that remembers how deeply You have loved me.",
+      "God, help me receive forgiveness and extend grace to others.",
+      "Father, remind me that Your mercy is greater than my mistakes."
+    ],
+    "wisdom": [
+      "Lord, give me wisdom for today. Guide my steps and help me choose what honors You.",
+      "Father, teach me to pause, listen, and walk in understanding.",
+      "God, lead me on the right path and help me recognize Your direction."
+    ],
+    "joy": [
+      "Lord, restore my joy today. Help me notice the blessings I often overlook.",
+      "God, fill my heart with gratitude and help me rejoice in Your goodness.",
+      "Father, let joy rise in me even when the day is not perfect."
+    ]
+  },
+  "reflections": {
+    "faith": [
+      "Faith does not mean everything feels easy. It means choosing to trust God while taking the next step.",
+      "This verse is a reminder that trust grows through daily surrender, not perfect circumstances.",
+      "Faith becomes stronger when you keep returning your focus to God instead of the problem."
+    ],
+    "hope": [
+      "Hope reminds you that God is still working, even when progress feels slow.",
+      "This verse points your heart forward. What feels unfinished is still held by God.",
+      "Hope is not pretending everything is fine. It is believing God is faithful in the middle of it."
+    ],
+    "love": [
+      "Love is often shown in small choices: patience, forgiveness, kindness, and humility.",
+      "This verse invites you to let God’s love shape how you treat people today.",
+      "The love God gives you is not meant to stop with you. It is meant to move through you."
+    ],
+    "strength": [
+      "Strength is not always loud. Sometimes strength is simply refusing to quit.",
+      "This verse reminds you that God can carry what feels too heavy for you alone.",
+      "Real strength begins when you stop relying only on yourself and lean into God."
+    ],
+    "peace": [
+      "Peace does not require every problem to disappear. It grows when your heart remembers who is in control.",
+      "This verse invites you to slow down and let God steady what feels unsettled.",
+      "Peace is not weakness. It is the confidence that God is present with you."
+    ],
+    "grace": [
+      "Grace reminds you that your mistakes do not get the final word. God’s mercy does.",
+      "This verse points to the kindness of God and the freedom of being forgiven.",
+      "Grace changes how you see yourself and how you treat others."
+    ],
+    "wisdom": [
+      "Wisdom grows when you pause long enough to let God lead instead of rushing ahead.",
+      "This verse reminds you that the right path is often found through humility and listening.",
+      "God’s wisdom helps you make choices that bring peace instead of regret."
+    ],
+    "joy": [
+      "Joy is not limited to perfect days. It can grow wherever gratitude is practiced.",
+      "This verse reminds you to look for evidence of God’s goodness today.",
+      "Joy often returns when your attention shifts from what is missing to what God has already given."
+    ]
+  },
+  "actions": {
+    "faith": [
+      "Take one step today that requires trust instead of overthinking.",
+      "Pray before making one decision you would normally try to control.",
+      "Write down one promise of God and keep it visible today."
+    ],
+    "hope": [
+      "Write down one thing you are looking forward to.",
+      "Encourage someone else who may need hope today.",
+      "Name one way God has carried you before."
+    ],
+    "love": [
+      "Show kindness to someone who does not expect it.",
+      "Send a message of encouragement to one person.",
+      "Choose patience in one moment where you would normally react quickly."
+    ],
+    "strength": [
+      "Do one hard thing today without quitting.",
+      "Take a short walk and use it as time to pray for strength.",
+      "Finish one task you have been avoiding."
+    ],
+    "peace": [
+      "Pause for 60 seconds, breathe slowly, and pray before moving on.",
+      "Turn one worry into a short prayer.",
+      "Create five quiet minutes today with no phone or noise."
+    ],
+    "grace": [
+      "Let go of one mistake you keep replaying.",
+      "Offer forgiveness or patience where it is needed.",
+      "Speak to yourself today with the same grace you would offer someone you love."
+    ],
+    "wisdom": [
+      "Before one decision today, pause and ask God for wisdom.",
+      "Choose the slower, wiser response in one conversation.",
+      "Write down one thing you know is right, then act on it."
+    ],
+    "joy": [
+      "List three blessings, even small ones.",
+      "Play one worship song or uplifting song and let yourself reset.",
+      "Share something good with someone else today."
+    ]
   }
 }
