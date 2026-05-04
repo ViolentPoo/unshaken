@@ -26,627 +26,976 @@
   --accent2:#818cf8;
   --muted:#94a3b8;
   --border:#1f2937;
-  --shadow:0 10px 30px rgba(0,0,0,0.4);
+  --shadow:0 10px 25px rgba(0,0,0,0.25);
 }
 
-*{box-sizing:border-box;}
+*{
+  box-sizing:border-box;
+}
 
 body{
   margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   background:var(--bg);
   color:var(--text);
-  padding:80px 0 70px;
+  min-height:100vh;
   display:flex;
-  justify-content:center;
+  flex-direction:column;
 }
 
-.topbar{
-  position:fixed;
-  top:0;left:0;right:0;
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-  color:white;
+header{
+  padding:18px 16px;
   text-align:center;
-  padding:14px;
-  font-weight:700;
+  font-weight:800;
+  font-size:1.5rem;
 }
 
-.container{width:min(900px,92%);}
+main{
+  width:min(940px,94%);
+  margin:0 auto;
+  flex:1;
+  padding-bottom:80px;
+}
 
 .card{
   background:var(--card);
-  padding:16px;
-  border-radius:var(--radius);
-  margin-top:14px;
-  box-shadow:var(--shadow);
   border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:20px;
+  margin:14px 0;
 }
 
-.section-title,
-.verse-section-title{
-  font-size:13px;
-  font-weight:700;
-  color:var(--accent);
-  margin-bottom:10px;
+.section-title{
+  font-size:.78rem;
   text-transform:uppercase;
+  letter-spacing:.14em;
+  color:var(--accent);
+  font-weight:800;
+  margin-bottom:10px;
+}
+
+.verse-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+
+#verseText{
+  font-size:1.25rem;
+  line-height:1.65;
+  margin:10px 0;
+}
+
+#verseRef{
+  color:var(--muted);
+  font-weight:700;
 }
 
 button,select,input{
-  padding:9px 12px;
-  border-radius:12px;
-  border:1px solid var(--border);
-  margin:3px;
-  background:var(--card);
-  color:var(--text);
   font:inherit;
 }
 
-button:hover{
-  background:var(--accent);
-  color:white;
-  cursor:pointer;
-}
-
-.star{font-size:28px;cursor:pointer;}
-
-.list-item{
-  padding:12px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  margin-bottom:10px;
-  cursor:pointer;
-  position:relative;
-}
-
-.ref{font-weight:700;}
-.preview{font-size:12px;color:var(--muted);margin-top:4px;}
-
-.hero-card{
-  padding:14px;
-  border-radius:14px;
+button{
+  border:0;
+  border-radius:999px;
+  padding:10px 15px;
   background:linear-gradient(135deg,var(--accent),var(--accent2));
   color:white;
-  margin-bottom:12px;
-}
-
-.hero-ref{font-weight:800;}
-.hero-text{font-size:12px;margin-top:6px;}
-
-.fav-remove{
-  position:absolute;
-  right:12px;
-  top:10px;
-  font-size:18px;
-  color:gold;
   cursor:pointer;
+  font-weight:700;
+  transition:.18s ease;
 }
 
-.footer-left,
-.footer-right{
-  position:fixed;
-  bottom:10px;
-  font-size:11px;
+button:hover{
+  transform:translateY(-1px);
+  opacity:.94;
+}
+
+button.secondary{
+  background:transparent;
+  color:var(--text);
+  border:1px solid var(--border);
+}
+
+button.small{
+  padding:7px 11px;
+  font-size:.85rem;
+}
+
+.star{
+  background:transparent;
+  color:#f59e0b;
+  border:0;
+  font-size:1.8rem;
+  padding:0;
+  line-height:1;
+}
+
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:16px 0;
+}
+
+select,input{
+  width:100%;
+  padding:11px 12px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--text);
+  margin:6px 0;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:12px;
+}
+
+.hidden{
+  display:none;
+}
+
+.result-item,.favorite-item{
+  border-top:1px solid var(--border);
+  padding:12px 0;
+}
+
+.result-item:first-child,.favorite-item:first-child{
+  border-top:0;
+}
+
+.result-ref,.favorite-ref{
+  font-weight:800;
+  color:var(--accent);
+  margin-bottom:4px;
+}
+
+.muted{
   color:var(--muted);
 }
 
-.footer-left{left:10px;}
-.footer-right{right:10px;cursor:pointer;}
-
-.modal-backdrop{
+footer{
   position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.6);
-  display:none;
+  bottom:0;
+  left:0;
+  right:0;
+  background:rgba(255,255,255,.78);
+  backdrop-filter:blur(10px);
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
   align-items:center;
-  justify-content:center;
-  z-index:999;
+  padding:8px 12px;
+  font-size:.7rem;
+  color:var(--muted);
+}
+
+[data-theme="dark"] footer{
+  background:rgba(15,23,42,.78);
+}
+
+.footer-link{
+  cursor:pointer;
+  text-decoration:underline;
 }
 
 .modal{
-  background:var(--card);
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
   padding:18px;
-  border-radius:var(--radius);
-  width:min(520px,90%);
+  z-index:100;
 }
 
-.hidden{display:none !important;}
+.modal.hidden{
+  display:none;
+}
+
+.modal-content{
+  background:var(--card);
+  color:var(--text);
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
+  width:min(600px,95%);
+  padding:22px;
+}
+
+.smart-pill{
+  display:inline-block;
+  background:rgba(59,130,246,.12);
+  color:var(--accent);
+  border:1px solid rgba(59,130,246,.25);
+  border-radius:999px;
+  padding:6px 10px;
+  font-size:.78rem;
+  font-weight:800;
+  margin-top:8px;
+}
+
+.apply-box{
+  border-left:4px solid var(--accent);
+  padding-left:14px;
+  color:var(--text);
+}
+
+mark{
+  background:rgba(250,204,21,.45);
+  color:inherit;
+  border-radius:4px;
+  padding:0 2px;
+}
+
+@media(max-width:520px){
+  header{
+    font-size:1.25rem;
+  }
+
+  #verseText{
+    font-size:1.1rem;
+  }
+
+  button{
+    width:100%;
+  }
+
+  .star{
+    width:auto;
+  }
+}
 </style>
 </head>
 
 <body>
+<header>Unshaken Bible Verse</header>
 
-<div class="topbar">Unshaken</div>
+<main>
 
-<div class="container">
+  <div class="card">
+    <div class="section-title">Verse</div>
 
-<div class="card">
-  <div class="verse-section-title" id="verse-title">Verse</div>
-  <div id="verse">Loading...</div>
-  <div class="star" id="star" onclick="toggleFav()">☆</div>
-</div>
+    <div class="verse-header">
+      <div>
+        <div id="verseRef">Loading...</div>
+        <div id="smartLabel" class="smart-pill hidden"></div>
+      </div>
+      <button class="star" id="favoriteBtn" title="Favorite verse">☆</button>
+    </div>
 
-<div class="card">
-  <button onclick="daily()">Daily</button>
-  <button onclick="randomVerse()">Random</button>
-  <button onclick="toggleSearch()">Search</button>
-  <button onclick="toggleFavorites()">Favorites</button>
+    <p id="verseText">Loading verse...</p>
 
-  <select id="translation" onchange="setTranslation(this.value)"></select>
+    <div class="controls">
+      <button id="dailyBtn">Daily</button>
+      <button id="randomBtn">Random</button>
+      <button id="encourageBtn">Encourage Me</button>
+      <button class="secondary" id="searchToggleBtn">Search</button>
+      <button class="secondary" id="favoritesToggleBtn">Favorites</button>
+    </div>
 
-  <select id="themeSelect" onchange="changeTheme(this.value)">
-    <option value="system">System</option>
-    <option value="light">Light</option>
-    <option value="dark">Dark</option>
-  </select>
-</div>
+    <div class="grid">
+      <div>
+        <div class="section-title">Smart Mode</div>
+        <select id="modeSelect">
+          <option value="random">Random</option>
+          <option value="encourage">Encourage Me</option>
+          <option value="faith">Build My Faith</option>
+          <option value="strength">Give Me Strength</option>
+          <option value="peace">Calm My Anxiety</option>
+          <option value="hope">Give Me Hope</option>
+          <option value="love">Grow In Love</option>
+        </select>
+      </div>
 
-<div class="card hidden" id="searchBox">
-  <div class="section-title">Search</div>
-  <input id="q" oninput="instantSearch()" placeholder="Search verses...">
-  <button onclick="clearSearch()">Clear</button>
-  <div id="hero"></div>
-  <div id="results"></div>
-</div>
+      <div>
+        <div class="section-title">Translation</div>
+        <select id="translationSelect"></select>
+      </div>
 
-<div class="card hidden" id="favBox">
-  <div class="section-title">Favorites</div>
-  <div id="favList"></div>
-</div>
+      <div>
+        <div class="section-title">Theme</div>
+        <select id="themeSelect">
+          <option value="system">System</option>
+          <option value="light">Day</option>
+          <option value="dark">Night</option>
+        </select>
+      </div>
+    </div>
+  </div>
 
-<div class="card">
-  <div class="section-title">Prayer</div>
-  <div id="prayer">Loading prayer...</div>
-</div>
+  <div class="card" id="prayerCard">
+    <div class="section-title">Prayer</div>
+    <p id="prayerText">Loading prayer...</p>
+  </div>
 
-<div class="card">
-  <div class="section-title">Reflection</div>
-  <div id="reflection">Loading reflection...</div>
-</div>
+  <div class="card" id="reflectionCard">
+    <div class="section-title">Reflection</div>
+    <p id="reflectionText">Loading reflection...</p>
+  </div>
 
-</div>
+  <div class="card" id="actionCard">
+    <div class="section-title">Apply Today</div>
+    <p id="actionText" class="apply-box">Loading application...</p>
+  </div>
 
-<div class="footer-left">Unshaken</div>
-<div class="footer-right" onclick="openMission()">est. 2013 — The Parker Family</div>
+  <div class="card hidden" id="searchCard">
+    <div class="section-title">Search Bible</div>
+    <input id="searchInput" type="text" placeholder="Search for a word or phrase...">
+    <div class="controls">
+      <button id="searchBtn">Search</button>
+      <button class="secondary" id="clearSearchBtn">Clear</button>
+    </div>
+    <div id="searchResults"></div>
+  </div>
 
-<div class="modal-backdrop" id="missionModal" onclick="closeMission(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <h3>Parker Family Mission Statement</h3>
-    <p>As a family, we seek to follow Jesus faithfully, honor God in all we do, and love one another with patience and grace.</p>
-    <button onclick="closeMission()">Close</button>
+  <div class="card hidden" id="favoritesCard">
+    <div class="section-title">Favorites</div>
+    <div id="favoritesList"></div>
+  </div>
+
+</main>
+
+<footer>
+  <span>v1.8.1</span>
+  <span class="footer-link" id="missionOpen">est. 2013 — The Parker Family</span>
+</footer>
+
+<div class="modal hidden" id="missionModal">
+  <div class="modal-content">
+    <div class="section-title">Mission</div>
+    <p>
+      Unshaken was created to help center each day on Scripture, encouragement,
+      prayer, and reflection. Our hope is that every verse points hearts back to
+      God’s truth and gives strength for the day ahead.
+    </p>
+    <button id="missionClose">Close</button>
   </div>
 </div>
 
 <script>
+const VERSION = "1.8.1";
+const DAILY_OFFSET = 81213;
 
-const TRANSLATIONS={
-  web:"World English Bible (WEB)",
-  kjv:"King James Version (KJV)",
-  asv:"American Standard Version (ASV)",
-  akjv:"American King James Version (AKJV)",
-  cpdv:"Catholic Public Domain Version (CPDV)"
-};
-
-const DAILY_SEED=81213;
-
-let canon={},keys=[],currentKey=null;
-let currentTranslation="web";
-let favs=JSON.parse(localStorage.getItem("fav")||"[]");
-
-let EXTRAS={
-  prayers:["Walk faithfully today."],
-  reflections:["What is God showing you?"],
-  topics:{}
-};
-
-let dailyKeyForExtras=null;
-
-function formatVerse(t){
-  return t ? t.trim().charAt(0).toUpperCase()+t.trim().slice(1) : "";
-}
-
-function hash(s){
-  let h=0;
-  for(let i=0;i<s.length;i++){
-    h=(h*31+s.charCodeAt(i))>>>0;
+const TRANSLATIONS = {
+  web: {
+    name: "World English Bible (WEB)",
+    file: "translations/web.txt"
+  },
+  kjv: {
+    name: "King James Version (KJV)",
+    file: "translations/kjv.txt"
+  },
+  asv: {
+    name: "American Standard Version (ASV)",
+    file: "translations/asv.txt"
+  },
+  akjv: {
+    name: "American King James Version (AKJV)",
+    file: "translations/akjv.txt"
+  },
+  cpdv: {
+    name: "Catholic Public Domain Version (CPDV)",
+    file: "translations/cpdv.txt"
   }
-  return h;
+};
+
+const SMART_MODES = {
+  random: {
+    label: "Random",
+    themes: []
+  },
+  encourage: {
+    label: "Encourage Me",
+    themes: ["hope","strength","peace"]
+  },
+  faith: {
+    label: "Build My Faith",
+    themes: ["faith","hope"]
+  },
+  strength: {
+    label: "Give Me Strength",
+    themes: ["strength","faith"]
+  },
+  peace: {
+    label: "Calm My Anxiety",
+    themes: ["peace","hope"]
+  },
+  hope: {
+    label: "Give Me Hope",
+    themes: ["hope","faith"]
+  },
+  love: {
+    label: "Grow In Love",
+    themes: ["love","grace"]
+  }
+};
+
+const THEME_KEYWORDS = {
+  faith: ["faith","believe","trust","trusted","believed","confidence","assurance"],
+  hope: ["hope","wait","future","promise","promised","restore","restored","light"],
+  love: ["love","loved","charity","kindness","mercy","compassion"],
+  strength: ["strength","strong","courage","courageous","mighty","power","weak","weary"],
+  peace: ["peace","rest","still","quiet","comfort","fear","afraid","troubled","anxious"],
+  grace: ["grace","forgive","forgiven","redeem","redeemed","salvation","saved"],
+  wisdom: ["wisdom","wise","understanding","knowledge","teach","path","way"],
+  joy: ["joy","rejoice","glad","delight","sing","praise"]
+};
+
+let extras = {
+  prayers: {},
+  reflections: {},
+  actions: {}
+};
+
+let allVerses = [];
+let currentVerse = null;
+let currentTranslation = localStorage.getItem("unshaken_translation") || "web";
+let favorites = JSON.parse(localStorage.getItem("unshaken_favorites") || "[]");
+
+const verseRefEl = document.getElementById("verseRef");
+const verseTextEl = document.getElementById("verseText");
+const favoriteBtn = document.getElementById("favoriteBtn");
+const prayerText = document.getElementById("prayerText");
+const reflectionText = document.getElementById("reflectionText");
+const actionText = document.getElementById("actionText");
+const smartLabel = document.getElementById("smartLabel");
+
+async function loadExtras(){
+  try{
+    const response = await fetch("content/extras.json");
+
+    if(!response.ok){
+      throw new Error("Unable to load extras.json");
+    }
+
+    extras = await response.json();
+  }catch(error){
+    console.error(error);
+
+    extras = {
+      prayers: {
+        hope: ["Lord, give me hope today and help me trust You."],
+        faith: ["Lord, strengthen my faith and help me walk with You today."],
+        strength: ["Lord, give me strength for what is in front of me today."],
+        peace: ["Lord, calm my heart and fill me with Your peace."],
+        love: ["Lord, help me love others with patience and kindness."],
+        grace: ["Lord, remind me of Your grace and mercy today."]
+      },
+      reflections: {
+        hope: ["Hope reminds us that God is still working, even when we cannot see it yet."],
+        faith: ["Faith is choosing to trust God one step at a time."],
+        strength: ["God often gives strength for the step in front of us, not the whole road at once."],
+        peace: ["Peace grows when we remember that God is present and in control."],
+        love: ["Love is often shown through small acts of kindness, patience, and humility."],
+        grace: ["Grace reminds us that God’s mercy is greater than our mistakes."]
+      },
+      actions: {
+        hope: ["Write down one thing you are looking forward to."],
+        faith: ["Take one step today that requires trust instead of overthinking."],
+        strength: ["Finish one task you have been avoiding."],
+        peace: ["Pause for 60 seconds, breathe slowly, and pray."],
+        love: ["Encourage one person today."],
+        grace: ["Let go of one mistake you keep replaying."]
+      }
+    };
+  }
 }
 
-function getDaily(){
-  if(!keys.length) return null;
-  const h=hash(new Date().toDateString()+DAILY_SEED);
-  return keys[h%keys.length];
+function populateTranslations(){
+  const select = document.getElementById("translationSelect");
+  select.innerHTML = "";
+
+  Object.entries(TRANSLATIONS).forEach(([key,item])=>{
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = item.name;
+    select.appendChild(option);
+  });
+
+  select.value = currentTranslation;
 }
 
-function getDailyIndex(length,offset){
-  if(!length) return 0;
-  return hash(new Date().toDateString()+DAILY_SEED+offset)%length;
+async function loadTranslation(key){
+  try{
+    const response = await fetch(TRANSLATIONS[key].file);
+
+    if(!response.ok){
+      throw new Error("Translation file not found");
+    }
+
+    const text = await response.text();
+
+    allVerses = text
+      .split(/\r?\n/)
+      .map(line=>line.trim())
+      .filter(Boolean)
+      .map(parseVerseLine)
+      .filter(v=>v.reference && v.text);
+
+    currentTranslation = key;
+    localStorage.setItem("unshaken_translation", key);
+
+    showDailyVerse();
+  }catch(error){
+    verseRefEl.textContent = "Unable to load translation";
+    verseTextEl.textContent = "Please make sure your translation files are in the translations folder.";
+    prayerText.textContent = "Unable to load devotional content.";
+    reflectionText.textContent = "Unable to load reflection content.";
+    actionText.textContent = "Please check your file paths.";
+    console.error(error);
+  }
 }
 
-/* THEME */
-function applyTheme(mode){
-  const dark =
-    mode==="dark" ||
-    (mode==="system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+function parseVerseLine(line){
+  const colonIndex = line.indexOf(":");
 
-  document.documentElement.setAttribute("data-theme",dark?"dark":"light");
+  if(colonIndex === -1){
+    return {
+      reference: "",
+      text: line,
+      scores: {}
+    };
+  }
+
+  let beforeColon = line.slice(0, colonIndex).trim();
+  let afterColon = line.slice(colonIndex + 1).trim();
+
+  const beforeParts = beforeColon.split(/\s+/);
+  const verseNumber = beforeParts.pop();
+  const bookAndChapter = beforeParts.join(" ");
+
+  const textParts = afterColon.split(/\s+/);
+  let verseText = afterColon;
+
+  if(textParts.length > 1 && /^\d+/.test(textParts[0])){
+    verseText = textParts.slice(1).join(" ");
+  }
+
+  const reference = `${bookAndChapter}:${verseNumber}`.replace(/\s+:/,":").trim();
+
+  return {
+    reference,
+    text: verseText,
+    scores: scoreVerse(`${reference} ${verseText}`)
+  };
 }
 
-function changeTheme(mode){
-  localStorage.setItem("theme",mode);
-  applyTheme(mode);
+function scoreVerse(content){
+  const lower = content.toLowerCase();
+  const scores = {};
+
+  Object.entries(THEME_KEYWORDS).forEach(([theme,words])=>{
+    let score = 0;
+
+    words.forEach(word=>{
+      const regex = new RegExp(`\\b${word}\\b`,"gi");
+      const matches = lower.match(regex);
+
+      if(matches){
+        score += matches.length * 30;
+      }
+    });
+
+    scores[theme] = Math.min(score,100);
+  });
+
+  return scores;
+}
+
+function hashString(str){
+  let hash = 0;
+
+  for(let i=0;i<str.length;i++){
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+
+  return Math.abs(hash);
+}
+
+function getTodayKey(){
+  const now = new Date();
+
+  return `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+}
+
+function getDailyIndex(){
+  return hashString(getTodayKey() + DAILY_OFFSET) % allVerses.length;
+}
+
+function getRandomVerse(){
+  if(!allVerses.length){
+    return null;
+  }
+
+  const seed = Date.now() + DAILY_OFFSET;
+
+  return allVerses[seed % allVerses.length];
+}
+
+function pickSmartVerse(mode){
+  if(!allVerses.length){
+    return null;
+  }
+
+  if(mode === "random"){
+    return getRandomVerse();
+  }
+
+  const modeData = SMART_MODES[mode] || SMART_MODES.encourage;
+  const targets = modeData.themes;
+
+  const ranked = allVerses
+    .map(verse=>{
+      let score = 0;
+
+      targets.forEach(theme=>{
+        score += verse.scores[theme] || 0;
+      });
+
+      return {
+        ...verse,
+        matchScore: score
+      };
+    })
+    .filter(verse=>verse.matchScore > 0)
+    .sort((a,b)=>b.matchScore-a.matchScore);
+
+  if(!ranked.length){
+    return getRandomVerse();
+  }
+
+  const topPool = ranked.slice(0, Math.min(25, ranked.length));
+
+  return topPool[Math.floor(Math.random() * topPool.length)];
+}
+
+function getDominantTheme(verse, preferredThemes=[]){
+  if(!verse || !verse.scores){
+    return "hope";
+  }
+
+  const candidates = preferredThemes.length ? preferredThemes : Object.keys(verse.scores);
+
+  let bestTheme = candidates[0] || "hope";
+  let bestScore = -1;
+
+  candidates.forEach(theme=>{
+    const score = verse.scores[theme] || 0;
+
+    if(score > bestScore){
+      bestScore = score;
+      bestTheme = theme;
+    }
+  });
+
+  if(bestScore <= 0){
+    return preferredThemes[0] || "hope";
+  }
+
+  return bestTheme;
+}
+
+function getSecondaryTheme(verse, primaryTheme, preferredThemes=[]){
+  const scores = verse?.scores || {};
+  const candidates = preferredThemes.length ? preferredThemes : Object.keys(scores);
+
+  const sorted = candidates
+    .filter(theme=>theme !== primaryTheme)
+    .map(theme=>({
+      theme,
+      score: scores[theme] || 0
+    }))
+    .sort((a,b)=>b.score-a.score);
+
+  if(sorted.length && sorted[0].score > 0){
+    return sorted[0].theme;
+  }
+
+  return primaryTheme;
+}
+
+function randomFrom(array){
+  return array[Math.floor(Math.random() * array.length)];
+}
+
+function capitalize(str){
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function generateDevotional(verse, mode="random"){
+  const modeData = SMART_MODES[mode] || SMART_MODES.random;
+  const preferredThemes = modeData.themes || [];
+
+  const prayerTheme = getDominantTheme(verse, preferredThemes);
+  const reflectionTheme = getSecondaryTheme(verse, prayerTheme, preferredThemes);
+  const actionTheme = reflectionTheme || prayerTheme;
+
+  prayerText.textContent = randomFrom(
+    extras.prayers[prayerTheme] ||
+    extras.prayers.hope ||
+    ["Lord, guide me today."]
+  );
+
+  reflectionText.textContent = randomFrom(
+    extras.reflections[reflectionTheme] ||
+    extras.reflections.hope ||
+    ["Reflect on God’s faithfulness today."]
+  );
+
+  actionText.textContent = randomFrom(
+    extras.actions[actionTheme] ||
+    extras.actions.hope ||
+    ["Take one faithful step today."]
+  );
+
+  if(mode !== "random"){
+    smartLabel.textContent = `${modeData.label} • Prayer: ${capitalize(prayerTheme)} • Reflection: ${capitalize(reflectionTheme)}`;
+    smartLabel.classList.remove("hidden");
+  }else{
+    smartLabel.classList.add("hidden");
+  }
+}
+
+function displayVerse(verse, mode="random"){
+  if(!verse){
+    return;
+  }
+
+  currentVerse = verse;
+  verseRefEl.textContent = verse.reference;
+  verseTextEl.textContent = verse.text;
+
+  updateFavoriteButton();
+  generateDevotional(verse, mode);
+}
+
+function showDailyVerse(){
+  if(!allVerses.length){
+    return;
+  }
+
+  const verse = allVerses[getDailyIndex()];
+  document.getElementById("modeSelect").value = "random";
+  displayVerse(verse, "random");
+}
+
+function showRandomVerse(){
+  const mode = document.getElementById("modeSelect").value;
+
+  if(mode === "random"){
+    displayVerse(getRandomVerse(), "random");
+  }else{
+    displayVerse(pickSmartVerse(mode), mode);
+  }
+}
+
+function encourageMe(){
+  document.getElementById("modeSelect").value = "encourage";
+  displayVerse(pickSmartVerse("encourage"), "encourage");
+}
+
+function verseKey(verse){
+  return `${currentTranslation}|${verse.reference}|${verse.text}`;
+}
+
+function updateFavoriteButton(){
+  if(!currentVerse){
+    return;
+  }
+
+  const key = verseKey(currentVerse);
+
+  favoriteBtn.textContent = favorites.some(f=>f.key === key) ? "★" : "☆";
+}
+
+function toggleFavorite(){
+  if(!currentVerse){
+    return;
+  }
+
+  const key = verseKey(currentVerse);
+  const exists = favorites.some(f=>f.key === key);
+
+  if(exists){
+    favorites = favorites.filter(f=>f.key !== key);
+  }else{
+    favorites.unshift({
+      key,
+      reference: currentVerse.reference,
+      text: currentVerse.text,
+      translation: currentTranslation,
+      date: new Date().toISOString()
+    });
+  }
+
+  localStorage.setItem("unshaken_favorites", JSON.stringify(favorites));
+  updateFavoriteButton();
+  renderFavorites();
+}
+
+function renderFavorites(){
+  const container = document.getElementById("favoritesList");
+
+  if(!favorites.length){
+    container.innerHTML = `<p class="muted">Save verses that speak to you — they’ll appear here.</p>`;
+    return;
+  }
+
+  container.innerHTML = favorites.map(f=>`
+    <div class="favorite-item">
+      <div class="favorite-ref">${escapeHtml(f.reference)}</div>
+      <div>${escapeHtml(f.text)}</div>
+      <div class="muted">${TRANSLATIONS[f.translation]?.name || f.translation}</div>
+    </div>
+  `).join("");
+}
+
+function searchBible(){
+  const query = document.getElementById("searchInput").value.trim().toLowerCase();
+  const results = document.getElementById("searchResults");
+
+  if(!query){
+    results.innerHTML = `<p class="muted">Enter a word or phrase to search.</p>`;
+    return;
+  }
+
+  const matches = allVerses.filter(v=>
+    v.text.toLowerCase().includes(query) ||
+    v.reference.toLowerCase().includes(query)
+  );
+
+  if(!matches.length){
+    results.innerHTML = `<p class="muted">No results found.</p>`;
+    return;
+  }
+
+  results.innerHTML = matches.slice(0,100).map(v=>`
+    <div class="result-item">
+      <div class="result-ref">${escapeHtml(v.reference)}</div>
+      <div>${highlight(escapeHtml(v.text), query)}</div>
+    </div>
+  `).join("");
+
+  if(matches.length > 100){
+    results.innerHTML += `<p class="muted">Showing first 100 of ${matches.length} results.</p>`;
+  }
+}
+
+function highlight(text, query){
+  const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  const regex = new RegExp(`(${safeQuery})`,"gi");
+
+  return text.replace(regex,"<mark>$1</mark>");
+}
+
+function clearSearch(){
+  document.getElementById("searchInput").value = "";
+  document.getElementById("searchResults").innerHTML = "";
+}
+
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function applyTheme(value){
+  if(value === "system"){
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.setAttribute("data-theme", prefersDark ? "dark" : "light");
+  }else{
+    document.documentElement.setAttribute("data-theme", value);
+  }
+
+  localStorage.setItem("unshaken_theme", value);
 }
 
 function initTheme(){
-  const saved=localStorage.getItem("theme")||"system";
-  document.getElementById("themeSelect").value=saved;
+  const saved = localStorage.getItem("unshaken_theme") || "system";
+  document.getElementById("themeSelect").value = saved;
   applyTheme(saved);
 
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{
-    if((localStorage.getItem("theme")||"system")==="system"){
+    if(document.getElementById("themeSelect").value === "system"){
       applyTheme("system");
     }
   });
 }
 
-/* EXTRAS */
-async function loadExtras(){
-  try{
-    const res=await fetch("content/extras.json");
-    if(!res.ok) throw new Error("extras.json failed to load");
+function bindEvents(){
+  document.getElementById("dailyBtn").addEventListener("click", showDailyVerse);
+  document.getElementById("randomBtn").addEventListener("click", showRandomVerse);
+  document.getElementById("encourageBtn").addEventListener("click", encourageMe);
+  document.getElementById("favoriteBtn").addEventListener("click", toggleFavorite);
 
-    const data=await res.json();
+  document.getElementById("modeSelect").addEventListener("change",()=>{
+    showRandomVerse();
+  });
 
-    EXTRAS={
-      prayers:Array.isArray(data.prayers)&&data.prayers.length ? data.prayers : EXTRAS.prayers,
-      reflections:Array.isArray(data.reflections)&&data.reflections.length ? data.reflections : EXTRAS.reflections,
-      topics:data.topics && typeof data.topics==="object" ? data.topics : {}
-    };
-  }catch(e){
-    console.warn("Using fallback prayer/reflection content.",e);
-  }
-}
+  document.getElementById("translationSelect").addEventListener("change",e=>{
+    loadTranslation(e.target.value);
+  });
 
-/* TOPIC ENGINE: WEIGHTED KEYWORDS + MULTI-TOPIC BLENDING */
+  document.getElementById("themeSelect").addEventListener("change",e=>{
+    applyTheme(e.target.value);
+  });
 
-function normalizeKeyword(rawKeyword){
-  if(typeof rawKeyword==="string"){
-    return {
-      term:rawKeyword.toLowerCase().trim(),
-      weight:1
-    };
-  }
+  document.getElementById("searchToggleBtn").addEventListener("click",()=>{
+    document.getElementById("searchCard").classList.toggle("hidden");
+  });
 
-  if(rawKeyword && typeof rawKeyword==="object"){
-    return {
-      term:String(rawKeyword.term || rawKeyword.keyword || "").toLowerCase().trim(),
-      weight:Number(rawKeyword.weight || 1)
-    };
-  }
+  document.getElementById("favoritesToggleBtn").addEventListener("click",()=>{
+    document.getElementById("favoritesCard").classList.toggle("hidden");
+    renderFavorites();
+  });
 
-  return {term:"",weight:0};
-}
+  document.getElementById("searchBtn").addEventListener("click",searchBible);
 
-function scoreTopic(topic,verseText){
-  const keywords=Array.isArray(topic.keywords) ? topic.keywords : [];
-  let score=0;
-  let hits=[];
-
-  keywords.forEach(rawKeyword=>{
-    const item=normalizeKeyword(rawKeyword);
-    if(!item.term) return;
-
-    if(verseText.includes(item.term)){
-      const phraseBonus=item.term.includes(" ") ? 2 : 1;
-      const value=item.weight * phraseBonus;
-      score += value;
-      hits.push(item.term);
+  document.getElementById("searchInput").addEventListener("keydown",e=>{
+    if(e.key === "Enter"){
+      searchBible();
     }
   });
 
-  return {score,hits};
-}
+  document.getElementById("clearSearchBtn").addEventListener("click",clearSearch);
 
-function getTopicMatchesForVerse(key){
-  if(!key || !canon[key]) return [];
+  document.getElementById("missionOpen").addEventListener("click",()=>{
+    document.getElementById("missionModal").classList.remove("hidden");
+  });
 
-  const verseText=(
-    canon[key][currentTranslation] ||
-    canon[key].web ||
-    ""
-  ).toLowerCase();
+  document.getElementById("missionClose").addEventListener("click",()=>{
+    document.getElementById("missionModal").classList.add("hidden");
+  });
 
-  const scored=[];
-
-  Object.keys(EXTRAS.topics||{}).forEach(topicName=>{
-    const topic=EXTRAS.topics[topicName];
-    const result=scoreTopic(topic,verseText);
-
-    if(result.score>0){
-      scored.push({
-        topicName,
-        score:result.score,
-        hits:result.hits
-      });
+  document.getElementById("missionModal").addEventListener("click",e=>{
+    if(e.target.id === "missionModal"){
+      document.getElementById("missionModal").classList.add("hidden");
     }
   });
-
-  if(!scored.length) return [];
-
-  scored.sort((a,b)=>b.score-a.score);
-
-  const topScore=scored[0].score;
-  const closeThreshold=0.75;
-
-  let closeMatches=scored.filter(item=>item.score>=topScore*closeThreshold);
-
-  if(closeMatches.length>2){
-    closeMatches=closeMatches.slice(0,2);
-  }
-
-  const tiedForFirst=closeMatches.filter(item=>item.score===topScore);
-
-  if(tiedForFirst.length>1){
-    const chosenIndex=hash(new Date().toDateString()+DAILY_SEED+"topic-tie")%tiedForFirst.length;
-    const chosenFirst=tiedForFirst[chosenIndex];
-
-    closeMatches=[
-      chosenFirst,
-      ...closeMatches.filter(item=>item.topicName!==chosenFirst.topicName)
-    ];
-  }
-
-  return closeMatches.slice(0,2);
 }
 
-function weightedTopicItems(topicMatches,type){
-  const items=[];
-
-  topicMatches.forEach(match=>{
-    const topic=EXTRAS.topics[match.topicName];
-    const list=topic && Array.isArray(topic[type]) ? topic[type] : [];
-
-    list.forEach(text=>{
-      items.push({
-        text,
-        weight:match.score,
-        topic:match.topicName
-      });
-    });
-  });
-
-  return items;
-}
-
-function chooseWeightedDailyItem(items,offset){
-  if(!items || !items.length) return "";
-
-  const expanded=[];
-
-  items.forEach(item=>{
-    const repeat=Math.max(1,Math.round(item.weight));
-    for(let i=0;i<repeat;i++){
-      expanded.push(item.text);
-    }
-  });
-
-  return expanded[getDailyIndex(expanded.length,offset)];
-}
-
-function chooseDailyItem(items,offset){
-  if(!items || !items.length) return "";
-  return items[getDailyIndex(items.length,offset)];
-}
-
-function setDailyExtras(){
-  const topicMatches=getTopicMatchesForVerse(dailyKeyForExtras);
-
-  const prayerItems=weightedTopicItems(topicMatches,"prayers");
-  const reflectionItems=weightedTopicItems(topicMatches,"reflections");
-
-  const prayer=prayerItems.length
-    ? chooseWeightedDailyItem(prayerItems,"topic-prayer")
-    : chooseDailyItem(EXTRAS.prayers,"prayer-general");
-
-  const reflection=reflectionItems.length
-    ? chooseWeightedDailyItem(reflectionItems,"topic-reflection")
-    : chooseDailyItem(EXTRAS.reflections,"reflection-general");
-
-  document.getElementById("prayer").innerText=prayer||"Walk faithfully today.";
-  document.getElementById("reflection").innerText=reflection||"What is God showing you?";
-}
-
-/* LOAD VERSES */
-async function loadAll(){
-  canon={};
-
-  for(const t in TRANSLATIONS){
-    try{
-      const txt=await (await fetch(`translations/${t}.txt`)).text();
-
-      txt.split("\n").forEach(line=>{
-        line=line.trim();
-        if(!line) return;
-
-        const p=line.split(/\s+/);
-        const i=p.findIndex(x=>x.includes(":"));
-        if(i<0) return;
-
-        const key=p.slice(0,i).join(" ")+" "+p[i];
-        const verse=p.slice(i+1).join(" ");
-
-        if(!canon[key]) canon[key]={};
-        canon[key][t]=verse;
-      });
-    }catch(e){}
-  }
-
-  keys=Object.keys(canon);
-  buildDropdown();
-
-  const dk=getDaily();
-  dailyKeyForExtras=dk;
-
-  if(dk) show(dk);
-  setDailyExtras();
-}
-
-function show(k){
-  if(!canon[k]) return;
-
-  currentKey=k;
-
-  document.getElementById("verse-title").innerText=k;
-  document.getElementById("verse").innerText=formatVerse(canon[k][currentTranslation]);
-
-  updateStar();
-}
-
-function daily(){
-  const dk=getDaily();
-  dailyKeyForExtras=dk;
-  if(dk) show(dk);
-  setDailyExtras();
-}
-
-function randomVerse(){
-  if(!keys.length) return;
-  show(keys[Math.floor(Math.random()*keys.length)]);
-}
-
-function buildDropdown(){
-  document.getElementById("translation").innerHTML=
-    Object.keys(TRANSLATIONS).map(k=>
-      `<option value="${k}">${TRANSLATIONS[k]}</option>`
-    ).join("");
-}
-
-function setTranslation(t){
-  currentTranslation=t;
-  if(currentKey) show(currentKey);
-  setDailyExtras();
-}
-
-/* SEARCH */
-function toggleSearch(){
-  document.getElementById("searchBox").classList.toggle("hidden");
-}
-
-function instantSearch(){
-  const q=document.getElementById("q").value.toLowerCase().trim();
-
-  if(!q){
-    document.getElementById("hero").innerHTML="";
-    document.getElementById("results").innerHTML="";
-    return;
-  }
-
-  const words=q.split(/\s+/);
-  let scored=[];
-
-  for(const k of keys){
-    const text=(canon[k][currentTranslation]||"").toLowerCase();
-    let score=0;
-
-    if(text.includes(q)) score+=5;
-    words.forEach(w=>{if(text.includes(w)) score++;});
-
-    if(score>0) scored.push({k,score,text});
-  }
-
-  scored.sort((a,b)=>b.score-a.score);
-
-  const heroVerse=scored[0];
-
-  document.getElementById("hero").innerHTML=
-    heroVerse ? `
-      <div class="hero-card" onclick="show('${heroVerse.k}')">
-        <div class="hero-ref">${heroVerse.k}</div>
-        <div class="hero-text">${formatVerse(heroVerse.text).slice(0,140)}...</div>
-      </div>
-    ` : "";
-
-  document.getElementById("results").innerHTML=
-    scored.slice(1,25).map(s=>`
-      <div class="list-item" onclick="show('${s.k}')">
-        <div class="ref">${s.k}</div>
-        <div class="preview">${formatVerse(s.text).slice(0,90)}...</div>
-      </div>
-    `).join("");
-}
-
-function clearSearch(){
-  document.getElementById("q").value="";
-  document.getElementById("hero").innerHTML="";
-  document.getElementById("results").innerHTML="";
-}
-
-/* FAVORITES */
-function toggleFavorites(){
-  document.getElementById("favBox").classList.toggle("hidden");
-  renderFav();
-}
-
-function toggleFav(){
-  if(!currentKey) return;
-
-  const i=favs.indexOf(currentKey);
-
-  if(i>-1) favs.splice(i,1);
-  else favs.push(currentKey);
-
-  localStorage.setItem("fav",JSON.stringify(favs));
-  updateStar();
-  renderFav();
-}
-
-function renderFav(){
-  const container=document.getElementById("favList");
-
-  container.innerHTML=favs.map(k=>`
-    <div class="list-item" data-key="${k}">
-      <div class="fav-remove" data-remove="${k}">★</div>
-      <div class="ref">${k}</div>
-      <div class="preview">${formatVerse(canon[k]?.[currentTranslation]||"").slice(0,100)}...</div>
-    </div>
-  `).join("");
-
-  container.querySelectorAll(".list-item").forEach(el=>{
-    el.onclick=()=>show(el.dataset.key);
-  });
-
-  container.querySelectorAll("[data-remove]").forEach(btn=>{
-    btn.onclick=(e)=>{
-      e.stopPropagation();
-      const k=btn.dataset.remove;
-      favs=favs.filter(f=>f!==k);
-      localStorage.setItem("fav",JSON.stringify(favs));
-      renderFav();
-      updateStar();
-    };
-  });
-}
-
-function updateStar(){
-  document.getElementById("star").innerText=favs.includes(currentKey)?"★":"☆";
-}
-
-/* MODAL */
-function openMission(){
-  document.getElementById("missionModal").style.display="flex";
-}
-
-function closeMission(){
-  document.getElementById("missionModal").style.display="none";
-}
-
-/* INIT */
-window.onload=async()=>{
+async function init(){
+  populateTranslations();
   initTheme();
-  await loadExtras();
-  await loadAll();
-};
+  bindEvents();
+  renderFavorites();
 
+  await loadExtras();
+  await loadTranslation(currentTranslation);
+}
+
+init();
 </script>
 
 </body>
